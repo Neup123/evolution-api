@@ -102,6 +102,11 @@ export declare namespace wa {
     webhookBase64?: boolean;
   };
 
+  export type LocalWebhookEndpoint = LocalWebHook & {
+    id?: string;
+    instanceId?: string;
+  };
+
   export type LocalPusher = LocalEvent & {
     appId?: string;
     key?: string;

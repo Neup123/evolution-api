@@ -222,7 +222,8 @@ router
       version: packageJson.version,
       clientName: databaseConfig.CONNECTION.CLIENT_NAME,
       manager: !serverConfig.DISABLE_MANAGER ? `${req.protocol}://${req.get('host')}/manager` : undefined,
-      documentation: `https://doc.evolution-api.com`,
+      swagger: `${req.protocol}://${req.get('host')}/docs`,
+      documentation: 'https://github.com/Neup123/evolution-api/tree/main/docs',
       whatsappWebVersion: (await fetchLatestWaWebVersion({})).version.join('.'),
     });
   })

@@ -1906,10 +1906,12 @@ export class BaileysStartupService extends ChannelStartupService {
 
             if (events['creds.update']) {
               this.instance.authState.saveCreds();
+              this.sendDataWebhook(Events.CREDS_UPDATE, { instance: this.instance.name });
             }
 
             if (events['messaging-history.set']) {
               const payload = events['messaging-history.set'];
+              this.sendDataWebhook(Events.MESSAGING_HISTORY_SET, payload);
               await this.messageHandle['messaging-history.set'](payload);
             }
 

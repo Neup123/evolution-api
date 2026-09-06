@@ -154,7 +154,7 @@ export class EventController {
     'CHATS_UPDATE',
     'CHATS_DELETE',
     'GROUPS_UPSERT',
-    'GROUP_UPDATE',
+    'GROUPS_UPDATE',
     'GROUP_PARTICIPANTS_UPDATE',
     'CONNECTION_UPDATE',
     'LABELS_EDIT',
@@ -167,5 +167,7 @@ export class EventController {
     'INSTANCE_CREATE',
     'INSTANCE_DELETE',
     'STATUS_INSTANCE',
+    'CREDS_UPDATE',
+    'MESSAGING_HISTORY_SET',
   ];
 }

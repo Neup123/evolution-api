@@ -214,6 +214,49 @@ const paths = {
   },
 };
 
+const webhookEndpointSchema = {
+  type: 'object',
+  required: ['enabled', 'url'],
+  properties: {
+    enabled: { type: 'boolean', description: 'Whether this destination receives events.' },
+    url: { type: 'string', format: 'uri', description: 'HTTPS or HTTP destination URL.' },
+    events: {
+      type: 'array',
+      description: 'Events to deliver. Omit or pass an empty array to enable every supported event.',
+      items: { type: 'string' },
+    },
+    headers: { type: 'object', additionalProperties: { type: 'string' }, description: 'Headers sent to this destination.' },
+    byEvents: { type: 'boolean', description: 'Append the kebab-case event name to the URL.' },
+    base64: { type: 'boolean', description: 'Preserve base64 media payloads when supported by the event.' },
+  },
+  additionalProperties: false,
+};
+
+paths['/webhook/set-many/{instanceName}'] = {
+  post: {
+    tags: ['Webhooks'],
+    summary: 'Replace an instance webhook destination list',
+    description: 'Atomically replaces all local webhook destinations for an instance. The legacy /webhook/set route remains available for one destination.',
+    operationId: 'setManyWebhooks',
+    parameters: [instanceParameter],
+    requestBody: {
+      required: true,
+      content: { 'application/json': { schema: { type: 'object', required: ['webhooks'], properties: { webhooks: { type: 'array', minItems: 1, items: webhookEndpointSchema } }, additionalProperties: false } } },
+    },
+    responses: { 201: { description: 'Saved webhook destinations.' }, 400: { description: 'Invalid destination configuration.' } },
+  },
+};
+
+paths['/webhook/find-all/{instanceName}'] = {
+  get: {
+    tags: ['Webhooks'],
+    summary: 'List an instance webhook destinations',
+    operationId: 'listWebhooks',
+    parameters: [instanceParameter],
+    responses: { 200: { description: 'Webhook destinations.' } },
+  },
+};
+
 for (const [method, definition] of Object.entries(metadata)) {
   const properties = Object.fromEntries(definition.parameters.map((parameter) => [parameter.name, parameter.schema]));
   const required = definition.parameters.filter((parameter) => parameter.required).map((parameter) => parameter.name);
@@ -281,6 +324,7 @@ const document = {
   security: [{ ApiKeyAuth: [] }],
   tags: [
     { name: 'Registry', description: 'Runtime method discovery.' },
+    { name: 'Webhooks', description: 'Instance event delivery configuration, including multiple destinations.' },
     ...Object.values(groupLabels).map(([name, description]) => ({ name, description })),
     { name: 'Legacy', description: 'Backward-compatible ordered-argument route.' },
   ],
