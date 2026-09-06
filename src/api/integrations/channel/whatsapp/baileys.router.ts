@@ -1,9 +1,13 @@
 import { RouterBroker } from '@api/abstract/abstract.router';
+import { BaileysInvokeDto } from '@api/dto/baileys.dto';
 import { InstanceDto } from '@api/dto/instance.dto';
 import { HttpStatus } from '@api/routes/index.router';
 import { baileysController } from '@api/server.module';
+import { baileysInvokeSchema } from '@validate/baileys.schema';
 import { instanceSchema } from '@validate/instance.schema';
 import { RequestHandler, Router } from 'express';
+
+import { BAILEYS_API_METHODS } from './baileys.methods';
 
 export class BaileysRouter extends RouterBroker {
   constructor(...guards: RequestHandler[]) {
@@ -99,6 +103,23 @@ export class BaileysRouter extends RouterBroker {
 
         res.status(HttpStatus.OK).json(response);
       });
+
+    this.router.get(this.routerPath('methods'), ...guards, async (_req, res) => {
+      res.status(HttpStatus.OK).json(baileysController.listMethods());
+    });
+
+    for (const method of BAILEYS_API_METHODS) {
+      this.router.post(this.routerPath(method), ...guards, async (req, res) => {
+        const response = await this.dataValidate<BaileysInvokeDto>({
+          request: req,
+          schema: baileysInvokeSchema,
+          ClassRef: BaileysInvokeDto,
+          execute: (instance, data) => baileysController.invoke(instance, method, data.args),
+        });
+
+        res.status(HttpStatus.OK).json(response);
+      });
+    }
   }
 
   public readonly router: Router = Router();

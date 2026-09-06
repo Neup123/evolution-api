@@ -152,6 +152,7 @@ import sharp from 'sharp';
 import { PassThrough, Readable } from 'stream';
 import { v4 } from 'uuid';
 
+import { BaileysApiMethod, isBaileysApiMethod } from './baileys.methods';
 import { BaileysMessageProcessor } from './baileysMessage.processor';
 import { useVoiceCallsBaileys } from './voiceCalls/useVoiceCallsBaileys';
 
@@ -4896,6 +4897,71 @@ export class BaileysStartupService extends ChannelStartupService {
     const response = { me: this.client.authState.creds.me, account: this.client.authState.creds.account };
 
     return response;
+  }
+
+  private deserializeBaileysApiValue(value: unknown): unknown {
+    if (Array.isArray(value)) {
+      return value.map((item) => this.deserializeBaileysApiValue(item));
+    }
+
+    if (value && typeof value === 'object') {
+      const record = value as Record<string, unknown>;
+      if (Object.keys(record).length === 1 && typeof record.$base64 === 'string') {
+        return Buffer.from(record.$base64, 'base64');
+      }
+
+      return Object.fromEntries(
+        Object.entries(record).map(([key, item]) => [key, this.deserializeBaileysApiValue(item)]),
+      );
+    }
+
+    return value;
+  }
+
+  private serializeBaileysApiValue(value: unknown, seen = new WeakSet<object>()): unknown {
+    if (value === undefined) return null;
+    if (typeof value === 'bigint') return value.toString();
+    if (Buffer.isBuffer(value) || value instanceof Uint8Array) {
+      return { $base64: Buffer.from(value).toString('base64') };
+    }
+    if (Array.isArray(value)) {
+      return value.map((item) => this.serializeBaileysApiValue(item, seen));
+    }
+    if (value instanceof Date) return value.toISOString();
+
+    if (value && typeof value === 'object') {
+      if (seen.has(value)) return '[Circular]';
+      seen.add(value);
+
+      const result = Object.fromEntries(
+        Object.entries(value)
+          .filter(([, item]) => typeof item !== 'function')
+          .map(([key, item]) => [key, this.serializeBaileysApiValue(item, seen)]),
+      );
+      seen.delete(value);
+      return result;
+    }
+
+    return value;
+  }
+
+  public async baileysInvoke(method: BaileysApiMethod, args: unknown[] = []) {
+    if (!isBaileysApiMethod(method)) {
+      throw new BadRequestException(`Unsupported Baileys API method: ${method}`);
+    }
+
+    const socketMethod = this.client?.[method] as unknown;
+    if (typeof socketMethod !== 'function') {
+      throw new BadRequestException(`Baileys method is unavailable on this connection: ${method}`);
+    }
+
+    const normalizedArgs = args.map((argument) => this.deserializeBaileysApiValue(argument));
+    const result = await socketMethod.apply(this.client, normalizedArgs);
+
+    return {
+      method,
+      result: this.serializeBaileysApiValue(result),
+    };
   }
 
   //Business Controller

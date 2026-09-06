@@ -122,6 +122,30 @@ docker pull evoapicloud/evolution-api:latest
 docker run -p 8080:8080 --env-file .env evoapicloud/evolution-api:latest
 ```
 
+This fork also publishes a multi-architecture image to GitHub Container Registry after changes land on `main`:
+
+```yaml
+services:
+  api:
+    image: ghcr.io/neup123/evolution-api:latest
+    restart: always
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+```
+
+The image can be pulled directly with `docker pull ghcr.io/neup123/evolution-api:latest`.
+If the GitHub package is private, authenticate once with a GitHub token that has `read:packages` permission.
+
+### Baileys API and Swagger
+
+This fork exposes the HTTP-compatible Baileys 7 socket methods at
+`POST /baileys/<method>/:instanceName`. Send the ordered Baileys arguments as `{ "args": [...] }`.
+Binary arguments and results use `{ "$base64": "..." }`. The live method registry is available at
+`GET /baileys/methods/:instanceName`, and Swagger UI is served at `/docs` unless
+`SERVER_DISABLE_DOCS=true`. The source specification is in [`docs/openapi.yaml`](docs/openapi.yaml).
+
 ---
 
 ## Architecture
