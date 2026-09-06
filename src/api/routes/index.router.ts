@@ -58,6 +58,7 @@ if (!serverConfig.DISABLE_DOCS) {
         url: '/docs/openapi.yaml',
         docExpansion: 'none',
         filter: true,
+        persistAuthorization: true,
         tagsSorter: 'alpha',
         operationsSorter: 'alpha',
       },
