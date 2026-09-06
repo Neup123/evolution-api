@@ -275,7 +275,7 @@ const document = {
     title: 'Evolution API – Baileys 7',
     version: '2.3.7-baileys-7.0.0-rc14',
     description:
-      'Typed, grouped HTTP routes for the Baileys WASocket API. Named request fields are generated from the installed Baileys TypeScript declarations.',
+      'Typed, grouped HTTP routes for the Baileys WASocket API. Named request fields are generated from the installed Baileys TypeScript declarations. Before using Try it out, click Authorize and enter the Evolution API global API key; Swagger sends it in the apikey header.',
   },
   servers: [{ url: '/', description: 'Current Evolution API server' }],
   security: [{ ApiKeyAuth: [] }],
@@ -286,7 +286,14 @@ const document = {
   ],
   paths,
   components: {
-    securitySchemes: { ApiKeyAuth: { type: 'apiKey', in: 'header', name: 'apikey' } },
+    securitySchemes: {
+      ApiKeyAuth: {
+        type: 'apiKey',
+        in: 'header',
+        name: 'apikey',
+        description: 'Enter the Evolution API global API key configured as AUTHENTICATION_API_KEY.',
+      },
+    },
     schemas: {
       BinaryValue: {
         oneOf: [
