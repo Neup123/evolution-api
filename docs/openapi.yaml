@@ -1,0 +1,278 @@
+openapi: 3.1.0
+info:
+  title: Evolution API - Baileys extension
+  version: 2.3.7-baileys-7.0.0-rc14
+  description: |
+    REST access to the HTTP-compatible methods exposed by the Baileys 7 socket.
+    Arguments are passed in the same order as the Baileys TypeScript signature.
+    Use `{ "$base64": "..." }` wherever a Baileys argument expects Buffer or Uint8Array.
+servers:
+  - url: /
+security:
+  - ApiKeyAuth: []
+tags:
+  - name: Baileys
+    description: Baileys socket operations scoped to an Evolution API instance.
+paths:
+  /baileys/methods/{instanceName}:
+    get:
+      tags: [Baileys]
+      operationId: listBaileysMethods
+      summary: List supported, legacy, and unsupported Baileys methods
+      parameters:
+        - $ref: '#/components/parameters/InstanceName'
+      responses:
+        '200':
+          description: Baileys method registry
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /baileys/{method}/{instanceName}:
+    post:
+      tags: [Baileys]
+      operationId: invokeBaileysMethod
+      summary: Invoke an HTTP-compatible Baileys socket method
+      description: |
+        Every value in the `method` enum is mounted as a literal API path. The `args`
+        array follows the order documented in the Baileys API reference. Existing
+        compatibility paths such as `onWhatsapp`, `profilePictureUrl`, `assertSessions`,
+        `createParticipantNodes`, `getUSyncDevices`, `generateMessageTag`, `sendNode`,
+        `signalRepositoryDecryptMessage`, and `getAuthState` remain available with their
+        original request bodies.
+      parameters:
+        - name: method
+          in: path
+          required: true
+          description: HTTP-compatible method from the Baileys WASocket API.
+          schema:
+            type: string
+            enum:
+              - communityMetadata
+              - communityCreate
+              - communityCreateGroup
+              - communityLeave
+              - communityUpdateSubject
+              - communityLinkGroup
+              - communityUnlinkGroup
+              - communityFetchLinkedGroups
+              - communityRequestParticipantsList
+              - communityRequestParticipantsUpdate
+              - communityParticipantsUpdate
+              - communityUpdateDescription
+              - communityInviteCode
+              - communityRevokeInvite
+              - communityAcceptInvite
+              - communityRevokeInviteV4
+              - communityAcceptInviteV4
+              - communityGetInviteInfo
+              - communityToggleEphemeral
+              - communitySettingUpdate
+              - communityMemberAddMode
+              - communityJoinApprovalMode
+              - communityFetchAllParticipating
+              - getOrderDetails
+              - getCatalog
+              - getCollections
+              - productCreate
+              - productDelete
+              - productUpdate
+              - updateBussinesProfile
+              - updateCoverPhoto
+              - removeCoverPhoto
+              - sendMessageAck
+              - sendRetryRequest
+              - rejectCall
+              - fetchMessageHistory
+              - requestPlaceholderResend
+              - issuePrivacyTokens
+              - relayMessage
+              - sendReceipt
+              - sendReceipts
+              - readMessages
+              - refreshMediaConn
+              - getMediaHost
+              - waUploadToServer
+              - fetchPrivacySettings
+              - sendPeerDataOperationMessage
+              - updateMemberLabel
+              - updateMediaMessage
+              - sendMessage
+              - newsletterCreate
+              - newsletterUpdate
+              - newsletterSubscribers
+              - newsletterMetadata
+              - newsletterFollow
+              - newsletterUnfollow
+              - newsletterMute
+              - newsletterUnmute
+              - newsletterUpdateName
+              - newsletterUpdateDescription
+              - newsletterUpdatePicture
+              - newsletterRemovePicture
+              - newsletterReactMessage
+              - newsletterFetchMessages
+              - subscribeNewsletterUpdates
+              - newsletterAdminCount
+              - newsletterChangeOwner
+              - newsletterDemote
+              - newsletterDelete
+              - groupMetadata
+              - groupCreate
+              - groupLeave
+              - groupUpdateSubject
+              - groupRequestParticipantsList
+              - groupRequestParticipantsUpdate
+              - groupParticipantsUpdate
+              - groupUpdateDescription
+              - groupInviteCode
+              - groupRevokeInvite
+              - groupAcceptInvite
+              - groupRevokeInviteV4
+              - groupAcceptInviteV4
+              - groupGetInviteInfo
+              - groupToggleEphemeral
+              - groupSettingUpdate
+              - groupMemberAddMode
+              - groupJoinApprovalMode
+              - groupFetchAllParticipating
+              - createCallLink
+              - getBotListV2
+              - sendPresenceUpdate
+              - presenceSubscribe
+              - fetchBlocklist
+              - fetchStatus
+              - fetchDisappearingDuration
+              - updateProfilePicture
+              - removeProfilePicture
+              - updateProfileStatus
+              - updateProfileName
+              - updateBlockStatus
+              - updateDisableLinkPreviewsPrivacy
+              - updateCallPrivacy
+              - updateMessagesPrivacy
+              - updateLastSeenPrivacy
+              - updateOnlinePrivacy
+              - updateProfilePicturePrivacy
+              - updateStatusPrivacy
+              - updateReadReceiptsPrivacy
+              - updateGroupsAddPrivacy
+              - updateDefaultDisappearingMode
+              - getBusinessProfile
+              - resyncAppState
+              - chatModify
+              - cleanDirtyBits
+              - addOrEditContact
+              - removeContact
+              - addLabel
+              - addChatLabel
+              - removeChatLabel
+              - addMessageLabel
+              - removeMessageLabel
+              - star
+              - addOrEditQuickReply
+              - removeQuickReply
+              - fetchAccountReachoutTimelock
+              - fetchNewChatMessageCap
+              - appPatch
+              - query
+              - sendRawMessage
+              - uploadPreKeys
+              - uploadPreKeysToServerIfRequired
+              - digestKeyBundle
+              - rotateSignedPreKey
+              - requestPairingCode
+              - sendUnifiedSession
+              - sendWAMBuffer
+        - $ref: '#/components/parameters/InstanceName'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BaileysInvocation'
+            examples:
+              profileStatus:
+                summary: Update the connected account profile status
+                value:
+                  args: [Available through Evolution API]
+              binaryArgument:
+                summary: Pass bytes to a method that accepts Buffer or Uint8Array
+                value:
+                  args:
+                    - $base64: SGVsbG8=
+      responses:
+        '200':
+          description: Serialized Baileys method result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaileysResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          description: Baileys or Evolution API execution error
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: apikey
+  parameters:
+    InstanceName:
+      name: instanceName
+      in: path
+      required: true
+      description: Connected Evolution API instance name.
+      schema:
+        type: string
+  schemas:
+    BaileysInvocation:
+      type: object
+      additionalProperties: false
+      properties:
+        args:
+          type: array
+          description: Ordered arguments from the corresponding Baileys method signature.
+          items: {}
+      examples:
+        - args: []
+    BaileysResult:
+      type: object
+      required: [method, result]
+      properties:
+        method:
+          type: string
+        result:
+          description: JSON-safe result. Binary values are represented with `$base64`.
+    Error:
+      type: object
+      additionalProperties: true
+  responses:
+    BadRequest:
+      description: Invalid request body, method, or arguments
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing or invalid API key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Evolution API instance not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

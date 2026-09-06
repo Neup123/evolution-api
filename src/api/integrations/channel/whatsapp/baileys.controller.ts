@@ -1,6 +1,14 @@
 import { InstanceDto } from '@api/dto/instance.dto';
 import { WAMonitoringService } from '@api/services/monitor.service';
 
+import {
+  BAILEYS_API_METHODS,
+  BAILEYS_EXISTING_API_METHODS,
+  BAILEYS_UNSUPPORTED_API_METHODS,
+  BAILEYS_VERSION,
+  BaileysApiMethod,
+} from './baileys.methods';
+
 export class BaileysController {
   constructor(private readonly waMonitor: WAMonitoringService) {}
 
@@ -56,5 +64,21 @@ export class BaileysController {
     const instance = this.waMonitor.waInstances[instanceName];
 
     return instance.baileysGetAuthState();
+  }
+
+  public listMethods() {
+    return {
+      version: BAILEYS_VERSION,
+      methods: BAILEYS_API_METHODS,
+      legacyMethods: BAILEYS_EXISTING_API_METHODS,
+      unsupportedMethods: BAILEYS_UNSUPPORTED_API_METHODS,
+      binaryFormat: { $base64: '<base64 encoded bytes>' },
+    };
+  }
+
+  public async invoke({ instanceName }: InstanceDto, method: BaileysApiMethod, args: unknown[] = []) {
+    const instance = this.waMonitor.waInstances[instanceName];
+
+    return instance.baileysInvoke(method, args);
   }
 }

@@ -17,6 +17,7 @@ RUN npm ci --silent
 
 COPY ./src ./src
 COPY ./public ./public
+COPY ./docs ./docs
 COPY ./prisma ./prisma
 COPY ./manager ./manager
 COPY ./.env.example ./.env
@@ -48,6 +49,7 @@ COPY --from=builder /evolution/dist ./dist
 COPY --from=builder /evolution/prisma ./prisma
 COPY --from=builder /evolution/manager ./manager
 COPY --from=builder /evolution/public ./public
+COPY --from=builder /evolution/docs ./docs
 COPY --from=builder /evolution/.env ./.env
 COPY --from=builder /evolution/Docker ./Docker
 COPY --from=builder /evolution/runWithProvider.js ./runWithProvider.js

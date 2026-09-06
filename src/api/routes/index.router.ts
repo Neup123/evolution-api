@@ -12,6 +12,7 @@ import { NextFunction, Request, Response, Router } from 'express';
 import fs from 'fs';
 import mimeTypes from 'mime-types';
 import path from 'path';
+import swaggerUi from 'swagger-ui-express';
 
 import { BusinessRouter } from './business.router';
 import { CallRouter } from './call.router';
@@ -43,6 +44,20 @@ const guards = [instanceExistsGuard, instanceLoggedGuard, authGuard['apikey']];
 const telemetry = new Telemetry();
 
 const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+
+if (!serverConfig.DISABLE_DOCS) {
+  router.get('/docs/openapi.yaml', (_req, res) => {
+    res.type('application/yaml').sendFile(path.join(process.cwd(), 'docs', 'openapi.yaml'));
+  });
+  router.use(
+    '/docs',
+    swaggerUi.serve,
+    swaggerUi.setup(undefined, {
+      customSiteTitle: 'Evolution API - Baileys Swagger',
+      swaggerOptions: { url: '/docs/openapi.yaml' },
+    }),
+  );
+}
 
 // Middleware for metrics IP whitelist
 const metricsIPWhitelist = (req: Request, res: Response, next: NextFunction) => {
