@@ -120,6 +120,7 @@ export declare namespace wa {
 
   export type LocalWebhookEndpoint = LocalWebHook & {
     id?: string;
+    name?: string;
     instanceId?: string;
   };
 

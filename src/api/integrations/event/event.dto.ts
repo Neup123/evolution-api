@@ -11,6 +11,7 @@ export class EventDto {
     base64?: boolean;
   };
   webhooks?: Array<{
+    name?: string;
     enabled?: boolean;
     events?: string[];
     url?: string;

@@ -216,6 +216,7 @@ model Webhook {
 
 model WebhookEndpoint {
   id              String    @id @default(cuid())
+  name            String?   @db.VarChar(100)
   url             String    @db.VarChar(500)
   headers         Json?     @db.JsonB
   enabled         Boolean?  @default(true) @db.Boolean

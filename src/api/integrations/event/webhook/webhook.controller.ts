@@ -13,6 +13,10 @@ import { EmitData, EventController, EventControllerInterface } from '../event.co
 export class WebhookController extends EventController implements EventControllerInterface {
   private readonly logger = new Logger('WebhookController');
 
+  private eventUrl(url: string, event: string): string {
+    return `${url.replace(/\/+$/, '')}/${event}`;
+  }
+
   constructor(prismaRepository: PrismaRepository, waMonitor: WAMonitoringService) {
     super(prismaRepository, waMonitor, true, 'webhook');
   }
@@ -87,6 +91,7 @@ export class WebhookController extends EventController implements EventControlle
   public async setMany(instanceName: string, webhooks: EventDto['webhooks']): Promise<wa.LocalWebhookEndpoint[]> {
     const instanceId = this.monitor.waInstances[instanceName].instanceId;
     const endpoints = webhooks.map((webhook) => ({
+      name: webhook.name?.trim() || undefined,
       enabled: webhook.enabled,
       events: !webhook.enabled ? [] : webhook.events?.length ? webhook.events : EventController.events,
       url: webhook.url,
@@ -112,7 +117,15 @@ export class WebhookController extends EventController implements EventControlle
           webhookBase64: first.webhookBase64,
           webhookByEvents: first.webhookByEvents,
         },
-        create: first,
+        create: {
+          enabled: first.enabled,
+          events: first.events,
+          url: first.url,
+          headers: first.headers,
+          webhookBase64: first.webhookBase64,
+          webhookByEvents: first.webhookByEvents,
+          instanceId: first.instanceId,
+        },
       });
       return prisma.webhookEndpoint.findMany({ where: { instanceId }, orderBy: { createdAt: 'asc' } });
     });
@@ -183,7 +196,7 @@ export class WebhookController extends EventController implements EventControlle
           webhookHeaders.Authorization = `Bearer ${this.generateJwtToken(webhookHeaders.jwt_key)}`;
           delete webhookHeaders.jwt_key;
         }
-        const baseURL = instance.webhookByEvents ? `${instance.url}/${transformedWe}` : instance.url;
+        const baseURL = instance.webhookByEvents ? this.eventUrl(instance.url, transformedWe) : instance.url;
         const endpointData = { ...webhookData, destination: baseURL };
 
         if (enabledLog) {
@@ -228,7 +241,7 @@ export class WebhookController extends EventController implements EventControlle
         let globalURL = webhookConfig.GLOBAL.URL;
 
         if (webhookConfig.GLOBAL.WEBHOOK_BY_EVENTS) {
-          globalURL = `${globalURL}/${transformedWe}`;
+          globalURL = this.eventUrl(globalURL, transformedWe);
         }
 
         if (enabledLog) {

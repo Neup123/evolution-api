@@ -29,6 +29,7 @@ export const webhookSchema: JSONSchema7 = {
     webhook: {
       type: 'object',
       properties: {
+        name: { type: 'string', minLength: 1, maxLength: 100 },
         enabled: { type: 'boolean' },
         url: { type: 'string' },
         headers: { type: 'object' },
