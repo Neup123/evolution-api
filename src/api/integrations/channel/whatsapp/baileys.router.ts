@@ -7,7 +7,7 @@ import { baileysInvokeSchema } from '@validate/baileys.schema';
 import { instanceSchema } from '@validate/instance.schema';
 import { RequestHandler, Router } from 'express';
 
-import { getBaileysNamedBodySchema, mapBaileysNamedBodyToArgs } from './baileys.metadata';
+import { getBaileysNamedBodySchema, mapBaileysNamedBodyToArgs, mapBaileysNamedQueryToBody } from './baileys.metadata';
 import { BAILEYS_API_METHODS, BAILEYS_METHOD_GROUPS } from './baileys.methods';
 
 export class BaileysRouter extends RouterBroker {
@@ -125,6 +125,7 @@ export class BaileysRouter extends RouterBroker {
     for (const [group, methods] of Object.entries(BAILEYS_METHOD_GROUPS)) {
       for (const method of methods) {
         this.router.post(`/${group}/${method}/:instanceName`, ...guards, async (req, res) => {
+          Object.assign(req.body, mapBaileysNamedQueryToBody(method, req.query as Record<string, unknown>));
           const response = await this.dataValidate<BaileysNamedInvokeDto>({
             request: req,
             schema: getBaileysNamedBodySchema(method),

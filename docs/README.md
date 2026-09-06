@@ -6,7 +6,7 @@ This fork exposes the installed Baileys 7 socket API as stable HTTP routes while
 
 1. Create and connect an Evolution API instance.
 2. In Swagger, choose **Authorize** and enter the global API key. Swagger sends it in the `apikey` header.
-3. Use a typed, grouped Baileys route. The request fields are generated from the installed Baileys TypeScript signatures, so positional `args` JSON is not needed.
+3. Use a typed, grouped Baileys route. Swagger shows each method argument as a separate named input. Known enum values are dropdowns, primitive arrays accept repeated values, and structured inputs accept JSON. Positional `args` JSON is not needed.
 
 `GET /baileys/methods/{instanceName}` returns the authoritative method registry for the installed version.
 
@@ -42,6 +42,8 @@ apikey: YOUR_GLOBAL_API_KEY
 ```
 
 The older `POST /baileys/{method}/{instanceName}` route with `{ "args": [] }` remains available for compatibility, but is deprecated in Swagger. For bytes, use `{ "$base64": "AAECAw==" }` in requests and expect the same envelope in responses.
+
+The manager's **Webhooks** page provides an **Add destination** button, independent event selectors for every destination, and the complete event list below. Its sidebar links open this server's Swagger UI and this fork's documentation.
 
 ## Multiple webhooks per instance
 

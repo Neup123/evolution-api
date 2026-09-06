@@ -77,6 +77,10 @@ export class WebhookController extends EventController implements EventControlle
       },
     });
 
+    const channel = this.monitor.waInstances[instanceName];
+    channel.localWebhook.enabled = webhook.enabled;
+    channel.localWebhook.webhookBase64 = webhook.webhookBase64;
+
     return webhook;
   }
 
@@ -94,11 +98,29 @@ export class WebhookController extends EventController implements EventControlle
 
     // Replacement is deliberate: it lets clients reconcile an instance's full
     // destination list atomically without guessing individual endpoint IDs.
-    return this.prisma.$transaction(async (prisma) => {
+    const saved = await this.prisma.$transaction(async (prisma) => {
       await prisma.webhookEndpoint.deleteMany({ where: { instanceId } });
       await prisma.webhookEndpoint.createMany({ data: endpoints });
+      const first = endpoints[0];
+      await prisma.webhook.upsert({
+        where: { instanceId },
+        update: {
+          enabled: first.enabled,
+          events: first.events,
+          url: first.url,
+          headers: first.headers,
+          webhookBase64: first.webhookBase64,
+          webhookByEvents: first.webhookByEvents,
+        },
+        create: first,
+      });
       return prisma.webhookEndpoint.findMany({ where: { instanceId }, orderBy: { createdAt: 'asc' } });
     });
+
+    const channel = this.monitor.waInstances[instanceName];
+    channel.localWebhook.enabled = saved.some((webhook) => webhook.enabled);
+    channel.localWebhook.webhookBase64 = saved.some((webhook) => webhook.enabled && webhook.webhookBase64);
+    return saved;
   }
 
   public async getAll(instanceName: string): Promise<wa.LocalWebhookEndpoint[]> {

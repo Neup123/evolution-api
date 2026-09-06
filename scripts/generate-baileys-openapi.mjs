@@ -21,6 +21,62 @@ const groupLabels = {
   advanced: ['Advanced protocol', 'Low-level protocol, cryptographic, query, and binary operations.'],
 };
 
+const methodDescriptions = {
+  communityMetadata: 'Get the name, description, participants, and settings of a community.',
+  communityCreate: 'Create a WhatsApp community with a subject and description.',
+  communityCreateGroup: 'Create a group inside an existing community and add participants.',
+  groupMetadata: 'Get the subject, description, owner, participants, and settings of a group.',
+  groupCreate: 'Create a WhatsApp group and add the supplied participants.',
+  groupParticipantsUpdate: 'Add, remove, promote, or demote participants in a group.',
+  groupRequestParticipantsList: 'List pending requests from people who want to join a group.',
+  groupRequestParticipantsUpdate: 'Approve or reject pending group join requests.',
+  newsletterCreate: 'Create a WhatsApp newsletter (channel).',
+  newsletterMetadata: 'Get newsletter details using its JID or invite code.',
+  newsletterFetchMessages: 'Load messages published by a newsletter.',
+  newsletterReactMessage: 'Add or remove an emoji reaction on a newsletter message.',
+  sendMessage: 'Send a Baileys message payload directly to a chat or group.',
+  readMessages: 'Mark one or more WhatsApp messages as read.',
+  sendReceipt: 'Send a delivery, read, played, or other receipt for a message.',
+  sendReceipts: 'Send the same receipt for multiple messages.',
+  relayMessage: 'Relay an already constructed protocol message to a WhatsApp JID.',
+  fetchMessageHistory: 'Request older messages for a chat from linked WhatsApp devices.',
+  updateMediaMessage: 'Re-upload or refresh media data for a message whose media is unavailable.',
+  fetchBlocklist: 'Get all WhatsApp accounts blocked by the connected account.',
+  updateBlockStatus: 'Block or unblock a WhatsApp contact.',
+  fetchPrivacySettings: 'Get the connected account privacy settings.',
+  chatModify: 'Archive, unarchive, mute, pin, clear, or delete a chat.',
+  sendPresenceUpdate: 'Set account presence, such as available, unavailable, composing, or recording.',
+  presenceSubscribe: 'Subscribe to live presence updates for a contact.',
+  requestPairingCode: 'Generate a pairing code for linking without scanning a QR code.',
+  query: 'Send a low-level WhatsApp binary query. Intended for advanced protocol integrations.',
+  sendRawMessage: 'Send a low-level raw WhatsApp message. Intended for advanced protocol integrations.',
+};
+
+function readableName(value) {
+  return value.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/^./, (character) => character.toUpperCase());
+}
+
+function describeMethod(method) {
+  if (methodDescriptions[method]) return methodDescriptions[method];
+  const readable = readableName(method).toLowerCase();
+  if (/^(fetch|get)/.test(method)) return `Retrieve ${readable.replace(/^(fetch|get) /, '')} from WhatsApp.`;
+  if (/^(create|add)/.test(method)) return `Create or add ${readable.replace(/^(create|add) /, '')} in WhatsApp.`;
+  if (/^(update|set|modify)/.test(method)) return `Change ${readable.replace(/^(update|set|modify) /, '')} for the connected WhatsApp account.`;
+  if (/^(remove|delete|clean)/.test(method)) return `Remove ${readable.replace(/^(remove|delete|clean) /, '')} from WhatsApp.`;
+  if (/^(send|relay|issue)/.test(method)) return `Send ${readable.replace(/^(send|relay|issue) /, '')} through the connected WhatsApp account.`;
+  return `Run ${readableName(method)} and return the WhatsApp result.`;
+}
+
+function guidedQuerySchema(schema) {
+  if (schema?.enum || ['string', 'number', 'integer', 'boolean'].includes(schema?.type)) return schema;
+  if (schema?.type === 'array' && schema.items && ['string', 'number', 'integer', 'boolean'].includes(schema.items.type)) return schema;
+  return {
+    type: 'string',
+    description: `${schema?.description ?? 'Structured value'}. Enter valid JSON.`,
+    example: schema?.type === 'array' ? '[]' : '{}',
+  };
+}
+
 function readGroups() {
   const source = fs.readFileSync(methodsPath, 'utf8');
   const groupsBlock = source.match(/export const BAILEYS_METHOD_GROUPS = \{([\s\S]*?)\n\} as const;/)?.[1];
@@ -223,7 +279,22 @@ const webhookEndpointSchema = {
     events: {
       type: 'array',
       description: 'Events to deliver. Omit or pass an empty array to enable every supported event.',
-      items: { type: 'string' },
+      items: {
+        type: 'string',
+        enum: [
+          'APPLICATION_STARTUP', 'QRCODE_UPDATED', 'MESSAGES_SET', 'MESSAGES_UPSERT', 'MESSAGES_EDITED',
+          'MESSAGES_UPDATE', 'MESSAGES_DELETE', 'MESSAGES_MEDIA_UPDATE', 'MESSAGES_REACTION',
+          'MESSAGE_RECEIPT_UPDATE', 'SEND_MESSAGE', 'SEND_MESSAGE_UPDATE', 'CONTACTS_SET', 'CONTACTS_UPSERT',
+          'CONTACTS_UPDATE', 'PRESENCE_UPDATE', 'CHATS_SET', 'CHATS_UPSERT', 'CHATS_UPDATE', 'CHATS_DELETE',
+          'CHATS_LOCK', 'GROUPS_UPSERT', 'GROUPS_UPDATE', 'GROUP_PARTICIPANTS_UPDATE', 'GROUP_JOIN_REQUEST',
+          'GROUP_MEMBER_TAG_UPDATE', 'CONNECTION_UPDATE', 'CREDS_UPDATE', 'MESSAGING_HISTORY_SET',
+          'MESSAGING_HISTORY_STATUS', 'LID_MAPPING_UPDATE', 'BLOCKLIST_SET', 'BLOCKLIST_UPDATE',
+          'NEWSLETTER_REACTION', 'NEWSLETTER_VIEW', 'NEWSLETTER_PARTICIPANTS_UPDATE',
+          'NEWSLETTER_SETTINGS_UPDATE', 'MESSAGE_CAPPING_UPDATE', 'SETTINGS_UPDATE', 'LABELS_EDIT',
+          'LABELS_ASSOCIATION', 'CALL', 'TYPEBOT_START', 'TYPEBOT_CHANGE_STATUS', 'REMOVE_INSTANCE',
+          'LOGOUT_INSTANCE', 'INSTANCE_CREATE', 'INSTANCE_DELETE', 'STATUS_INSTANCE',
+        ],
+      },
     },
     headers: { type: 'object', additionalProperties: { type: 'string' }, description: 'Headers sent to this destination.' },
     byEvents: { type: 'boolean', description: 'Append the kebab-case event name to the URL.' },
@@ -258,29 +329,23 @@ paths['/webhook/find-all/{instanceName}'] = {
 };
 
 for (const [method, definition] of Object.entries(metadata)) {
-  const properties = Object.fromEntries(definition.parameters.map((parameter) => [parameter.name, parameter.schema]));
-  const required = definition.parameters.filter((parameter) => parameter.required).map((parameter) => parameter.name);
-  const requestSchema = {
-    type: 'object',
-    properties,
-    ...(required.length ? { required } : {}),
-    additionalProperties: false,
-  };
   paths[`/baileys/${definition.group}/${method}/{instanceName}`] = {
     post: {
       tags: [groupLabels[definition.group][0]],
-      summary: method,
-      description: `Invokes WASocket.${method} with named fields.`,
+      summary: readableName(method),
+      description: `${describeMethod(method)} Complete the named fields below. Structured fields accept JSON. JSON request bodies remain supported for API clients.`,
       operationId: `baileys_${method}`,
-      parameters: [instanceParameter],
-      ...(definition.parameters.length
-        ? {
-            requestBody: {
-              required: required.length > 0,
-              content: { 'application/json': { schema: requestSchema } },
-            },
-          }
-        : {}),
+      parameters: [
+        instanceParameter,
+        ...definition.parameters.map((parameter) => ({
+          name: parameter.name,
+          in: 'query',
+          required: parameter.required,
+          description: parameter.schema.description ?? `${readableName(parameter.name)} for ${readableName(method)}.`,
+          schema: guidedQuerySchema(parameter.schema),
+          ...(parameter.schema.type === 'array' ? { style: 'form', explode: true } : {}),
+        })),
+      ],
       responses: { 200: successResponse, 400: { description: 'Invalid method parameters.' } },
     },
   };
