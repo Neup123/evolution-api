@@ -54,7 +54,13 @@ if (!serverConfig.DISABLE_DOCS) {
     swaggerUi.serve,
     swaggerUi.setup(undefined, {
       customSiteTitle: 'Evolution API - Baileys Swagger',
-      swaggerOptions: { url: '/docs/openapi.yaml' },
+      swaggerOptions: {
+        url: '/docs/openapi.yaml',
+        docExpansion: 'none',
+        filter: true,
+        tagsSorter: 'alpha',
+        operationsSorter: 'alpha',
+      },
     }),
   );
 }

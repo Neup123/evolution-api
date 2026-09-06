@@ -1,5 +1,5 @@
 import { RouterBroker } from '@api/abstract/abstract.router';
-import { BaileysInvokeDto } from '@api/dto/baileys.dto';
+import { BaileysInvokeDto, BaileysNamedInvokeDto } from '@api/dto/baileys.dto';
 import { InstanceDto } from '@api/dto/instance.dto';
 import { HttpStatus } from '@api/routes/index.router';
 import { baileysController } from '@api/server.module';
@@ -7,7 +7,8 @@ import { baileysInvokeSchema } from '@validate/baileys.schema';
 import { instanceSchema } from '@validate/instance.schema';
 import { RequestHandler, Router } from 'express';
 
-import { BAILEYS_API_METHODS } from './baileys.methods';
+import { getBaileysNamedBodySchema, mapBaileysNamedBodyToArgs } from './baileys.metadata';
+import { BAILEYS_API_METHODS, BAILEYS_METHOD_GROUPS } from './baileys.methods';
 
 export class BaileysRouter extends RouterBroker {
   constructor(...guards: RequestHandler[]) {
@@ -119,6 +120,22 @@ export class BaileysRouter extends RouterBroker {
 
         res.status(HttpStatus.OK).json(response);
       });
+    }
+
+    for (const [group, methods] of Object.entries(BAILEYS_METHOD_GROUPS)) {
+      for (const method of methods) {
+        this.router.post(`/${group}/${method}/:instanceName`, ...guards, async (req, res) => {
+          const response = await this.dataValidate<BaileysNamedInvokeDto>({
+            request: req,
+            schema: getBaileysNamedBodySchema(method),
+            ClassRef: BaileysNamedInvokeDto,
+            execute: (instance, data) =>
+              baileysController.invoke(instance, method, mapBaileysNamedBodyToArgs(method, data)),
+          });
+
+          res.status(HttpStatus.OK).json(response);
+        });
+      }
     }
   }
 
