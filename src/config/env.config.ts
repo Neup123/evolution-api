@@ -86,9 +86,27 @@ export type EventsRabbitmq = {
   LABELS_EDIT: boolean;
   LABELS_ASSOCIATION: boolean;
   GROUPS_UPSERT: boolean;
-  GROUP_UPDATE: boolean;
+  GROUPS_UPDATE: boolean;
   GROUP_PARTICIPANTS_UPDATE: boolean;
   CALL: boolean;
+  CREDS_UPDATE: boolean;
+  MESSAGING_HISTORY_SET: boolean;
+  MESSAGING_HISTORY_STATUS?: boolean;
+  LID_MAPPING_UPDATE?: boolean;
+  MESSAGES_MEDIA_UPDATE?: boolean;
+  MESSAGES_REACTION?: boolean;
+  MESSAGE_RECEIPT_UPDATE?: boolean;
+  GROUP_JOIN_REQUEST?: boolean;
+  GROUP_MEMBER_TAG_UPDATE?: boolean;
+  BLOCKLIST_SET?: boolean;
+  BLOCKLIST_UPDATE?: boolean;
+  NEWSLETTER_REACTION?: boolean;
+  NEWSLETTER_VIEW?: boolean;
+  NEWSLETTER_PARTICIPANTS_UPDATE?: boolean;
+  NEWSLETTER_SETTINGS_UPDATE?: boolean;
+  MESSAGE_CAPPING_UPDATE?: boolean;
+  CHATS_LOCK?: boolean;
+  SETTINGS_UPDATE?: boolean;
   TYPEBOT_START: boolean;
   TYPEBOT_CHANGE_STATUS: boolean;
 };
@@ -218,9 +236,27 @@ export type EventsWebhook = {
   LABELS_EDIT: boolean;
   LABELS_ASSOCIATION: boolean;
   GROUPS_UPSERT: boolean;
-  GROUP_UPDATE: boolean;
+  GROUPS_UPDATE: boolean;
   GROUP_PARTICIPANTS_UPDATE: boolean;
   CALL: boolean;
+  CREDS_UPDATE: boolean;
+  MESSAGING_HISTORY_SET: boolean;
+  MESSAGING_HISTORY_STATUS: boolean;
+  LID_MAPPING_UPDATE: boolean;
+  MESSAGES_MEDIA_UPDATE: boolean;
+  MESSAGES_REACTION: boolean;
+  MESSAGE_RECEIPT_UPDATE: boolean;
+  GROUP_JOIN_REQUEST: boolean;
+  GROUP_MEMBER_TAG_UPDATE: boolean;
+  BLOCKLIST_SET: boolean;
+  BLOCKLIST_UPDATE: boolean;
+  NEWSLETTER_REACTION: boolean;
+  NEWSLETTER_VIEW: boolean;
+  NEWSLETTER_PARTICIPANTS_UPDATE: boolean;
+  NEWSLETTER_SETTINGS_UPDATE: boolean;
+  MESSAGE_CAPPING_UPDATE: boolean;
+  CHATS_LOCK: boolean;
+  SETTINGS_UPDATE: boolean;
   TYPEBOT_START: boolean;
   TYPEBOT_CHANGE_STATUS: boolean;
   ERRORS: boolean;
@@ -251,9 +287,11 @@ export type EventsPusher = {
   LABELS_EDIT: boolean;
   LABELS_ASSOCIATION: boolean;
   GROUPS_UPSERT: boolean;
-  GROUP_UPDATE: boolean;
+  GROUPS_UPDATE: boolean;
   GROUP_PARTICIPANTS_UPDATE: boolean;
   CALL: boolean;
+  CREDS_UPDATE: boolean;
+  MESSAGING_HISTORY_SET: boolean;
   TYPEBOT_START: boolean;
   TYPEBOT_CHANGE_STATUS: boolean;
 };
@@ -532,9 +570,11 @@ export class ConfigService {
           LABELS_EDIT: process.env?.RABBITMQ_EVENTS_LABELS_EDIT === 'true',
           LABELS_ASSOCIATION: process.env?.RABBITMQ_EVENTS_LABELS_ASSOCIATION === 'true',
           GROUPS_UPSERT: process.env?.RABBITMQ_EVENTS_GROUPS_UPSERT === 'true',
-          GROUP_UPDATE: process.env?.RABBITMQ_EVENTS_GROUPS_UPDATE === 'true',
+          GROUPS_UPDATE: process.env?.RABBITMQ_EVENTS_GROUPS_UPDATE === 'true',
           GROUP_PARTICIPANTS_UPDATE: process.env?.RABBITMQ_EVENTS_GROUP_PARTICIPANTS_UPDATE === 'true',
           CALL: process.env?.RABBITMQ_EVENTS_CALL === 'true',
+          CREDS_UPDATE: process.env?.RABBITMQ_EVENTS_CREDS_UPDATE === 'true',
+          MESSAGING_HISTORY_SET: process.env?.RABBITMQ_EVENTS_MESSAGING_HISTORY_SET === 'true',
           TYPEBOT_START: process.env?.RABBITMQ_EVENTS_TYPEBOT_START === 'true',
           TYPEBOT_CHANGE_STATUS: process.env?.RABBITMQ_EVENTS_TYPEBOT_CHANGE_STATUS === 'true',
         },
@@ -569,9 +609,11 @@ export class ConfigService {
           LABELS_EDIT: process.env?.NATS_EVENTS_LABELS_EDIT === 'true',
           LABELS_ASSOCIATION: process.env?.NATS_EVENTS_LABELS_ASSOCIATION === 'true',
           GROUPS_UPSERT: process.env?.NATS_EVENTS_GROUPS_UPSERT === 'true',
-          GROUP_UPDATE: process.env?.NATS_EVENTS_GROUPS_UPDATE === 'true',
+          GROUPS_UPDATE: process.env?.NATS_EVENTS_GROUPS_UPDATE === 'true',
           GROUP_PARTICIPANTS_UPDATE: process.env?.NATS_EVENTS_GROUP_PARTICIPANTS_UPDATE === 'true',
           CALL: process.env?.NATS_EVENTS_CALL === 'true',
+          CREDS_UPDATE: process.env?.NATS_EVENTS_CREDS_UPDATE === 'true',
+          MESSAGING_HISTORY_SET: process.env?.NATS_EVENTS_MESSAGING_HISTORY_SET === 'true',
           TYPEBOT_START: process.env?.NATS_EVENTS_TYPEBOT_START === 'true',
           TYPEBOT_CHANGE_STATUS: process.env?.NATS_EVENTS_TYPEBOT_CHANGE_STATUS === 'true',
         },
@@ -652,9 +694,11 @@ export class ConfigService {
           LABELS_EDIT: process.env?.KAFKA_EVENTS_LABELS_EDIT === 'true',
           LABELS_ASSOCIATION: process.env?.KAFKA_EVENTS_LABELS_ASSOCIATION === 'true',
           GROUPS_UPSERT: process.env?.KAFKA_EVENTS_GROUPS_UPSERT === 'true',
-          GROUP_UPDATE: process.env?.KAFKA_EVENTS_GROUPS_UPDATE === 'true',
+          GROUPS_UPDATE: process.env?.KAFKA_EVENTS_GROUPS_UPDATE === 'true',
           GROUP_PARTICIPANTS_UPDATE: process.env?.KAFKA_EVENTS_GROUP_PARTICIPANTS_UPDATE === 'true',
           CALL: process.env?.KAFKA_EVENTS_CALL === 'true',
+          CREDS_UPDATE: process.env?.KAFKA_EVENTS_CREDS_UPDATE === 'true',
+          MESSAGING_HISTORY_SET: process.env?.KAFKA_EVENTS_MESSAGING_HISTORY_SET === 'true',
           TYPEBOT_START: process.env?.KAFKA_EVENTS_TYPEBOT_START === 'true',
           TYPEBOT_CHANGE_STATUS: process.env?.KAFKA_EVENTS_TYPEBOT_CHANGE_STATUS === 'true',
         },
@@ -717,9 +761,11 @@ export class ConfigService {
           LABELS_EDIT: process.env?.PUSHER_EVENTS_LABELS_EDIT === 'true',
           LABELS_ASSOCIATION: process.env?.PUSHER_EVENTS_LABELS_ASSOCIATION === 'true',
           GROUPS_UPSERT: process.env?.PUSHER_EVENTS_GROUPS_UPSERT === 'true',
-          GROUP_UPDATE: process.env?.PUSHER_EVENTS_GROUPS_UPDATE === 'true',
+          GROUPS_UPDATE: process.env?.PUSHER_EVENTS_GROUPS_UPDATE === 'true',
           GROUP_PARTICIPANTS_UPDATE: process.env?.PUSHER_EVENTS_GROUP_PARTICIPANTS_UPDATE === 'true',
           CALL: process.env?.PUSHER_EVENTS_CALL === 'true',
+          CREDS_UPDATE: process.env?.PUSHER_EVENTS_CREDS_UPDATE === 'true',
+          MESSAGING_HISTORY_SET: process.env?.PUSHER_EVENTS_MESSAGING_HISTORY_SET === 'true',
           TYPEBOT_START: process.env?.PUSHER_EVENTS_TYPEBOT_START === 'true',
           TYPEBOT_CHANGE_STATUS: process.env?.PUSHER_EVENTS_TYPEBOT_CHANGE_STATUS === 'true',
         },
@@ -774,9 +820,27 @@ export class ConfigService {
           LABELS_EDIT: process.env?.WEBHOOK_EVENTS_LABELS_EDIT === 'true',
           LABELS_ASSOCIATION: process.env?.WEBHOOK_EVENTS_LABELS_ASSOCIATION === 'true',
           GROUPS_UPSERT: process.env?.WEBHOOK_EVENTS_GROUPS_UPSERT === 'true',
-          GROUP_UPDATE: process.env?.WEBHOOK_EVENTS_GROUPS_UPDATE === 'true',
+          GROUPS_UPDATE: process.env?.WEBHOOK_EVENTS_GROUPS_UPDATE === 'true',
           GROUP_PARTICIPANTS_UPDATE: process.env?.WEBHOOK_EVENTS_GROUP_PARTICIPANTS_UPDATE === 'true',
           CALL: process.env?.WEBHOOK_EVENTS_CALL === 'true',
+          CREDS_UPDATE: process.env?.WEBHOOK_EVENTS_CREDS_UPDATE === 'true',
+          MESSAGING_HISTORY_SET: process.env?.WEBHOOK_EVENTS_MESSAGING_HISTORY_SET === 'true',
+          MESSAGING_HISTORY_STATUS: process.env?.WEBHOOK_EVENTS_MESSAGING_HISTORY_STATUS === 'true',
+          LID_MAPPING_UPDATE: process.env?.WEBHOOK_EVENTS_LID_MAPPING_UPDATE === 'true',
+          MESSAGES_MEDIA_UPDATE: process.env?.WEBHOOK_EVENTS_MESSAGES_MEDIA_UPDATE === 'true',
+          MESSAGES_REACTION: process.env?.WEBHOOK_EVENTS_MESSAGES_REACTION === 'true',
+          MESSAGE_RECEIPT_UPDATE: process.env?.WEBHOOK_EVENTS_MESSAGE_RECEIPT_UPDATE === 'true',
+          GROUP_JOIN_REQUEST: process.env?.WEBHOOK_EVENTS_GROUP_JOIN_REQUEST === 'true',
+          GROUP_MEMBER_TAG_UPDATE: process.env?.WEBHOOK_EVENTS_GROUP_MEMBER_TAG_UPDATE === 'true',
+          BLOCKLIST_SET: process.env?.WEBHOOK_EVENTS_BLOCKLIST_SET === 'true',
+          BLOCKLIST_UPDATE: process.env?.WEBHOOK_EVENTS_BLOCKLIST_UPDATE === 'true',
+          NEWSLETTER_REACTION: process.env?.WEBHOOK_EVENTS_NEWSLETTER_REACTION === 'true',
+          NEWSLETTER_VIEW: process.env?.WEBHOOK_EVENTS_NEWSLETTER_VIEW === 'true',
+          NEWSLETTER_PARTICIPANTS_UPDATE: process.env?.WEBHOOK_EVENTS_NEWSLETTER_PARTICIPANTS_UPDATE === 'true',
+          NEWSLETTER_SETTINGS_UPDATE: process.env?.WEBHOOK_EVENTS_NEWSLETTER_SETTINGS_UPDATE === 'true',
+          MESSAGE_CAPPING_UPDATE: process.env?.WEBHOOK_EVENTS_MESSAGE_CAPPING_UPDATE === 'true',
+          CHATS_LOCK: process.env?.WEBHOOK_EVENTS_CHATS_LOCK === 'true',
+          SETTINGS_UPDATE: process.env?.WEBHOOK_EVENTS_SETTINGS_UPDATE === 'true',
           TYPEBOT_START: process.env?.WEBHOOK_EVENTS_TYPEBOT_START === 'true',
           TYPEBOT_CHANGE_STATUS: process.env?.WEBHOOK_EVENTS_TYPEBOT_CHANGE_STATUS === 'true',
           ERRORS: process.env?.WEBHOOK_EVENTS_ERRORS === 'true',

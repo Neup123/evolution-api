@@ -155,7 +155,8 @@ TypeScript signatures. For example, `communityParticipantsUpdate` accepts:
 The legacy `POST /baileys/<method>/:instanceName` route with `{ "args": [...] }` remains available. Binary
 arguments and results use `{ "$base64": "..." }`. The live method registry is available at
 `GET /baileys/methods/:instanceName`, and Swagger UI is served at `/docs` unless
-`SERVER_DISABLE_DOCS=true`. The source specification is in [`docs/openapi.yaml`](docs/openapi.yaml).
+`SERVER_DISABLE_DOCS=true`. The source specification is in [`docs/openapi.yaml`](docs/openapi.yaml), and the fork-specific
+usage guide is in [`docs/README.md`](docs/README.md).
 
 ---
 
@@ -196,7 +197,8 @@ Local storage or S3/MinIO. Automatic media download from WhatsApp. Optional audi
 | Resource | Link |
 |---|---|
 | Website | [evolutionfoundation.com.br](https://evolutionfoundation.com.br) |
-| Documentation | [docs.evolutionfoundation.com.br](https://docs.evolutionfoundation.com.br) |
+| Swagger UI | [`/docs`](./docs/openapi.yaml) |
+| Fork documentation | [`docs/README.md`](./docs/README.md) |
 | Community | [evolutionfoundation.com.br/community](https://evolutionfoundation.com.br/community) |
 | Docker Hub | [evoapicloud/evolution-api](https://hub.docker.com/r/evoapicloud/evolution-api) |
 | Changelog | [CHANGELOG.md](./CHANGELOG.md) |

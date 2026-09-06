@@ -4,7 +4,7 @@ import { EventDto } from '@api/integrations/event/event.dto';
 import { HttpStatus } from '@api/routes/index.router';
 import { eventManager } from '@api/server.module';
 import { ConfigService } from '@config/env.config';
-import { instanceSchema, webhookSchema } from '@validate/validate.schema';
+import { instanceSchema, webhookSchema, webhooksSchema } from '@validate/validate.schema';
 import { RequestHandler, Router } from 'express';
 
 export class WebhookRouter extends RouterBroker {
@@ -24,12 +24,32 @@ export class WebhookRouter extends RouterBroker {
 
         res.status(HttpStatus.CREATED).json(response);
       })
+      .post(this.routerPath('set-many'), ...guards, async (req, res) => {
+        const response = await this.dataValidate<EventDto>({
+          request: req,
+          schema: webhooksSchema,
+          ClassRef: EventDto,
+          execute: (instance, data) => eventManager.webhook.setMany(instance.instanceName, data.webhooks),
+        });
+
+        res.status(HttpStatus.CREATED).json(response);
+      })
       .get(this.routerPath('find'), ...guards, async (req, res) => {
         const response = await this.dataValidate<InstanceDto>({
           request: req,
           schema: instanceSchema,
           ClassRef: InstanceDto,
           execute: (instance) => eventManager.webhook.get(instance.instanceName),
+        });
+
+        res.status(HttpStatus.OK).json(response);
+      })
+      .get(this.routerPath('find-all'), ...guards, async (req, res) => {
+        const response = await this.dataValidate<InstanceDto>({
+          request: req,
+          schema: instanceSchema,
+          ClassRef: InstanceDto,
+          execute: (instance) => eventManager.webhook.getAll(instance.instanceName),
         });
 
         res.status(HttpStatus.OK).json(response);

@@ -10,6 +10,14 @@ export class EventDto {
     byEvents?: boolean;
     base64?: boolean;
   };
+  webhooks?: Array<{
+    enabled?: boolean;
+    events?: string[];
+    url?: string;
+    headers?: JsonValue;
+    byEvents?: boolean;
+    base64?: boolean;
+  }>;
 
   websocket?: {
     enabled?: boolean;

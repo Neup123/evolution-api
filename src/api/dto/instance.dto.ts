@@ -38,6 +38,14 @@ export class InstanceDto extends IntegrationDto {
     byEvents?: boolean;
     base64?: boolean;
   };
+  webhooks?: Array<{
+    enabled?: boolean;
+    events?: string[];
+    headers?: JsonValue;
+    url?: string;
+    byEvents?: boolean;
+    base64?: boolean;
+  }>;
   chatwootAccountId?: string;
   chatwootConversationPending?: boolean;
   chatwootAutoCreate?: boolean;

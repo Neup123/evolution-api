@@ -49,3 +49,16 @@ export const webhookSchema: JSONSchema7 = {
   },
   required: ['webhook'],
 };
+
+export const webhooksSchema: JSONSchema7 = {
+  $id: v4(),
+  type: 'object',
+  properties: {
+    webhooks: {
+      type: 'array',
+      minItems: 1,
+      items: webhookSchema.properties.webhook as JSONSchema7,
+    },
+  },
+  required: ['webhooks'],
+};

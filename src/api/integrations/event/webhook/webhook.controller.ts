@@ -25,12 +25,12 @@ export class WebhookController extends EventController implements EventControlle
     if (!data.webhook?.enabled) {
       data.webhook.events = [];
     } else {
-      if (0 === data.webhook.events.length) {
+      if (!data.webhook.events?.length) {
         data.webhook.events = EventController.events;
       }
     }
 
-    return this.prisma.webhook.upsert({
+    const webhook = await this.prisma.webhook.upsert({
       where: {
         instanceId: this.monitor.waInstances[instanceName].instanceId,
       },
@@ -52,6 +52,67 @@ export class WebhookController extends EventController implements EventControlle
         webhookByEvents: data.webhook.byEvents,
       },
     });
+
+    // Keep the original endpoint in the new delivery table in sync. This makes
+    // old POST /webhook/set clients safe to use after the migration.
+    await this.prisma.webhookEndpoint.upsert({
+      where: { id: webhook.id },
+      update: {
+        enabled: webhook.enabled,
+        events: webhook.events,
+        url: webhook.url,
+        headers: webhook.headers,
+        webhookBase64: webhook.webhookBase64,
+        webhookByEvents: webhook.webhookByEvents,
+      },
+      create: {
+        id: webhook.id,
+        instanceId: webhook.instanceId,
+        enabled: webhook.enabled,
+        events: webhook.events,
+        url: webhook.url,
+        headers: webhook.headers,
+        webhookBase64: webhook.webhookBase64,
+        webhookByEvents: webhook.webhookByEvents,
+      },
+    });
+
+    return webhook;
+  }
+
+  public async setMany(instanceName: string, webhooks: EventDto['webhooks']): Promise<wa.LocalWebhookEndpoint[]> {
+    const instanceId = this.monitor.waInstances[instanceName].instanceId;
+    const endpoints = webhooks.map((webhook) => ({
+      enabled: webhook.enabled,
+      events: !webhook.enabled ? [] : webhook.events?.length ? webhook.events : EventController.events,
+      url: webhook.url,
+      headers: webhook.headers,
+      webhookBase64: webhook.base64,
+      webhookByEvents: webhook.byEvents,
+      instanceId,
+    }));
+
+    // Replacement is deliberate: it lets clients reconcile an instance's full
+    // destination list atomically without guessing individual endpoint IDs.
+    return this.prisma.$transaction(async (prisma) => {
+      await prisma.webhookEndpoint.deleteMany({ where: { instanceId } });
+      await prisma.webhookEndpoint.createMany({ data: endpoints });
+      return prisma.webhookEndpoint.findMany({ where: { instanceId }, orderBy: { createdAt: 'asc' } });
+    });
+  }
+
+  public async getAll(instanceName: string): Promise<wa.LocalWebhookEndpoint[]> {
+    const instance = this.monitor.waInstances[instanceName];
+    if (!instance) return [];
+
+    const endpoints = await this.prisma.webhookEndpoint.findMany({
+      where: { instanceId: instance.instanceId },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (endpoints.length) return endpoints;
+
+    const legacy = await this.get(instanceName);
+    return legacy ? [legacy] : [];
   }
 
   public async emit({
@@ -71,20 +132,9 @@ export class WebhookController extends EventController implements EventControlle
       return;
     }
 
-    const instance = (await this.get(instanceName)) as wa.LocalWebHook;
+    const endpoints = await this.getAll(instanceName);
 
     const webhookConfig = configService.get<Webhook>('WEBHOOK');
-    const webhookLocal = instance?.events;
-    const webhookHeaders = { ...((instance?.headers as Record<string, string>) || {}) };
-
-    if (webhookHeaders && 'jwt_key' in webhookHeaders) {
-      const jwtKey = webhookHeaders['jwt_key'];
-      const jwtToken = this.generateJwtToken(jwtKey);
-      webhookHeaders['Authorization'] = `Bearer ${jwtToken}`;
-
-      delete webhookHeaders['jwt_key'];
-    }
-
     const we = event.replace(/[.-]/gm, '_').toUpperCase();
     const transformedWe = we.replace(/_/gm, '-').toLowerCase();
     const enabledLog = configService.get<Log>('LOG').LEVEL.includes('WEBHOOKS');
@@ -95,28 +145,30 @@ export class WebhookController extends EventController implements EventControlle
       event,
       instance: instanceName,
       data,
-      destination: instance?.url || `${webhookConfig.GLOBAL.URL}/${transformedWe}`,
+      destination: `${webhookConfig.GLOBAL.URL}/${transformedWe}`,
       date_time: dateTime,
       sender,
       server_url: serverUrl,
       apikey: apiKey,
     };
 
-    if (local && instance?.enabled) {
-      if (Array.isArray(webhookLocal) && webhookLocal.includes(we)) {
-        let baseURL: string;
-
-        if (instance?.webhookByEvents) {
-          baseURL = `${instance?.url}/${transformedWe}`;
-        } else {
-          baseURL = instance?.url;
+    if (local) {
+      for (const instance of endpoints) {
+        const webhookLocal = instance.events;
+        if (!instance.enabled || !Array.isArray(webhookLocal) || !webhookLocal.includes(we)) continue;
+        const webhookHeaders = { ...((instance.headers as Record<string, string>) || {}) };
+        if ('jwt_key' in webhookHeaders) {
+          webhookHeaders.Authorization = `Bearer ${this.generateJwtToken(webhookHeaders.jwt_key)}`;
+          delete webhookHeaders.jwt_key;
         }
+        const baseURL = instance.webhookByEvents ? `${instance.url}/${transformedWe}` : instance.url;
+        const endpointData = { ...webhookData, destination: baseURL };
 
         if (enabledLog) {
           const logData = {
             local: `${origin}.sendData-Webhook`,
             url: baseURL,
-            ...webhookData,
+            ...endpointData,
           };
 
           this.logger.log(logData);
@@ -130,7 +182,7 @@ export class WebhookController extends EventController implements EventControlle
               timeout: webhookConfig.REQUEST?.TIMEOUT_MS ?? 30000,
             });
 
-            await this.retryWebhookRequest(httpService, webhookData, `${origin}.sendData-Webhook`, baseURL, serverUrl);
+            await this.retryWebhookRequest(httpService, endpointData, `${origin}.sendData-Webhook`, baseURL, serverUrl);
           }
         } catch (error) {
           this.logger.error({

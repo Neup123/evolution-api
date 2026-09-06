@@ -81,6 +81,7 @@ model Instance {
   Contact                 Contact[]
   Message                 Message[]
   Webhook                 Webhook?
+  WebhookEndpoint         WebhookEndpoint[]
   Chatwoot                Chatwoot?
   Label                   Label[]
   Proxy                   Proxy?
@@ -209,6 +210,22 @@ model Webhook {
   updatedAt       DateTime  @updatedAt @db.Timestamp
   Instance        Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   instanceId      String    @unique
+
+  @@index([instanceId])
+}
+
+model WebhookEndpoint {
+  id              String    @id @default(cuid())
+  url             String    @db.VarChar(500)
+  headers         Json?     @db.JsonB
+  enabled         Boolean?  @default(true) @db.Boolean
+  events          Json?     @db.JsonB
+  webhookByEvents Boolean?  @default(false) @db.Boolean
+  webhookBase64   Boolean?  @default(false) @db.Boolean
+  createdAt       DateTime? @default(now()) @db.Timestamp
+  updatedAt       DateTime  @updatedAt @db.Timestamp
+  Instance        Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  instanceId      String
 
   @@index([instanceId])
 }
