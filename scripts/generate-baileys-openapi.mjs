@@ -22,7 +22,7 @@ const groupLabels = {
 };
 
 const methodDescriptions = {
-  communityMetadata: 'Get the name, description, participants, and settings of a community.',
+  communityMetadata: 'Get a parent community name, description, participants, and settings. Use Group Metadata for regular groups.',
   communityCreate: 'Create a WhatsApp community with a subject and description.',
   communityCreateGroup: 'Create a group inside an existing community and add participants.',
   groupMetadata: 'Get the subject, description, owner, participants, and settings of a group.',
@@ -67,6 +67,23 @@ function describeMethod(method) {
   return `Run ${readableName(method)} and return the WhatsApp result.`;
 }
 
+function describeParameter(method, parameter) {
+  const name = parameter.name;
+  if (method.startsWith('community') && ['jid', 'communityJid', 'parentCommunityJid'].includes(name)) {
+    return 'Parent community JID ending in @g.us. A regular group or subgroup JID is not accepted unless the operation explicitly says otherwise.';
+  }
+  if (method.startsWith('group') && ['jid', 'id', 'groupJid'].includes(name)) {
+    return 'WhatsApp group JID ending in @g.us.';
+  }
+  if (['jid', 'to', 'toJid'].includes(name)) {
+    return 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.';
+  }
+  if (/participants?/i.test(name)) return 'Participant WhatsApp JIDs, each including the @s.whatsapp.net suffix.';
+  if (/inviteCode|^code$/i.test(name)) return 'Invite code only, without the chat.whatsapp.com URL prefix.';
+  if (name === 'action') return `Action performed by ${readableName(method)}.`;
+  return parameter.schema.description ?? `${readableName(name)} for ${readableName(method)}.`;
+}
+
 function guidedQuerySchema(schema) {
   if (schema?.enum || ['string', 'number', 'integer', 'boolean'].includes(schema?.type)) return schema;
   if (schema?.type === 'array' && schema.items && ['string', 'number', 'integer', 'boolean'].includes(schema.items.type)) return schema;
@@ -90,8 +107,22 @@ function readGroups() {
   );
 }
 
+function readUnsupportedMethods() {
+  const source = fs.readFileSync(methodsPath, 'utf8');
+  const block = source.match(/export const BAILEYS_UNSUPPORTED_API_METHODS = \[([\s\S]*?)\] as const;/)?.[1];
+  if (!block) throw new Error('Could not find BAILEYS_UNSUPPORTED_API_METHODS');
+  return [...block.matchAll(/'([^']+)'/g)].map((method) => method[1]);
+}
+
 const groups = readGroups();
 const methods = Object.values(groups).flat();
+const duplicateMethods = methods.filter((method, index) => methods.indexOf(method) !== index);
+if (duplicateMethods.length) throw new Error(`Methods assigned to multiple groups: ${[...new Set(duplicateMethods)].join(', ')}`);
+const unsupportedMethods = new Set(readUnsupportedMethods());
+const exposedUnsupportedMethods = methods.filter((method) => unsupportedMethods.has(method));
+if (exposedUnsupportedMethods.length) {
+  throw new Error(`Unsupported methods cannot be exposed: ${exposedUnsupportedMethods.join(', ')}`);
+}
 const methodSet = new Set(methods);
 const groupByMethod = Object.fromEntries(
   Object.entries(groups).flatMap(([group, names]) => names.map((name) => [name, group])),
@@ -341,7 +372,7 @@ for (const [method, definition] of Object.entries(metadata)) {
           name: parameter.name,
           in: 'query',
           required: parameter.required,
-          description: parameter.schema.description ?? `${readableName(parameter.name)} for ${readableName(method)}.`,
+          description: describeParameter(method, parameter),
           schema: guidedQuerySchema(parameter.schema),
           ...(parameter.schema.type === 'array' ? { style: 'form', explode: true } : {}),
         })),

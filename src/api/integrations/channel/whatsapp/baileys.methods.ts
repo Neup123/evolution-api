@@ -52,7 +52,6 @@ export const BAILEYS_METHOD_GROUPS = {
     'readMessages',
     'refreshMediaConn',
     'getMediaHost',
-    'waUploadToServer',
     'fetchPrivacySettings',
     'sendPeerDataOperationMessage',
     'updateMemberLabel',

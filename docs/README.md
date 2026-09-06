@@ -22,6 +22,8 @@ This fork exposes the installed Baileys 7 socket API as stable HTTP routes while
 | `account` | Profile, privacy, presence, contacts, labels, and quick replies. |
 | `advanced` | Protocol-level, cryptographic, query, and binary operations. |
 
+Community operations require the parent community JID. A normal group should use the corresponding Group operation. When a subgroup is supplied to `communityMetadata`, the API returns a clear error containing its parent community JID instead of an internal Baileys parser error.
+
 Every typed route has this shape:
 
 ```text
@@ -42,6 +44,8 @@ apikey: YOUR_GLOBAL_API_KEY
 ```
 
 The older `POST /baileys/{method}/{instanceName}` route with `{ "args": [] }` remains available for compatibility, but is deprecated in Swagger. For bytes, use `{ "$base64": "AAECAw==" }` in requests and expect the same envelope in responses.
+
+Methods that require process-local streams, callbacks, or socket lifecycle control are intentionally excluded. In particular, use media values accepted by `sendMessage`, product, newsletter, and profile-picture operations instead of calling Baileys's internal `waUploadToServer` function directly.
 
 The manager's **Webhooks** page provides an **Add destination** button, independent event selectors for every destination, and the complete event list below. Its sidebar links open this server's Swagger UI and this fork's documentation.
 

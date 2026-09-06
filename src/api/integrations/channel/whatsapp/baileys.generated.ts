@@ -1232,68 +1232,6 @@ export const BAILEYS_METHOD_METADATA = {
     group: 'messages',
     parameters: [],
   },
-  waUploadToServer: {
-    group: 'messages',
-    parameters: [
-      {
-        name: 'encFilePath',
-        required: true,
-        rest: false,
-        schema: {
-          type: 'string',
-          description: 'string',
-        },
-      },
-      {
-        name: 'opts',
-        required: true,
-        rest: false,
-        schema: {
-          type: 'object',
-          properties: {
-            fileEncSha256B64: {
-              type: 'string',
-              description: 'string',
-            },
-            mediaType: {
-              type: 'string',
-              enum: [
-                'audio',
-                'document',
-                'gif',
-                'image',
-                'ppic',
-                'product',
-                'ptt',
-                'sticker',
-                'video',
-                'thumbnail-document',
-                'thumbnail-image',
-                'thumbnail-video',
-                'thumbnail-link',
-                'md-msg-hist',
-                'md-app-state',
-                'product-catalog-image',
-                'payment-bg-image',
-                'ptv',
-                'biz-cover-photo',
-              ],
-              description:
-                '"audio" | "document" | "gif" | "image" | "ppic" | "product" | "ptt" | "sticker" | "video" | "thumbnail-document" | "thumbnail-image" | "thumbnail-video" | "thumbnail-link" | "md-msg-hist" | "md-app-state" | "product-catalog-image" | "payment-bg-image" | "ptv" | "biz-cover-photo"',
-            },
-            timeoutMs: {
-              type: 'number',
-              description: 'number',
-            },
-          },
-          required: ['fileEncSha256B64', 'mediaType'],
-          additionalProperties: false,
-          description:
-            '{ fileEncSha256B64: string; mediaType: "audio" | "document" | "gif" | "image" | "ppic" | "product" | "ptt" | "sticker" | "video" | "thumbnail-document" | "thumbnail-image" | "thumbnail-video" | "thumbnail-link" | "md-msg-hist" | "md-app-state" | "product-catalog-image" | "payment-bg-image" | "ptv" | "biz-cover-photo"; timeoutMs?: number; }',
-        },
-      },
-    ],
-  },
   fetchPrivacySettings: {
     group: 'messages',
     parameters: [

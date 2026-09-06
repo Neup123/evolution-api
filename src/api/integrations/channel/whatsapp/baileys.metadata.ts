@@ -36,7 +36,11 @@ export function mapBaileysNamedBodyToArgs(method: BaileysApiMethod, body: Record
 }
 
 function coerceQueryValue(value: unknown, schema: JSONSchema7Definition): unknown {
-  if (typeof schema === 'boolean' || typeof value !== 'string') return value;
+  if (typeof schema === 'boolean') return value;
+  if (Array.isArray(value) && schema.type === 'array' && schema.items && !Array.isArray(schema.items)) {
+    return value.map((item) => coerceQueryValue(item, schema.items as JSONSchema7Definition));
+  }
+  if (typeof value !== 'string') return value;
   if (schema.type === 'boolean') return value === 'true' ? true : value === 'false' ? false : value;
   if (schema.type === 'number' || schema.type === 'integer') {
     const number = Number(value);

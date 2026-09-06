@@ -5019,12 +5019,58 @@ export class BaileysStartupService extends ChannelStartupService {
     }
 
     const normalizedArgs = args.map((argument) => this.deserializeBaileysApiValue(argument));
-    const result = await socketMethod.apply(this.client, normalizedArgs);
 
-    return {
-      method,
-      result: this.serializeBaileysApiValue(result),
-    };
+    try {
+      let result: unknown;
+      if (method === 'communityMetadata') {
+        const jid = normalizedArgs[0];
+        if (typeof jid !== 'string' || !jid.endsWith('@g.us')) {
+          throw new Error('Community JID must end with @g.us');
+        }
+
+        // Baileys rc14's community parser assumes a <community> response. WhatsApp
+        // can return the equivalent <group> node, causing an undefined.attrs crash.
+        // The group parser supports community flags and validates missing nodes.
+        const metadata = await this.client.groupMetadata(jid);
+        if (!metadata.isCommunity) {
+          if (metadata.linkedParent) {
+            throw new Error(
+              `${jid} is a community subgroup. Use its parent community JID ${metadata.linkedParent}, or use communityFetchLinkedGroups with the subgroup JID.`,
+            );
+          }
+          throw new Error(`${jid} is a regular group, not a community. Use groupMetadata instead.`);
+        }
+        result = metadata;
+      } else if (method === 'communityUpdateDescription') {
+        const [jid, description] = normalizedArgs;
+        if (typeof jid !== 'string' || !jid.endsWith('@g.us')) {
+          throw new Error('Community JID must end with @g.us');
+        }
+        const metadata = await this.client.groupMetadata(jid);
+        if (!metadata.isCommunity) {
+          throw new Error(
+            metadata.linkedParent
+              ? `${jid} is a subgroup. Use the parent community JID ${metadata.linkedParent}.`
+              : `${jid} is a regular group. Use groupUpdateDescription instead.`,
+          );
+        }
+        result = await this.client.groupUpdateDescription(jid, description as string | undefined);
+      } else {
+        result = await socketMethod.apply(this.client, normalizedArgs);
+      }
+
+      return {
+        method,
+        result: this.serializeBaileysApiValue(result),
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new BadRequestException(
+        `Baileys method ${method} failed`,
+        message,
+        'Verify that the JID belongs to the selected resource and that the connected WhatsApp account has permission to perform this operation.',
+      );
+    }
   }
 
   //Business Controller
