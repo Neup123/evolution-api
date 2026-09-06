@@ -77,7 +77,11 @@ GET  /webhook/find-all/{instanceName}
 
 An empty `events` list means all supported events. With `byEvents: true`, a `MESSAGES_UPSERT` delivery uses a suffix such as `/messages-upsert`.
 
-The migration copies every legacy `Webhook` row into `WebhookEndpoint` with the same ID. Updating the legacy one-webhook route keeps its corresponding destination synchronized, so existing instances need no reconfiguration. Baileys-specific events now include `CREDS_UPDATE` (instance metadata only, never credentials) and `MESSAGING_HISTORY_SET`.
+The migration copies every legacy `Webhook` row into `WebhookEndpoint` with the same ID. Updating the legacy one-webhook route keeps its corresponding destination synchronized, so existing instances need no reconfiguration.
+
+## Baileys event coverage
+
+All events exposed by the installed Baileys event map are available for local and global webhooks, except `contacts.set`, which Baileys 7 no longer emits. In addition to the established message, contact, chat, group, call, label, presence, and connection events, the API relays history status, LID mapping, media updates, reactions, receipts, group join requests/member tags, blocklist updates, newsletter events, message capping, chat locks, and settings updates. `CREDS_UPDATE` contains only instance metadata and never credentials.
 
 ## Baileys references
 

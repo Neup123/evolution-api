@@ -91,6 +91,22 @@ export type EventsRabbitmq = {
   CALL: boolean;
   CREDS_UPDATE: boolean;
   MESSAGING_HISTORY_SET: boolean;
+  MESSAGING_HISTORY_STATUS?: boolean;
+  LID_MAPPING_UPDATE?: boolean;
+  MESSAGES_MEDIA_UPDATE?: boolean;
+  MESSAGES_REACTION?: boolean;
+  MESSAGE_RECEIPT_UPDATE?: boolean;
+  GROUP_JOIN_REQUEST?: boolean;
+  GROUP_MEMBER_TAG_UPDATE?: boolean;
+  BLOCKLIST_SET?: boolean;
+  BLOCKLIST_UPDATE?: boolean;
+  NEWSLETTER_REACTION?: boolean;
+  NEWSLETTER_VIEW?: boolean;
+  NEWSLETTER_PARTICIPANTS_UPDATE?: boolean;
+  NEWSLETTER_SETTINGS_UPDATE?: boolean;
+  MESSAGE_CAPPING_UPDATE?: boolean;
+  CHATS_LOCK?: boolean;
+  SETTINGS_UPDATE?: boolean;
   TYPEBOT_START: boolean;
   TYPEBOT_CHANGE_STATUS: boolean;
 };
@@ -225,6 +241,22 @@ export type EventsWebhook = {
   CALL: boolean;
   CREDS_UPDATE: boolean;
   MESSAGING_HISTORY_SET: boolean;
+  MESSAGING_HISTORY_STATUS: boolean;
+  LID_MAPPING_UPDATE: boolean;
+  MESSAGES_MEDIA_UPDATE: boolean;
+  MESSAGES_REACTION: boolean;
+  MESSAGE_RECEIPT_UPDATE: boolean;
+  GROUP_JOIN_REQUEST: boolean;
+  GROUP_MEMBER_TAG_UPDATE: boolean;
+  BLOCKLIST_SET: boolean;
+  BLOCKLIST_UPDATE: boolean;
+  NEWSLETTER_REACTION: boolean;
+  NEWSLETTER_VIEW: boolean;
+  NEWSLETTER_PARTICIPANTS_UPDATE: boolean;
+  NEWSLETTER_SETTINGS_UPDATE: boolean;
+  MESSAGE_CAPPING_UPDATE: boolean;
+  CHATS_LOCK: boolean;
+  SETTINGS_UPDATE: boolean;
   TYPEBOT_START: boolean;
   TYPEBOT_CHANGE_STATUS: boolean;
   ERRORS: boolean;
@@ -793,6 +825,22 @@ export class ConfigService {
           CALL: process.env?.WEBHOOK_EVENTS_CALL === 'true',
           CREDS_UPDATE: process.env?.WEBHOOK_EVENTS_CREDS_UPDATE === 'true',
           MESSAGING_HISTORY_SET: process.env?.WEBHOOK_EVENTS_MESSAGING_HISTORY_SET === 'true',
+          MESSAGING_HISTORY_STATUS: process.env?.WEBHOOK_EVENTS_MESSAGING_HISTORY_STATUS === 'true',
+          LID_MAPPING_UPDATE: process.env?.WEBHOOK_EVENTS_LID_MAPPING_UPDATE === 'true',
+          MESSAGES_MEDIA_UPDATE: process.env?.WEBHOOK_EVENTS_MESSAGES_MEDIA_UPDATE === 'true',
+          MESSAGES_REACTION: process.env?.WEBHOOK_EVENTS_MESSAGES_REACTION === 'true',
+          MESSAGE_RECEIPT_UPDATE: process.env?.WEBHOOK_EVENTS_MESSAGE_RECEIPT_UPDATE === 'true',
+          GROUP_JOIN_REQUEST: process.env?.WEBHOOK_EVENTS_GROUP_JOIN_REQUEST === 'true',
+          GROUP_MEMBER_TAG_UPDATE: process.env?.WEBHOOK_EVENTS_GROUP_MEMBER_TAG_UPDATE === 'true',
+          BLOCKLIST_SET: process.env?.WEBHOOK_EVENTS_BLOCKLIST_SET === 'true',
+          BLOCKLIST_UPDATE: process.env?.WEBHOOK_EVENTS_BLOCKLIST_UPDATE === 'true',
+          NEWSLETTER_REACTION: process.env?.WEBHOOK_EVENTS_NEWSLETTER_REACTION === 'true',
+          NEWSLETTER_VIEW: process.env?.WEBHOOK_EVENTS_NEWSLETTER_VIEW === 'true',
+          NEWSLETTER_PARTICIPANTS_UPDATE: process.env?.WEBHOOK_EVENTS_NEWSLETTER_PARTICIPANTS_UPDATE === 'true',
+          NEWSLETTER_SETTINGS_UPDATE: process.env?.WEBHOOK_EVENTS_NEWSLETTER_SETTINGS_UPDATE === 'true',
+          MESSAGE_CAPPING_UPDATE: process.env?.WEBHOOK_EVENTS_MESSAGE_CAPPING_UPDATE === 'true',
+          CHATS_LOCK: process.env?.WEBHOOK_EVENTS_CHATS_LOCK === 'true',
+          SETTINGS_UPDATE: process.env?.WEBHOOK_EVENTS_SETTINGS_UPDATE === 'true',
           TYPEBOT_START: process.env?.WEBHOOK_EVENTS_TYPEBOT_START === 'true',
           TYPEBOT_CHANGE_STATUS: process.env?.WEBHOOK_EVENTS_TYPEBOT_CHANGE_STATUS === 'true',
           ERRORS: process.env?.WEBHOOK_EVENTS_ERRORS === 'true',

@@ -1915,6 +1915,14 @@ export class BaileysStartupService extends ChannelStartupService {
               await this.messageHandle['messaging-history.set'](payload);
             }
 
+            if (events['messaging-history.status']) {
+              this.sendDataWebhook(Events.MESSAGING_HISTORY_STATUS, events['messaging-history.status']);
+            }
+
+            if (events['lid-mapping.update']) {
+              this.sendDataWebhook(Events.LID_MAPPING_UPDATE, events['lid-mapping.update']);
+            }
+
             if (events['messages.upsert']) {
               const payload = events['messages.upsert'];
 
@@ -1927,8 +1935,17 @@ export class BaileysStartupService extends ChannelStartupService {
               await this.messageHandle['messages.update'](payload, settings);
             }
 
+            if (events['messages.media-update']) {
+              this.sendDataWebhook(Events.MESSAGES_MEDIA_UPDATE, events['messages.media-update']);
+            }
+
+            if (events['messages.reaction']) {
+              this.sendDataWebhook(Events.MESSAGES_REACTION, events['messages.reaction']);
+            }
+
             if (events['message-receipt.update']) {
               const payload = events['message-receipt.update'] as MessageUserReceiptUpdate[];
+              this.sendDataWebhook(Events.MESSAGE_RECEIPT_UPDATE, payload);
               const remotesJidMap: Record<string, number> = {};
 
               for (const event of payload) {
@@ -1969,6 +1986,14 @@ export class BaileysStartupService extends ChannelStartupService {
                 const payload = events['group-participants.update'] as any;
                 this.groupHandler['group-participants.update'](payload);
               }
+
+              if (events['group.join-request']) {
+                this.sendDataWebhook(Events.GROUP_JOIN_REQUEST, events['group.join-request']);
+              }
+
+              if (events['group.member-tag.update']) {
+                this.sendDataWebhook(Events.GROUP_MEMBER_TAG_UPDATE, events['group.member-tag.update']);
+              }
             }
 
             if (events['chats.upsert']) {
@@ -1994,6 +2019,42 @@ export class BaileysStartupService extends ChannelStartupService {
             if (events['contacts.update']) {
               const payload = events['contacts.update'];
               this.contactHandle['contacts.update'](payload);
+            }
+
+            if (events['blocklist.set']) {
+              this.sendDataWebhook(Events.BLOCKLIST_SET, events['blocklist.set']);
+            }
+
+            if (events['blocklist.update']) {
+              this.sendDataWebhook(Events.BLOCKLIST_UPDATE, events['blocklist.update']);
+            }
+
+            if (events['newsletter.reaction']) {
+              this.sendDataWebhook(Events.NEWSLETTER_REACTION, events['newsletter.reaction']);
+            }
+
+            if (events['newsletter.view']) {
+              this.sendDataWebhook(Events.NEWSLETTER_VIEW, events['newsletter.view']);
+            }
+
+            if (events['newsletter-participants.update']) {
+              this.sendDataWebhook(Events.NEWSLETTER_PARTICIPANTS_UPDATE, events['newsletter-participants.update']);
+            }
+
+            if (events['newsletter-settings.update']) {
+              this.sendDataWebhook(Events.NEWSLETTER_SETTINGS_UPDATE, events['newsletter-settings.update']);
+            }
+
+            if (events['message-capping.update']) {
+              this.sendDataWebhook(Events.MESSAGE_CAPPING_UPDATE, events['message-capping.update']);
+            }
+
+            if (events['chats.lock']) {
+              this.sendDataWebhook(Events.CHATS_LOCK, events['chats.lock']);
+            }
+
+            if (events['settings.update']) {
+              this.sendDataWebhook(Events.SETTINGS_UPDATE, events['settings.update']);
             }
 
             if (events[Events.LABELS_ASSOCIATION]) {
