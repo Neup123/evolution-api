@@ -1,9 +1,7 @@
-name: Build Docker image
+name: Legacy Docker Hub tagged publish (manual)
 
 on:
-  push:
-    tags:
-      - "*.*.*"
+  workflow_dispatch:
 
 jobs:
   build_deploy:
