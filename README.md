@@ -122,7 +122,7 @@ docker pull evoapicloud/evolution-api:latest
 docker run -p 8080:8080 --env-file .env evoapicloud/evolution-api:latest
 ```
 
-This fork also publishes a multi-architecture image to GitHub Container Registry after changes land on `main`:
+This fork also publishes an image to GitHub Container Registry after changes land on `main`:
 
 ```yaml
 services:
