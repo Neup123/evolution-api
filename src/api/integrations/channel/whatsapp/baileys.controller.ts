@@ -1,9 +1,11 @@
 import { InstanceDto } from '@api/dto/instance.dto';
 import { WAMonitoringService } from '@api/services/monitor.service';
 
+import { listBaileysMethodMetadata } from './baileys.metadata';
 import {
   BAILEYS_API_METHODS,
   BAILEYS_EXISTING_API_METHODS,
+  BAILEYS_METHOD_GROUPS,
   BAILEYS_UNSUPPORTED_API_METHODS,
   BAILEYS_VERSION,
   BaileysApiMethod,
@@ -70,6 +72,8 @@ export class BaileysController {
     return {
       version: BAILEYS_VERSION,
       methods: BAILEYS_API_METHODS,
+      groups: BAILEYS_METHOD_GROUPS,
+      metadata: listBaileysMethodMetadata(),
       legacyMethods: BAILEYS_EXISTING_API_METHODS,
       unsupportedMethods: BAILEYS_UNSUPPORTED_API_METHODS,
       binaryFormat: { $base64: '<base64 encoded bytes>' },

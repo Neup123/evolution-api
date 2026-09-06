@@ -1,55 +1,5161 @@
 openapi: 3.1.0
 info:
-  title: Evolution API - Baileys extension
+  title: Evolution API – Baileys 7
   version: 2.3.7-baileys-7.0.0-rc14
-  description: |
-    REST access to the HTTP-compatible methods exposed by the Baileys 7 socket.
-    Arguments are passed in the same order as the Baileys TypeScript signature.
-    Use `{ "$base64": "..." }` wherever a Baileys argument expects Buffer or Uint8Array.
+  description: Typed, grouped HTTP routes for the Baileys WASocket API. Named request fields are generated from the installed Baileys TypeScript declarations.
 servers:
   - url: /
+    description: Current Evolution API server
 security:
   - ApiKeyAuth: []
 tags:
-  - name: Baileys
-    description: Baileys socket operations scoped to an Evolution API instance.
+  - name: Registry
+    description: Runtime method discovery.
+  - name: Communities
+    description: Community creation, membership, invitations, and settings.
+  - name: Business & catalog
+    description: Business profiles, catalogs, collections, and products.
+  - name: Calls & messages
+    description: Messages, receipts, calls, media, and history.
+  - name: Newsletters
+    description: Newsletter lifecycle, subscribers, content, and reactions.
+  - name: Groups
+    description: Group creation, membership, invitations, and settings.
+  - name: Account & privacy
+    description: Account, presence, profile, privacy, contacts, labels, and quick replies.
+  - name: Advanced protocol
+    description: Low-level protocol, cryptographic, query, and binary operations.
+  - name: Legacy
+    description: Backward-compatible ordered-argument route.
 paths:
   /baileys/methods/{instanceName}:
     get:
-      tags: [Baileys]
+      tags:
+        - Registry
+      summary: List supported Baileys methods and grouped routes
       operationId: listBaileysMethods
-      summary: List supported, legacy, and unsupported Baileys methods
       parameters:
-        - $ref: '#/components/parameters/InstanceName'
+        - &a1
+          name: instanceName
+          in: path
+          required: true
+          description: Connected Evolution API instance name.
+          schema:
+            type: string
       responses:
-        '200':
-          description: Baileys method registry
+        "200": &a2
+          description: Baileys method result. Binary values use the $base64 envelope.
           content:
             application/json:
-              schema:
-                type: object
-                additionalProperties: true
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+              schema: {}
+  /baileys/communities/communityMetadata/{instanceName}:
+    post:
+      tags:
+        - Communities
+      summary: communityMetadata
+      description: Invokes WASocket.communityMetadata with named fields.
+      operationId: baileys_communityMetadata
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+              required:
+                - jid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/communities/communityCreate/{instanceName}:
+    post:
+      tags:
+        - Communities
+      summary: communityCreate
+      description: Invokes WASocket.communityCreate with named fields.
+      operationId: baileys_communityCreate
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject:
+                  type: string
+                  description: string
+                body:
+                  type: string
+                  description: string
+              required:
+                - subject
+                - body
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/communities/communityCreateGroup/{instanceName}:
+    post:
+      tags:
+        - Communities
+      summary: communityCreateGroup
+      description: Invokes WASocket.communityCreateGroup with named fields.
+      operationId: baileys_communityCreateGroup
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject:
+                  type: string
+                  description: string
+                participants:
+                  type: array
+                  items:
+                    type: string
+                    description: string
+                  description: string[]
+                parentCommunityJid:
+                  type: string
+                  description: string
+              required:
+                - subject
+                - participants
+                - parentCommunityJid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/communities/communityLeave/{instanceName}:
+    post:
+      tags:
+        - Communities
+      summary: communityLeave
+      description: Invokes WASocket.communityLeave with named fields.
+      operationId: baileys_communityLeave
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: string
+              required:
+                - id
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/communities/communityUpdateSubject/{instanceName}:
+    post:
+      tags:
+        - Communities
+      summary: communityUpdateSubject
+      description: Invokes WASocket.communityUpdateSubject with named fields.
+      operationId: baileys_communityUpdateSubject
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                subject:
+                  type: string
+                  description: string
+              required:
+                - jid
+                - subject
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/communities/communityLinkGroup/{instanceName}:
+    post:
+      tags:
+        - Communities
+      summary: communityLinkGroup
+      description: Invokes WASocket.communityLinkGroup with named fields.
+      operationId: baileys_communityLinkGroup
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                groupJid:
+                  type: string
+                  description: string
+                parentCommunityJid:
+                  type: string
+                  description: string
+              required:
+                - groupJid
+                - parentCommunityJid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/communities/communityUnlinkGroup/{instanceName}:
+    post:
+      tags:
+        - Communities
+      summary: communityUnlinkGroup
+      description: Invokes WASocket.communityUnlinkGroup with named fields.
+      operationId: baileys_communityUnlinkGroup
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                groupJid:
+                  type: string
+                  description: string
+                parentCommunityJid:
+                  type: string
+                  description: string
+              required:
+                - groupJid
+                - parentCommunityJid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/communities/communityFetchLinkedGroups/{instanceName}:
+    post:
+      tags:
+        - Communities
+      summary: communityFetchLinkedGroups
+      description: Invokes WASocket.communityFetchLinkedGroups with named fields.
+      operationId: baileys_communityFetchLinkedGroups
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+              required:
+                - jid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/communities/communityRequestParticipantsList/{instanceName}:
+    post:
+      tags:
+        - Communities
+      summary: communityRequestParticipantsList
+      description: Invokes WASocket.communityRequestParticipantsList with named fields.
+      operationId: baileys_communityRequestParticipantsList
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+              required:
+                - jid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/communities/communityRequestParticipantsUpdate/{instanceName}:
+    post:
+      tags:
+        - Communities
+      summary: communityRequestParticipantsUpdate
+      description: Invokes WASocket.communityRequestParticipantsUpdate with named fields.
+      operationId: baileys_communityRequestParticipantsUpdate
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                participants:
+                  type: array
+                  items:
+                    type: string
+                    description: string
+                  description: string[]
+                action:
+                  type: string
+                  enum:
+                    - approve
+                    - reject
+                  description: '"approve" | "reject"'
+              required:
+                - jid
+                - participants
+                - action
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/communities/communityParticipantsUpdate/{instanceName}:
+    post:
+      tags:
+        - Communities
+      summary: communityParticipantsUpdate
+      description: Invokes WASocket.communityParticipantsUpdate with named fields.
+      operationId: baileys_communityParticipantsUpdate
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                participants:
+                  type: array
+                  items:
+                    type: string
+                    description: string
+                  description: string[]
+                action:
+                  type: string
+                  enum:
+                    - add
+                    - remove
+                    - promote
+                    - demote
+                    - modify
+                  description: ParticipantAction
+              required:
+                - jid
+                - participants
+                - action
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/communities/communityUpdateDescription/{instanceName}:
+    post:
+      tags:
+        - Communities
+      summary: communityUpdateDescription
+      description: Invokes WASocket.communityUpdateDescription with named fields.
+      operationId: baileys_communityUpdateDescription
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                description:
+                  type: string
+                  description: string
+              required:
+                - jid
+                - description
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/communities/communityInviteCode/{instanceName}:
+    post:
+      tags:
+        - Communities
+      summary: communityInviteCode
+      description: Invokes WASocket.communityInviteCode with named fields.
+      operationId: baileys_communityInviteCode
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+              required:
+                - jid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/communities/communityRevokeInvite/{instanceName}:
+    post:
+      tags:
+        - Communities
+      summary: communityRevokeInvite
+      description: Invokes WASocket.communityRevokeInvite with named fields.
+      operationId: baileys_communityRevokeInvite
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+              required:
+                - jid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/communities/communityAcceptInvite/{instanceName}:
+    post:
+      tags:
+        - Communities
+      summary: communityAcceptInvite
+      description: Invokes WASocket.communityAcceptInvite with named fields.
+      operationId: baileys_communityAcceptInvite
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  description: string
+              required:
+                - code
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/communities/communityRevokeInviteV4/{instanceName}:
+    post:
+      tags:
+        - Communities
+      summary: communityRevokeInviteV4
+      description: Invokes WASocket.communityRevokeInviteV4 with named fields.
+      operationId: baileys_communityRevokeInviteV4
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                communityJid:
+                  type: string
+                  description: string
+                invitedJid:
+                  type: string
+                  description: string
+              required:
+                - communityJid
+                - invitedJid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/communities/communityAcceptInviteV4/{instanceName}:
+    post:
+      tags:
+        - Communities
+      summary: communityAcceptInviteV4
+      description: Invokes WASocket.communityAcceptInviteV4 with named fields.
+      operationId: baileys_communityAcceptInviteV4
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                key:
+                  anyOf:
+                    - type: string
+                      description: string
+                    - description: WAMessageKey
+                  description: string | WAMessageKey
+                inviteMessage:
+                  type: object
+                  properties:
+                    groupJid:
+                      type: string
+                      description: string
+                    inviteCode:
+                      type: string
+                      description: string
+                    inviteExpiration:
+                      anyOf:
+                        - type: number
+                          description: number
+                        - type: object
+                          additionalProperties: true
+                          description: Long
+                      description: number | Long
+                    groupName:
+                      type: string
+                      description: string
+                    jpegThumbnail:
+                      oneOf:
+                        - type: string
+                        - type: object
+                          properties:
+                            $base64:
+                              type: string
+                              format: byte
+                          required:
+                            - $base64
+                          additionalProperties: false
+                      description: Uint8Array<ArrayBufferLike>
+                    caption:
+                      type: string
+                      description: string
+                    contextInfo:
+                      type: object
+                      additionalProperties: true
+                      description: IContextInfo
+                    groupType:
+                      type: number
+                      enum:
+                        - 0
+                        - 1
+                      description: GroupType
+                  additionalProperties: false
+                  description: IGroupInviteMessage
+              required:
+                - key
+                - inviteMessage
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/communities/communityGetInviteInfo/{instanceName}:
+    post:
+      tags:
+        - Communities
+      summary: communityGetInviteInfo
+      description: Invokes WASocket.communityGetInviteInfo with named fields.
+      operationId: baileys_communityGetInviteInfo
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  description: string
+              required:
+                - code
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/communities/communityToggleEphemeral/{instanceName}:
+    post:
+      tags:
+        - Communities
+      summary: communityToggleEphemeral
+      description: Invokes WASocket.communityToggleEphemeral with named fields.
+      operationId: baileys_communityToggleEphemeral
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                ephemeralExpiration:
+                  type: number
+                  description: number
+              required:
+                - jid
+                - ephemeralExpiration
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/communities/communitySettingUpdate/{instanceName}:
+    post:
+      tags:
+        - Communities
+      summary: communitySettingUpdate
+      description: Invokes WASocket.communitySettingUpdate with named fields.
+      operationId: baileys_communitySettingUpdate
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                setting:
+                  type: string
+                  enum:
+                    - announcement
+                    - not_announcement
+                    - locked
+                    - unlocked
+                  description: '"announcement" | "not_announcement" | "locked" | "unlocked"'
+              required:
+                - jid
+                - setting
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/communities/communityMemberAddMode/{instanceName}:
+    post:
+      tags:
+        - Communities
+      summary: communityMemberAddMode
+      description: Invokes WASocket.communityMemberAddMode with named fields.
+      operationId: baileys_communityMemberAddMode
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                mode:
+                  type: string
+                  enum:
+                    - admin_add
+                    - all_member_add
+                  description: '"admin_add" | "all_member_add"'
+              required:
+                - jid
+                - mode
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/communities/communityJoinApprovalMode/{instanceName}:
+    post:
+      tags:
+        - Communities
+      summary: communityJoinApprovalMode
+      description: Invokes WASocket.communityJoinApprovalMode with named fields.
+      operationId: baileys_communityJoinApprovalMode
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                mode:
+                  type: string
+                  enum:
+                    - on
+                    - off
+                  description: '"on" | "off"'
+              required:
+                - jid
+                - mode
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/communities/communityFetchAllParticipating/{instanceName}:
+    post:
+      tags:
+        - Communities
+      summary: communityFetchAllParticipating
+      description: Invokes WASocket.communityFetchAllParticipating with named fields.
+      operationId: baileys_communityFetchAllParticipating
+      parameters:
+        - *a1
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/business/getOrderDetails/{instanceName}:
+    post:
+      tags:
+        - Business & catalog
+      summary: getOrderDetails
+      description: Invokes WASocket.getOrderDetails with named fields.
+      operationId: baileys_getOrderDetails
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                orderId:
+                  type: string
+                  description: string
+                tokenBase64:
+                  type: string
+                  description: string
+              required:
+                - orderId
+                - tokenBase64
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/business/getCatalog/{instanceName}:
+    post:
+      tags:
+        - Business & catalog
+      summary: getCatalog
+      description: Invokes WASocket.getCatalog with named fields.
+      operationId: baileys_getCatalog
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                options:
+                  type: object
+                  properties:
+                    cursor:
+                      type: string
+                      description: string
+                    limit:
+                      type: number
+                      description: number
+                    jid:
+                      type: string
+                      description: string
+                  additionalProperties: false
+                  description: GetCatalogOptions
+              required:
+                - options
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/business/getCollections/{instanceName}:
+    post:
+      tags:
+        - Business & catalog
+      summary: getCollections
+      description: Invokes WASocket.getCollections with named fields.
+      operationId: baileys_getCollections
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                limit:
+                  type: number
+                  description: number
+              required:
+                - jid
+                - limit
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/business/productCreate/{instanceName}:
+    post:
+      tags:
+        - Business & catalog
+      summary: productCreate
+      description: Invokes WASocket.productCreate with named fields.
+      operationId: baileys_productCreate
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                create:
+                  description: ProductCreate
+              required:
+                - create
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/business/productDelete/{instanceName}:
+    post:
+      tags:
+        - Business & catalog
+      summary: productDelete
+      description: Invokes WASocket.productDelete with named fields.
+      operationId: baileys_productDelete
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                productIds:
+                  type: array
+                  items:
+                    type: string
+                    description: string
+                  description: string[]
+              required:
+                - productIds
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/business/productUpdate/{instanceName}:
+    post:
+      tags:
+        - Business & catalog
+      summary: productUpdate
+      description: Invokes WASocket.productUpdate with named fields.
+      operationId: baileys_productUpdate
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                productId:
+                  type: string
+                  description: string
+                update:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: string
+                    retailerId:
+                      type: string
+                      description: string
+                    url:
+                      type: string
+                      description: string
+                    description:
+                      type: string
+                      description: string
+                    price:
+                      type: number
+                      description: number
+                    currency:
+                      type: string
+                      description: string
+                    isHidden:
+                      anyOf:
+                        - type: boolean
+                          description: "false"
+                        - type: boolean
+                          description: "true"
+                      description: boolean
+                    images:
+                      anyOf:
+                        - type: string
+                        - type: object
+                          additionalProperties: true
+                        - type: object
+                          properties:
+                            $base64:
+                              type: string
+                              format: byte
+                          required:
+                            - $base64
+                          additionalProperties: false
+                      description: WAMediaUpload[]
+                  required:
+                    - name
+                    - description
+                    - price
+                    - currency
+                    - images
+                  additionalProperties: false
+                  description: ProductUpdate
+              required:
+                - productId
+                - update
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/business/updateBussinesProfile/{instanceName}:
+    post:
+      tags:
+        - Business & catalog
+      summary: updateBussinesProfile
+      description: Invokes WASocket.updateBussinesProfile with named fields.
+      operationId: baileys_updateBussinesProfile
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                args:
+                  type: object
+                  properties:
+                    address:
+                      type: string
+                      description: string
+                    websites:
+                      type: array
+                      items:
+                        type: string
+                        description: string
+                      description: string[]
+                    email:
+                      type: string
+                      description: string
+                    description:
+                      type: string
+                      description: string
+                    hours:
+                      type: object
+                      properties:
+                        timezone:
+                          type: string
+                          description: string
+                        days:
+                          type: array
+                          items:
+                            anyOf:
+                              - type: object
+                                additionalProperties: true
+                                description: '{ day: DayOfWeekBussines; mode: "specific_hours"; openTimeInMinutes: string; closeTimeInMinutes: string; }'
+                              - type: object
+                                additionalProperties: true
+                                description: '{ day: DayOfWeekBussines; mode: "open_24h" | "appointment_only"; }'
+                            description: HoursDay
+                          description: HoursDay[]
+                      required:
+                        - timezone
+                        - days
+                      additionalProperties: false
+                      description: "{ timezone: string; days: HoursDay[]; }"
+                  additionalProperties: false
+                  description: UpdateBussinesProfileProps
+              required:
+                - args
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/business/updateCoverPhoto/{instanceName}:
+    post:
+      tags:
+        - Business & catalog
+      summary: updateCoverPhoto
+      description: Invokes WASocket.updateCoverPhoto with named fields.
+      operationId: baileys_updateCoverPhoto
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                photo:
+                  anyOf:
+                    - type: string
+                    - type: object
+                      additionalProperties: true
+                    - type: object
+                      properties:
+                        $base64:
+                          type: string
+                          format: byte
+                      required:
+                        - $base64
+                      additionalProperties: false
+                  description: WAMediaUpload
+              required:
+                - photo
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/business/removeCoverPhoto/{instanceName}:
+    post:
+      tags:
+        - Business & catalog
+      summary: removeCoverPhoto
+      description: Invokes WASocket.removeCoverPhoto with named fields.
+      operationId: baileys_removeCoverPhoto
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: string
+              required:
+                - id
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/messages/sendMessageAck/{instanceName}:
+    post:
+      tags:
+        - Calls & messages
+      summary: sendMessageAck
+      description: Invokes WASocket.sendMessageAck with named fields.
+      operationId: baileys_sendMessageAck
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                node:
+                  type: object
+                  properties:
+                    tag:
+                      type: string
+                      description: string
+                    attrs:
+                      type: object
+                      additionalProperties: true
+                      description: "{ [key: string]: string; }"
+                    content:
+                      oneOf:
+                        - type: string
+                        - type: object
+                          properties:
+                            $base64:
+                              type: string
+                              format: byte
+                          required:
+                            - $base64
+                          additionalProperties: false
+                      description: string | Uint8Array<ArrayBufferLike> | BinaryNode[]
+                  required:
+                    - tag
+                    - attrs
+                  additionalProperties: false
+                  description: BinaryNode
+                errorCode:
+                  type: number
+                  description: number
+              required:
+                - node
+                - errorCode
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/messages/sendRetryRequest/{instanceName}:
+    post:
+      tags:
+        - Calls & messages
+      summary: sendRetryRequest
+      description: Invokes WASocket.sendRetryRequest with named fields.
+      operationId: baileys_sendRetryRequest
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                node:
+                  type: object
+                  properties:
+                    tag:
+                      type: string
+                      description: string
+                    attrs:
+                      type: object
+                      additionalProperties: true
+                      description: "{ [key: string]: string; }"
+                    content:
+                      oneOf:
+                        - type: string
+                        - type: object
+                          properties:
+                            $base64:
+                              type: string
+                              format: byte
+                          required:
+                            - $base64
+                          additionalProperties: false
+                      description: string | Uint8Array<ArrayBufferLike> | BinaryNode[]
+                  required:
+                    - tag
+                    - attrs
+                  additionalProperties: false
+                  description: BinaryNode
+                forceIncludeKeys:
+                  anyOf:
+                    - type: boolean
+                      description: "false"
+                    - type: boolean
+                      description: "true"
+                  description: boolean
+              required:
+                - node
+                - forceIncludeKeys
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/messages/rejectCall/{instanceName}:
+    post:
+      tags:
+        - Calls & messages
+      summary: rejectCall
+      description: Invokes WASocket.rejectCall with named fields.
+      operationId: baileys_rejectCall
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                callId:
+                  type: string
+                  description: string
+                callFrom:
+                  type: string
+                  description: string
+              required:
+                - callId
+                - callFrom
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/messages/fetchMessageHistory/{instanceName}:
+    post:
+      tags:
+        - Calls & messages
+      summary: fetchMessageHistory
+      description: Invokes WASocket.fetchMessageHistory with named fields.
+      operationId: baileys_fetchMessageHistory
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                count:
+                  type: number
+                  description: number
+                oldestMsgKey:
+                  description: WAMessageKey
+                oldestMsgTimestamp:
+                  description: any
+              required:
+                - count
+                - oldestMsgKey
+                - oldestMsgTimestamp
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/messages/requestPlaceholderResend/{instanceName}:
+    post:
+      tags:
+        - Calls & messages
+      summary: requestPlaceholderResend
+      description: Invokes WASocket.requestPlaceholderResend with named fields.
+      operationId: baileys_requestPlaceholderResend
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                messageKey:
+                  description: WAMessageKey
+                msgData:
+                  type: object
+                  additionalProperties: true
+                  description: Partial<WAMessage>
+              required:
+                - messageKey
+                - msgData
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/messages/issuePrivacyTokens/{instanceName}:
+    post:
+      tags:
+        - Calls & messages
+      summary: issuePrivacyTokens
+      description: Invokes WASocket.issuePrivacyTokens with named fields.
+      operationId: baileys_issuePrivacyTokens
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jids:
+                  type: array
+                  items:
+                    type: string
+                    description: string
+                  description: string[]
+                timestamp:
+                  type: number
+                  description: number
+              required:
+                - jids
+                - timestamp
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/messages/relayMessage/{instanceName}:
+    post:
+      tags:
+        - Calls & messages
+      summary: relayMessage
+      description: Invokes WASocket.relayMessage with named fields.
+      operationId: baileys_relayMessage
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                message:
+                  type: object
+                  additionalProperties: true
+                  description: IMessage
+                options:
+                  description: MessageRelayOptions
+              required:
+                - jid
+                - message
+                - options
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/messages/sendReceipt/{instanceName}:
+    post:
+      tags:
+        - Calls & messages
+      summary: sendReceipt
+      description: Invokes WASocket.sendReceipt with named fields.
+      operationId: baileys_sendReceipt
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                participant:
+                  type: string
+                  description: string
+                messageIds:
+                  type: array
+                  items:
+                    type: string
+                    description: string
+                  description: string[]
+                type:
+                  type: string
+                  enum:
+                    - read
+                    - read-self
+                    - hist_sync
+                    - peer_msg
+                    - sender
+                    - inactive
+                    - played
+                  description: MessageReceiptType
+              required:
+                - jid
+                - participant
+                - messageIds
+                - type
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/messages/sendReceipts/{instanceName}:
+    post:
+      tags:
+        - Calls & messages
+      summary: sendReceipts
+      description: Invokes WASocket.sendReceipts with named fields.
+      operationId: baileys_sendReceipts
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                keys:
+                  type: array
+                  items:
+                    description: WAMessageKey
+                  description: WAMessageKey[]
+                type:
+                  type: string
+                  enum:
+                    - read
+                    - read-self
+                    - hist_sync
+                    - peer_msg
+                    - sender
+                    - inactive
+                    - played
+                  description: MessageReceiptType
+              required:
+                - keys
+                - type
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/messages/readMessages/{instanceName}:
+    post:
+      tags:
+        - Calls & messages
+      summary: readMessages
+      description: Invokes WASocket.readMessages with named fields.
+      operationId: baileys_readMessages
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                keys:
+                  type: array
+                  items:
+                    description: WAMessageKey
+                  description: WAMessageKey[]
+              required:
+                - keys
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/messages/refreshMediaConn/{instanceName}:
+    post:
+      tags:
+        - Calls & messages
+      summary: refreshMediaConn
+      description: Invokes WASocket.refreshMediaConn with named fields.
+      operationId: baileys_refreshMediaConn
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                forceGet:
+                  anyOf:
+                    - type: boolean
+                      description: "false"
+                    - type: boolean
+                      description: "true"
+                  description: boolean
+              required:
+                - forceGet
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/messages/getMediaHost/{instanceName}:
+    post:
+      tags:
+        - Calls & messages
+      summary: getMediaHost
+      description: Invokes WASocket.getMediaHost with named fields.
+      operationId: baileys_getMediaHost
+      parameters:
+        - *a1
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/messages/waUploadToServer/{instanceName}:
+    post:
+      tags:
+        - Calls & messages
+      summary: waUploadToServer
+      description: Invokes WASocket.waUploadToServer with named fields.
+      operationId: baileys_waUploadToServer
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                encFilePath:
+                  type: string
+                  description: string
+                opts:
+                  type: object
+                  properties:
+                    fileEncSha256B64:
+                      type: string
+                      description: string
+                    mediaType:
+                      type: string
+                      enum:
+                        - audio
+                        - document
+                        - gif
+                        - image
+                        - ppic
+                        - product
+                        - ptt
+                        - sticker
+                        - video
+                        - thumbnail-document
+                        - thumbnail-image
+                        - thumbnail-video
+                        - thumbnail-link
+                        - md-msg-hist
+                        - md-app-state
+                        - product-catalog-image
+                        - payment-bg-image
+                        - ptv
+                        - biz-cover-photo
+                      description: '"audio" | "document" | "gif" | "image" | "ppic" | "product" | "ptt" | "sticker" | "video" | "thumbnail-document" | "thumbnail-image" | "thumbnail-video" | "thumbnail-link" | "md-msg-hist" | "md-app-state" | "product-catalog-image" | "payment-bg-image" | "ptv" | "biz-cover-photo"'
+                    timeoutMs:
+                      type: number
+                      description: number
+                  required:
+                    - fileEncSha256B64
+                    - mediaType
+                  additionalProperties: false
+                  description: '{ fileEncSha256B64: string; mediaType: "audio" | "document" | "gif" | "image" | "ppic" | "product" | "ptt" | "sticker" | "video" | "thumbnail-document" | "thumbnail-image" | "thumbnail-video" | "thumbnail-link" | "md-msg-hist" | "md-app-state" | "product-catalog-image" | "payment-bg-image" | "ptv" | "biz-cover-photo"; timeoutMs?: number; }'
+              required:
+                - encFilePath
+                - opts
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/messages/fetchPrivacySettings/{instanceName}:
+    post:
+      tags:
+        - Calls & messages
+      summary: fetchPrivacySettings
+      description: Invokes WASocket.fetchPrivacySettings with named fields.
+      operationId: baileys_fetchPrivacySettings
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                force:
+                  anyOf:
+                    - type: boolean
+                      description: "false"
+                    - type: boolean
+                      description: "true"
+                  description: boolean
+              required:
+                - force
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/messages/sendPeerDataOperationMessage/{instanceName}:
+    post:
+      tags:
+        - Calls & messages
+      summary: sendPeerDataOperationMessage
+      description: Invokes WASocket.sendPeerDataOperationMessage with named fields.
+      operationId: baileys_sendPeerDataOperationMessage
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pdoMessage:
+                  type: object
+                  properties:
+                    peerDataOperationRequestType:
+                      type: number
+                      enum:
+                        - 0
+                        - 1
+                        - 2
+                        - 3
+                        - 4
+                        - 5
+                        - 6
+                        - 7
+                        - 8
+                        - 9
+                        - 10
+                        - 11
+                      description: PeerDataOperationRequestType
+                    requestStickerReupload:
+                      type: array
+                      items:
+                        type: object
+                        additionalProperties: true
+                        description: IRequestStickerReupload
+                      description: IRequestStickerReupload[]
+                    requestUrlPreview:
+                      type: array
+                      items:
+                        type: object
+                        additionalProperties: true
+                        description: IRequestUrlPreview
+                      description: IRequestUrlPreview[]
+                    historySyncOnDemandRequest:
+                      type: object
+                      properties:
+                        chatJid:
+                          type: string
+                          description: string
+                        oldestMsgId:
+                          type: string
+                          description: string
+                        oldestMsgFromMe:
+                          anyOf:
+                            - type: boolean
+                              description: "false"
+                            - type: boolean
+                              description: "true"
+                          description: boolean
+                        onDemandMsgCount:
+                          type: number
+                          description: number
+                        oldestMsgTimestampMs:
+                          anyOf:
+                            - type: number
+                              description: number
+                            - type: object
+                              additionalProperties: true
+                              description: Long
+                          description: number | Long
+                        accountLid:
+                          type: string
+                          description: string
+                      additionalProperties: false
+                      description: IHistorySyncOnDemandRequest
+                    placeholderMessageResendRequest:
+                      type: array
+                      items:
+                        type: object
+                        additionalProperties: true
+                        description: IPlaceholderMessageResendRequest
+                      description: IPlaceholderMessageResendRequest[]
+                    fullHistorySyncOnDemandRequest:
+                      type: object
+                      properties:
+                        requestMetadata:
+                          type: object
+                          additionalProperties: true
+                          description: IFullHistorySyncOnDemandRequestMetadata
+                        historySyncConfig:
+                          type: object
+                          additionalProperties: true
+                          description: IHistorySyncConfig
+                      additionalProperties: false
+                      description: IFullHistorySyncOnDemandRequest
+                    syncdCollectionFatalRecoveryRequest:
+                      type: object
+                      properties:
+                        collectionName:
+                          type: string
+                          description: string
+                        timestamp:
+                          anyOf:
+                            - type: number
+                              description: number
+                            - type: object
+                              additionalProperties: true
+                              description: Long
+                          description: number | Long
+                      additionalProperties: false
+                      description: ISyncDCollectionFatalRecoveryRequest
+                    historySyncChunkRetryRequest:
+                      type: object
+                      properties:
+                        syncType:
+                          type: number
+                          enum:
+                            - 0
+                            - 1
+                            - 2
+                            - 3
+                            - 4
+                            - 5
+                            - 6
+                            - 7
+                            - 8
+                          description: HistorySyncType
+                        chunkOrder:
+                          type: number
+                          description: number
+                        chunkNotificationId:
+                          type: string
+                          description: string
+                        regenerateChunk:
+                          anyOf:
+                            - type: boolean
+                              description: "false"
+                            - type: boolean
+                              description: "true"
+                          description: boolean
+                      additionalProperties: false
+                      description: IHistorySyncChunkRetryRequest
+                    galaxyFlowAction:
+                      type: object
+                      properties:
+                        type:
+                          type: number
+                          description: GalaxyFlowActionType
+                        flowId:
+                          type: string
+                          description: string
+                        stanzaId:
+                          type: string
+                          description: string
+                      additionalProperties: false
+                      description: IGalaxyFlowAction
+                  additionalProperties: false
+                  description: IPeerDataOperationRequestMessage
+              required:
+                - pdoMessage
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/messages/updateMemberLabel/{instanceName}:
+    post:
+      tags:
+        - Calls & messages
+      summary: updateMemberLabel
+      description: Invokes WASocket.updateMemberLabel with named fields.
+      operationId: baileys_updateMemberLabel
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                memberLabel:
+                  type: string
+                  description: string
+              required:
+                - jid
+                - memberLabel
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/messages/updateMediaMessage/{instanceName}:
+    post:
+      tags:
+        - Calls & messages
+      summary: updateMediaMessage
+      description: Invokes WASocket.updateMediaMessage with named fields.
+      operationId: baileys_updateMediaMessage
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  description: WAMessage
+              required:
+                - message
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/messages/sendMessage/{instanceName}:
+    post:
+      tags:
+        - Calls & messages
+      summary: sendMessage
+      description: Invokes WASocket.sendMessage with named fields.
+      operationId: baileys_sendMessage
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                content:
+                  anyOf:
+                    - description: "{ text: string; linkPreview?: WAUrlInfo; } & Mentionable & Contextable & Editable & ViewOnce"
+                    - anyOf:
+                        - type: string
+                        - type: object
+                          additionalProperties: true
+                        - type: object
+                          properties:
+                            $base64:
+                              type: string
+                              format: byte
+                          required:
+                            - $base64
+                          additionalProperties: false
+                      description: "{ image: WAMediaUpload; caption?: string; jpegThumbnail?: string; } & Mentionable & Contextable & WithDimensions & { mimetype?: string; } & Editable & { albumParentKey?: WAMessageKey; } & ViewOnce"
+                    - anyOf:
+                        - type: string
+                        - type: object
+                          additionalProperties: true
+                        - type: object
+                          properties:
+                            $base64:
+                              type: string
+                              format: byte
+                          required:
+                            - $base64
+                          additionalProperties: false
+                      description: "{ video: WAMediaUpload; caption?: string; gifPlayback?: boolean; jpegThumbnail?: string; ptv?: boolean; } & Mentionable & Contextable & WithDimensions & { mimetype?: string; } & Editable & { albumParentKey?: WAMessageKey; } & ViewOnce"
+                    - anyOf:
+                        - type: string
+                        - type: object
+                          additionalProperties: true
+                        - type: object
+                          properties:
+                            $base64:
+                              type: string
+                              format: byte
+                          required:
+                            - $base64
+                          additionalProperties: false
+                      description: "{ audio: WAMediaUpload; ptt?: boolean; seconds?: number; } & { mimetype?: string; } & Editable & { albumParentKey?: WAMessageKey; } & ViewOnce"
+                    - anyOf:
+                        - type: string
+                        - type: object
+                          additionalProperties: true
+                        - type: object
+                          properties:
+                            $base64:
+                              type: string
+                              format: byte
+                          required:
+                            - $base64
+                          additionalProperties: false
+                      description: "{ sticker: WAMediaUpload; isAnimated?: boolean; } & WithDimensions & { mimetype?: string; } & Editable & { albumParentKey?: WAMessageKey; } & ViewOnce"
+                    - anyOf:
+                        - type: string
+                        - type: object
+                          additionalProperties: true
+                        - type: object
+                          properties:
+                            $base64:
+                              type: string
+                              format: byte
+                          required:
+                            - $base64
+                          additionalProperties: false
+                      description: "{ document: WAMediaUpload; mimetype: string; fileName?: string; caption?: string; } & Contextable & { mimetype?: string; } & Editable & { albumParentKey?: WAMessageKey; } & ViewOnce"
+                    - description: "{ event: EventMessageOptions; } & ViewOnce"
+                    - description: "{ poll: PollMessageOptions; } & Mentionable & Contextable & Editable & ViewOnce"
+                    - description: "{ album: AlbumMessageOptions; } & Contextable & Mentionable & ViewOnce"
+                    - description: "{ contacts: { displayName?: string; contacts: IContactMessage[]; }; } & ViewOnce"
+                    - description: "{ location: ILocationMessage; } & ViewOnce"
+                    - description: "{ react: IReactionMessage; } & ViewOnce"
+                    - description: '{ buttonReply: ButtonReplyInfo; type: "template" | "plain"; } & ViewOnce'
+                    - description: "{ groupInvite: GroupInviteInfo; } & ViewOnce"
+                    - description: '{ listReply: Omit<IListResponseMessage, "contextInfo">; } & ViewOnce'
+                    - description: "{ pin: WAMessageKey; type: Type; time?: 86400 | 604800 | 2592000; } & ViewOnce"
+                    - description: "{ product: WASendableProduct; businessOwnerJid?: string; body?: string; footer?: string; } & ViewOnce"
+                    - description: SharePhoneNumber & ViewOnce
+                    - description: RequestPhoneNumber & ViewOnce
+                    - type: object
+                      properties:
+                        forward:
+                          description: WAMessage
+                        force:
+                          anyOf:
+                            - type: boolean
+                              description: "false"
+                            - type: boolean
+                              description: "true"
+                          description: boolean
+                      required:
+                        - forward
+                      additionalProperties: false
+                      description: "{ forward: WAMessage; force?: boolean; }"
+                    - type: object
+                      properties:
+                        delete:
+                          description: WAMessageKey
+                      required:
+                        - delete
+                      additionalProperties: false
+                      description: "{ delete: WAMessageKey; }"
+                    - type: object
+                      properties:
+                        disappearingMessagesInChat:
+                          anyOf:
+                            - type: number
+                              description: number
+                            - type: boolean
+                              description: "false"
+                            - type: boolean
+                              description: "true"
+                          description: number | boolean
+                      required:
+                        - disappearingMessagesInChat
+                      additionalProperties: false
+                      description: "{ disappearingMessagesInChat: number | boolean; }"
+                    - type: object
+                      properties:
+                        limitSharing:
+                          anyOf:
+                            - type: boolean
+                              description: "false"
+                            - type: boolean
+                              description: "true"
+                          description: boolean
+                      required:
+                        - limitSharing
+                      additionalProperties: false
+                      description: "{ limitSharing: boolean; }"
+                  description: AnyMessageContent
+                options:
+                  description: MiscMessageGenerationOptions
+              required:
+                - jid
+                - content
+                - options
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/newsletters/newsletterCreate/{instanceName}:
+    post:
+      tags:
+        - Newsletters
+      summary: newsletterCreate
+      description: Invokes WASocket.newsletterCreate with named fields.
+      operationId: baileys_newsletterCreate
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: string
+                description:
+                  type: string
+                  description: string
+              required:
+                - name
+                - description
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/newsletters/newsletterUpdate/{instanceName}:
+    post:
+      tags:
+        - Newsletters
+      summary: newsletterUpdate
+      description: Invokes WASocket.newsletterUpdate with named fields.
+      operationId: baileys_newsletterUpdate
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                updates:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: string
+                    description:
+                      type: string
+                      description: string
+                    picture:
+                      type: string
+                      description: string
+                  additionalProperties: false
+                  description: NewsletterUpdate
+              required:
+                - jid
+                - updates
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/newsletters/newsletterSubscribers/{instanceName}:
+    post:
+      tags:
+        - Newsletters
+      summary: newsletterSubscribers
+      description: Invokes WASocket.newsletterSubscribers with named fields.
+      operationId: baileys_newsletterSubscribers
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+              required:
+                - jid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/newsletters/newsletterMetadata/{instanceName}:
+    post:
+      tags:
+        - Newsletters
+      summary: newsletterMetadata
+      description: Invokes WASocket.newsletterMetadata with named fields.
+      operationId: baileys_newsletterMetadata
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - invite
+                    - jid
+                  description: '"invite" | "jid"'
+                key:
+                  type: string
+                  description: string
+              required:
+                - type
+                - key
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/newsletters/newsletterFollow/{instanceName}:
+    post:
+      tags:
+        - Newsletters
+      summary: newsletterFollow
+      description: Invokes WASocket.newsletterFollow with named fields.
+      operationId: baileys_newsletterFollow
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+              required:
+                - jid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/newsletters/newsletterUnfollow/{instanceName}:
+    post:
+      tags:
+        - Newsletters
+      summary: newsletterUnfollow
+      description: Invokes WASocket.newsletterUnfollow with named fields.
+      operationId: baileys_newsletterUnfollow
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+              required:
+                - jid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/newsletters/newsletterMute/{instanceName}:
+    post:
+      tags:
+        - Newsletters
+      summary: newsletterMute
+      description: Invokes WASocket.newsletterMute with named fields.
+      operationId: baileys_newsletterMute
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+              required:
+                - jid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/newsletters/newsletterUnmute/{instanceName}:
+    post:
+      tags:
+        - Newsletters
+      summary: newsletterUnmute
+      description: Invokes WASocket.newsletterUnmute with named fields.
+      operationId: baileys_newsletterUnmute
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+              required:
+                - jid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/newsletters/newsletterUpdateName/{instanceName}:
+    post:
+      tags:
+        - Newsletters
+      summary: newsletterUpdateName
+      description: Invokes WASocket.newsletterUpdateName with named fields.
+      operationId: baileys_newsletterUpdateName
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                name:
+                  type: string
+                  description: string
+              required:
+                - jid
+                - name
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/newsletters/newsletterUpdateDescription/{instanceName}:
+    post:
+      tags:
+        - Newsletters
+      summary: newsletterUpdateDescription
+      description: Invokes WASocket.newsletterUpdateDescription with named fields.
+      operationId: baileys_newsletterUpdateDescription
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                description:
+                  type: string
+                  description: string
+              required:
+                - jid
+                - description
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/newsletters/newsletterUpdatePicture/{instanceName}:
+    post:
+      tags:
+        - Newsletters
+      summary: newsletterUpdatePicture
+      description: Invokes WASocket.newsletterUpdatePicture with named fields.
+      operationId: baileys_newsletterUpdatePicture
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                content:
+                  anyOf:
+                    - type: string
+                    - type: object
+                      additionalProperties: true
+                    - type: object
+                      properties:
+                        $base64:
+                          type: string
+                          format: byte
+                      required:
+                        - $base64
+                      additionalProperties: false
+                  description: WAMediaUpload
+              required:
+                - jid
+                - content
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/newsletters/newsletterRemovePicture/{instanceName}:
+    post:
+      tags:
+        - Newsletters
+      summary: newsletterRemovePicture
+      description: Invokes WASocket.newsletterRemovePicture with named fields.
+      operationId: baileys_newsletterRemovePicture
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+              required:
+                - jid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/newsletters/newsletterReactMessage/{instanceName}:
+    post:
+      tags:
+        - Newsletters
+      summary: newsletterReactMessage
+      description: Invokes WASocket.newsletterReactMessage with named fields.
+      operationId: baileys_newsletterReactMessage
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                serverId:
+                  type: string
+                  description: string
+                reaction:
+                  type: string
+                  description: string
+              required:
+                - jid
+                - serverId
+                - reaction
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/newsletters/newsletterFetchMessages/{instanceName}:
+    post:
+      tags:
+        - Newsletters
+      summary: newsletterFetchMessages
+      description: Invokes WASocket.newsletterFetchMessages with named fields.
+      operationId: baileys_newsletterFetchMessages
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                count:
+                  type: number
+                  description: number
+                since:
+                  type: number
+                  description: number
+                after:
+                  type: number
+                  description: number
+              required:
+                - jid
+                - count
+                - since
+                - after
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/newsletters/subscribeNewsletterUpdates/{instanceName}:
+    post:
+      tags:
+        - Newsletters
+      summary: subscribeNewsletterUpdates
+      description: Invokes WASocket.subscribeNewsletterUpdates with named fields.
+      operationId: baileys_subscribeNewsletterUpdates
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+              required:
+                - jid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/newsletters/newsletterAdminCount/{instanceName}:
+    post:
+      tags:
+        - Newsletters
+      summary: newsletterAdminCount
+      description: Invokes WASocket.newsletterAdminCount with named fields.
+      operationId: baileys_newsletterAdminCount
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+              required:
+                - jid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/newsletters/newsletterChangeOwner/{instanceName}:
+    post:
+      tags:
+        - Newsletters
+      summary: newsletterChangeOwner
+      description: Invokes WASocket.newsletterChangeOwner with named fields.
+      operationId: baileys_newsletterChangeOwner
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                newOwnerJid:
+                  type: string
+                  description: string
+              required:
+                - jid
+                - newOwnerJid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/newsletters/newsletterDemote/{instanceName}:
+    post:
+      tags:
+        - Newsletters
+      summary: newsletterDemote
+      description: Invokes WASocket.newsletterDemote with named fields.
+      operationId: baileys_newsletterDemote
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                userJid:
+                  type: string
+                  description: string
+              required:
+                - jid
+                - userJid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/newsletters/newsletterDelete/{instanceName}:
+    post:
+      tags:
+        - Newsletters
+      summary: newsletterDelete
+      description: Invokes WASocket.newsletterDelete with named fields.
+      operationId: baileys_newsletterDelete
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+              required:
+                - jid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/groups/groupMetadata/{instanceName}:
+    post:
+      tags:
+        - Groups
+      summary: groupMetadata
+      description: Invokes WASocket.groupMetadata with named fields.
+      operationId: baileys_groupMetadata
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+              required:
+                - jid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/groups/groupCreate/{instanceName}:
+    post:
+      tags:
+        - Groups
+      summary: groupCreate
+      description: Invokes WASocket.groupCreate with named fields.
+      operationId: baileys_groupCreate
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject:
+                  type: string
+                  description: string
+                participants:
+                  type: array
+                  items:
+                    type: string
+                    description: string
+                  description: string[]
+              required:
+                - subject
+                - participants
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/groups/groupLeave/{instanceName}:
+    post:
+      tags:
+        - Groups
+      summary: groupLeave
+      description: Invokes WASocket.groupLeave with named fields.
+      operationId: baileys_groupLeave
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: string
+              required:
+                - id
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/groups/groupUpdateSubject/{instanceName}:
+    post:
+      tags:
+        - Groups
+      summary: groupUpdateSubject
+      description: Invokes WASocket.groupUpdateSubject with named fields.
+      operationId: baileys_groupUpdateSubject
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                subject:
+                  type: string
+                  description: string
+              required:
+                - jid
+                - subject
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/groups/groupRequestParticipantsList/{instanceName}:
+    post:
+      tags:
+        - Groups
+      summary: groupRequestParticipantsList
+      description: Invokes WASocket.groupRequestParticipantsList with named fields.
+      operationId: baileys_groupRequestParticipantsList
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+              required:
+                - jid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/groups/groupRequestParticipantsUpdate/{instanceName}:
+    post:
+      tags:
+        - Groups
+      summary: groupRequestParticipantsUpdate
+      description: Invokes WASocket.groupRequestParticipantsUpdate with named fields.
+      operationId: baileys_groupRequestParticipantsUpdate
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                participants:
+                  type: array
+                  items:
+                    type: string
+                    description: string
+                  description: string[]
+                action:
+                  type: string
+                  enum:
+                    - approve
+                    - reject
+                  description: '"approve" | "reject"'
+              required:
+                - jid
+                - participants
+                - action
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/groups/groupParticipantsUpdate/{instanceName}:
+    post:
+      tags:
+        - Groups
+      summary: groupParticipantsUpdate
+      description: Invokes WASocket.groupParticipantsUpdate with named fields.
+      operationId: baileys_groupParticipantsUpdate
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                participants:
+                  type: array
+                  items:
+                    type: string
+                    description: string
+                  description: string[]
+                action:
+                  type: string
+                  enum:
+                    - add
+                    - remove
+                    - promote
+                    - demote
+                    - modify
+                  description: ParticipantAction
+              required:
+                - jid
+                - participants
+                - action
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/groups/groupUpdateDescription/{instanceName}:
+    post:
+      tags:
+        - Groups
+      summary: groupUpdateDescription
+      description: Invokes WASocket.groupUpdateDescription with named fields.
+      operationId: baileys_groupUpdateDescription
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                description:
+                  type: string
+                  description: string
+              required:
+                - jid
+                - description
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/groups/groupInviteCode/{instanceName}:
+    post:
+      tags:
+        - Groups
+      summary: groupInviteCode
+      description: Invokes WASocket.groupInviteCode with named fields.
+      operationId: baileys_groupInviteCode
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+              required:
+                - jid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/groups/groupRevokeInvite/{instanceName}:
+    post:
+      tags:
+        - Groups
+      summary: groupRevokeInvite
+      description: Invokes WASocket.groupRevokeInvite with named fields.
+      operationId: baileys_groupRevokeInvite
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+              required:
+                - jid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/groups/groupAcceptInvite/{instanceName}:
+    post:
+      tags:
+        - Groups
+      summary: groupAcceptInvite
+      description: Invokes WASocket.groupAcceptInvite with named fields.
+      operationId: baileys_groupAcceptInvite
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  description: string
+              required:
+                - code
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/groups/groupRevokeInviteV4/{instanceName}:
+    post:
+      tags:
+        - Groups
+      summary: groupRevokeInviteV4
+      description: Invokes WASocket.groupRevokeInviteV4 with named fields.
+      operationId: baileys_groupRevokeInviteV4
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                groupJid:
+                  type: string
+                  description: string
+                invitedJid:
+                  type: string
+                  description: string
+              required:
+                - groupJid
+                - invitedJid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/groups/groupAcceptInviteV4/{instanceName}:
+    post:
+      tags:
+        - Groups
+      summary: groupAcceptInviteV4
+      description: Invokes WASocket.groupAcceptInviteV4 with named fields.
+      operationId: baileys_groupAcceptInviteV4
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                key:
+                  anyOf:
+                    - type: string
+                      description: string
+                    - description: WAMessageKey
+                  description: string | WAMessageKey
+                inviteMessage:
+                  type: object
+                  properties:
+                    groupJid:
+                      type: string
+                      description: string
+                    inviteCode:
+                      type: string
+                      description: string
+                    inviteExpiration:
+                      anyOf:
+                        - type: number
+                          description: number
+                        - type: object
+                          additionalProperties: true
+                          description: Long
+                      description: number | Long
+                    groupName:
+                      type: string
+                      description: string
+                    jpegThumbnail:
+                      oneOf:
+                        - type: string
+                        - type: object
+                          properties:
+                            $base64:
+                              type: string
+                              format: byte
+                          required:
+                            - $base64
+                          additionalProperties: false
+                      description: Uint8Array<ArrayBufferLike>
+                    caption:
+                      type: string
+                      description: string
+                    contextInfo:
+                      type: object
+                      additionalProperties: true
+                      description: IContextInfo
+                    groupType:
+                      type: number
+                      enum:
+                        - 0
+                        - 1
+                      description: GroupType
+                  additionalProperties: false
+                  description: IGroupInviteMessage
+              required:
+                - key
+                - inviteMessage
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/groups/groupGetInviteInfo/{instanceName}:
+    post:
+      tags:
+        - Groups
+      summary: groupGetInviteInfo
+      description: Invokes WASocket.groupGetInviteInfo with named fields.
+      operationId: baileys_groupGetInviteInfo
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  description: string
+              required:
+                - code
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/groups/groupToggleEphemeral/{instanceName}:
+    post:
+      tags:
+        - Groups
+      summary: groupToggleEphemeral
+      description: Invokes WASocket.groupToggleEphemeral with named fields.
+      operationId: baileys_groupToggleEphemeral
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                ephemeralExpiration:
+                  type: number
+                  description: number
+              required:
+                - jid
+                - ephemeralExpiration
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/groups/groupSettingUpdate/{instanceName}:
+    post:
+      tags:
+        - Groups
+      summary: groupSettingUpdate
+      description: Invokes WASocket.groupSettingUpdate with named fields.
+      operationId: baileys_groupSettingUpdate
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                setting:
+                  type: string
+                  enum:
+                    - announcement
+                    - not_announcement
+                    - locked
+                    - unlocked
+                  description: '"announcement" | "not_announcement" | "locked" | "unlocked"'
+              required:
+                - jid
+                - setting
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/groups/groupMemberAddMode/{instanceName}:
+    post:
+      tags:
+        - Groups
+      summary: groupMemberAddMode
+      description: Invokes WASocket.groupMemberAddMode with named fields.
+      operationId: baileys_groupMemberAddMode
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                mode:
+                  type: string
+                  enum:
+                    - admin_add
+                    - all_member_add
+                  description: '"admin_add" | "all_member_add"'
+              required:
+                - jid
+                - mode
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/groups/groupJoinApprovalMode/{instanceName}:
+    post:
+      tags:
+        - Groups
+      summary: groupJoinApprovalMode
+      description: Invokes WASocket.groupJoinApprovalMode with named fields.
+      operationId: baileys_groupJoinApprovalMode
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                mode:
+                  type: string
+                  enum:
+                    - on
+                    - off
+                  description: '"on" | "off"'
+              required:
+                - jid
+                - mode
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/groups/groupFetchAllParticipating/{instanceName}:
+    post:
+      tags:
+        - Groups
+      summary: groupFetchAllParticipating
+      description: Invokes WASocket.groupFetchAllParticipating with named fields.
+      operationId: baileys_groupFetchAllParticipating
+      parameters:
+        - *a1
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/createCallLink/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: createCallLink
+      description: Invokes WASocket.createCallLink with named fields.
+      operationId: baileys_createCallLink
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - audio
+                    - video
+                  description: '"audio" | "video"'
+                event:
+                  type: object
+                  properties:
+                    startTime:
+                      type: number
+                      description: number
+                  required:
+                    - startTime
+                  additionalProperties: false
+                  description: "{ startTime: number; }"
+                timeoutMs:
+                  type: number
+                  description: number
+              required:
+                - type
+                - event
+                - timeoutMs
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/getBotListV2/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: getBotListV2
+      description: Invokes WASocket.getBotListV2 with named fields.
+      operationId: baileys_getBotListV2
+      parameters:
+        - *a1
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/sendPresenceUpdate/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: sendPresenceUpdate
+      description: Invokes WASocket.sendPresenceUpdate with named fields.
+      operationId: baileys_sendPresenceUpdate
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - unavailable
+                    - available
+                    - composing
+                    - recording
+                    - paused
+                  description: WAPresence
+                toJid:
+                  type: string
+                  description: string
+              required:
+                - type
+                - toJid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/presenceSubscribe/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: presenceSubscribe
+      description: Invokes WASocket.presenceSubscribe with named fields.
+      operationId: baileys_presenceSubscribe
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                toJid:
+                  type: string
+                  description: string
+              required:
+                - toJid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/fetchBlocklist/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: fetchBlocklist
+      description: Invokes WASocket.fetchBlocklist with named fields.
+      operationId: baileys_fetchBlocklist
+      parameters:
+        - *a1
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/fetchStatus/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: fetchStatus
+      description: Invokes WASocket.fetchStatus with named fields.
+      operationId: baileys_fetchStatus
+      parameters:
+        - *a1
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jids:
+                  type: array
+                  items:
+                    type: string
+                    description: string
+                  description: string[]
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/fetchDisappearingDuration/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: fetchDisappearingDuration
+      description: Invokes WASocket.fetchDisappearingDuration with named fields.
+      operationId: baileys_fetchDisappearingDuration
+      parameters:
+        - *a1
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jids:
+                  type: array
+                  items:
+                    type: string
+                    description: string
+                  description: string[]
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/updateProfilePicture/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: updateProfilePicture
+      description: Invokes WASocket.updateProfilePicture with named fields.
+      operationId: baileys_updateProfilePicture
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                content:
+                  anyOf:
+                    - type: string
+                    - type: object
+                      additionalProperties: true
+                    - type: object
+                      properties:
+                        $base64:
+                          type: string
+                          format: byte
+                      required:
+                        - $base64
+                      additionalProperties: false
+                  description: WAMediaUpload
+                dimensions:
+                  type: object
+                  properties:
+                    width:
+                      type: number
+                      description: number
+                    height:
+                      type: number
+                      description: number
+                  required:
+                    - width
+                    - height
+                  additionalProperties: false
+                  description: "{ width: number; height: number; }"
+              required:
+                - jid
+                - content
+                - dimensions
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/removeProfilePicture/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: removeProfilePicture
+      description: Invokes WASocket.removeProfilePicture with named fields.
+      operationId: baileys_removeProfilePicture
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+              required:
+                - jid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/updateProfileStatus/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: updateProfileStatus
+      description: Invokes WASocket.updateProfileStatus with named fields.
+      operationId: baileys_updateProfileStatus
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  description: string
+              required:
+                - status
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/updateProfileName/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: updateProfileName
+      description: Invokes WASocket.updateProfileName with named fields.
+      operationId: baileys_updateProfileName
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: string
+              required:
+                - name
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/updateBlockStatus/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: updateBlockStatus
+      description: Invokes WASocket.updateBlockStatus with named fields.
+      operationId: baileys_updateBlockStatus
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                action:
+                  type: string
+                  enum:
+                    - block
+                    - unblock
+                  description: '"block" | "unblock"'
+              required:
+                - jid
+                - action
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/updateDisableLinkPreviewsPrivacy/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: updateDisableLinkPreviewsPrivacy
+      description: Invokes WASocket.updateDisableLinkPreviewsPrivacy with named fields.
+      operationId: baileys_updateDisableLinkPreviewsPrivacy
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isPreviewsDisabled:
+                  anyOf:
+                    - type: boolean
+                      description: "false"
+                    - type: boolean
+                      description: "true"
+                  description: boolean
+              required:
+                - isPreviewsDisabled
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/updateCallPrivacy/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: updateCallPrivacy
+      description: Invokes WASocket.updateCallPrivacy with named fields.
+      operationId: baileys_updateCallPrivacy
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                value:
+                  type: string
+                  enum:
+                    - all
+                    - known
+                  description: WAPrivacyCallValue
+              required:
+                - value
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/updateMessagesPrivacy/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: updateMessagesPrivacy
+      description: Invokes WASocket.updateMessagesPrivacy with named fields.
+      operationId: baileys_updateMessagesPrivacy
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                value:
+                  type: string
+                  enum:
+                    - all
+                    - contacts
+                  description: WAPrivacyMessagesValue
+              required:
+                - value
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/updateLastSeenPrivacy/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: updateLastSeenPrivacy
+      description: Invokes WASocket.updateLastSeenPrivacy with named fields.
+      operationId: baileys_updateLastSeenPrivacy
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                value:
+                  type: string
+                  enum:
+                    - all
+                    - contacts
+                    - contact_blacklist
+                    - none
+                  description: WAPrivacyValue
+              required:
+                - value
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/updateOnlinePrivacy/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: updateOnlinePrivacy
+      description: Invokes WASocket.updateOnlinePrivacy with named fields.
+      operationId: baileys_updateOnlinePrivacy
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                value:
+                  type: string
+                  enum:
+                    - all
+                    - match_last_seen
+                  description: WAPrivacyOnlineValue
+              required:
+                - value
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/updateProfilePicturePrivacy/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: updateProfilePicturePrivacy
+      description: Invokes WASocket.updateProfilePicturePrivacy with named fields.
+      operationId: baileys_updateProfilePicturePrivacy
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                value:
+                  type: string
+                  enum:
+                    - all
+                    - contacts
+                    - contact_blacklist
+                    - none
+                  description: WAPrivacyValue
+              required:
+                - value
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/updateStatusPrivacy/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: updateStatusPrivacy
+      description: Invokes WASocket.updateStatusPrivacy with named fields.
+      operationId: baileys_updateStatusPrivacy
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                value:
+                  type: string
+                  enum:
+                    - all
+                    - contacts
+                    - contact_blacklist
+                    - none
+                  description: WAPrivacyValue
+              required:
+                - value
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/updateReadReceiptsPrivacy/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: updateReadReceiptsPrivacy
+      description: Invokes WASocket.updateReadReceiptsPrivacy with named fields.
+      operationId: baileys_updateReadReceiptsPrivacy
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                value:
+                  type: string
+                  enum:
+                    - all
+                    - none
+                  description: WAReadReceiptsValue
+              required:
+                - value
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/updateGroupsAddPrivacy/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: updateGroupsAddPrivacy
+      description: Invokes WASocket.updateGroupsAddPrivacy with named fields.
+      operationId: baileys_updateGroupsAddPrivacy
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                value:
+                  type: string
+                  enum:
+                    - all
+                    - contacts
+                    - contact_blacklist
+                  description: WAPrivacyGroupAddValue
+              required:
+                - value
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/updateDefaultDisappearingMode/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: updateDefaultDisappearingMode
+      description: Invokes WASocket.updateDefaultDisappearingMode with named fields.
+      operationId: baileys_updateDefaultDisappearingMode
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                duration:
+                  type: number
+                  description: number
+              required:
+                - duration
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/getBusinessProfile/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: getBusinessProfile
+      description: Invokes WASocket.getBusinessProfile with named fields.
+      operationId: baileys_getBusinessProfile
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+              required:
+                - jid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/resyncAppState/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: resyncAppState
+      description: Invokes WASocket.resyncAppState with named fields.
+      operationId: baileys_resyncAppState
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                collections:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - critical_block
+                      - critical_unblock_low
+                      - regular_high
+                      - regular_low
+                      - regular
+                    description: '"critical_block" | "critical_unblock_low" | "regular_high" | "regular_low" | "regular"'
+                  description: readonly ("critical_block" | "critical_unblock_low" | "regular_high" | "regular_low" | "regular")[]
+                isInitialSync:
+                  anyOf:
+                    - type: boolean
+                      description: "false"
+                    - type: boolean
+                      description: "true"
+                  description: boolean
+              required:
+                - collections
+                - isInitialSync
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/chatModify/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: chatModify
+      description: Invokes WASocket.chatModify with named fields.
+      operationId: baileys_chatModify
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mod:
+                  anyOf:
+                    - type: object
+                      properties:
+                        archive:
+                          anyOf:
+                            - type: boolean
+                              description: "false"
+                            - type: boolean
+                              description: "true"
+                          description: boolean
+                        lastMessages:
+                          anyOf:
+                            - type: array
+                              items:
+                                type: object
+                                additionalProperties: true
+                                description: MinimalMessage
+                              description: MinimalMessage[]
+                            - type: object
+                              properties:
+                                lastMessageTimestamp:
+                                  anyOf:
+                                    - type: number
+                                      description: number
+                                    - type: object
+                                      additionalProperties: true
+                                      description: Long
+                                  description: number | Long
+                                lastSystemMessageTimestamp:
+                                  anyOf:
+                                    - type: number
+                                      description: number
+                                    - type: object
+                                      additionalProperties: true
+                                      description: Long
+                                  description: number | Long
+                                messages:
+                                  type: array
+                                  items:
+                                    type: object
+                                    additionalProperties: true
+                                    description: ISyncActionMessage
+                                  description: ISyncActionMessage[]
+                              additionalProperties: false
+                              description: ISyncActionMessageRange
+                          description: LastMessageList
+                      required:
+                        - archive
+                        - lastMessages
+                      additionalProperties: false
+                      description: "{ archive: boolean; lastMessages: LastMessageList; }"
+                    - type: object
+                      properties:
+                        pushNameSetting:
+                          type: string
+                          description: string
+                      required:
+                        - pushNameSetting
+                      additionalProperties: false
+                      description: "{ pushNameSetting: string; }"
+                    - type: object
+                      properties:
+                        pin:
+                          anyOf:
+                            - type: boolean
+                              description: "false"
+                            - type: boolean
+                              description: "true"
+                          description: boolean
+                      required:
+                        - pin
+                      additionalProperties: false
+                      description: "{ pin: boolean; }"
+                    - type: object
+                      properties:
+                        mute:
+                          type: number
+                          description: number
+                      required:
+                        - mute
+                      additionalProperties: false
+                      description: "{ mute: number; }"
+                    - type: object
+                      properties:
+                        clear:
+                          anyOf:
+                            - type: boolean
+                              description: "false"
+                            - type: boolean
+                              description: "true"
+                          description: boolean
+                        lastMessages:
+                          anyOf:
+                            - type: array
+                              items:
+                                type: object
+                                additionalProperties: true
+                                description: MinimalMessage
+                              description: MinimalMessage[]
+                            - type: object
+                              properties:
+                                lastMessageTimestamp:
+                                  anyOf:
+                                    - type: number
+                                      description: number
+                                    - type: object
+                                      additionalProperties: true
+                                      description: Long
+                                  description: number | Long
+                                lastSystemMessageTimestamp:
+                                  anyOf:
+                                    - type: number
+                                      description: number
+                                    - type: object
+                                      additionalProperties: true
+                                      description: Long
+                                  description: number | Long
+                                messages:
+                                  type: array
+                                  items:
+                                    type: object
+                                    additionalProperties: true
+                                    description: ISyncActionMessage
+                                  description: ISyncActionMessage[]
+                              additionalProperties: false
+                              description: ISyncActionMessageRange
+                          description: LastMessageList
+                      required:
+                        - clear
+                        - lastMessages
+                      additionalProperties: false
+                      description: "{ clear: boolean; lastMessages: LastMessageList; }"
+                    - type: object
+                      properties:
+                        deleteForMe:
+                          type: object
+                          properties:
+                            deleteMedia:
+                              anyOf:
+                                - type: boolean
+                                  description: "false"
+                                - type: boolean
+                                  description: "true"
+                              description: boolean
+                            key:
+                              description: WAMessageKey
+                            timestamp:
+                              type: number
+                              description: number
+                          required:
+                            - deleteMedia
+                            - key
+                            - timestamp
+                          additionalProperties: false
+                          description: "{ deleteMedia: boolean; key: WAMessageKey; timestamp: number; }"
+                      required:
+                        - deleteForMe
+                      additionalProperties: false
+                      description: "{ deleteForMe: { deleteMedia: boolean; key: WAMessageKey; timestamp: number; }; }"
+                    - type: object
+                      properties:
+                        star:
+                          type: object
+                          properties:
+                            messages:
+                              type: array
+                              items:
+                                type: object
+                                additionalProperties: true
+                                description: "{ id: string; fromMe?: boolean; }"
+                              description: "{ id: string; fromMe?: boolean; }[]"
+                            star:
+                              anyOf:
+                                - type: boolean
+                                  description: "false"
+                                - type: boolean
+                                  description: "true"
+                              description: boolean
+                          required:
+                            - messages
+                            - star
+                          additionalProperties: false
+                          description: "{ messages: { id: string; fromMe?: boolean; }[]; star: boolean; }"
+                      required:
+                        - star
+                      additionalProperties: false
+                      description: "{ star: { messages: { id: string; fromMe?: boolean; }[]; star: boolean; }; }"
+                    - type: object
+                      properties:
+                        markRead:
+                          anyOf:
+                            - type: boolean
+                              description: "false"
+                            - type: boolean
+                              description: "true"
+                          description: boolean
+                        lastMessages:
+                          anyOf:
+                            - type: array
+                              items:
+                                type: object
+                                additionalProperties: true
+                                description: MinimalMessage
+                              description: MinimalMessage[]
+                            - type: object
+                              properties:
+                                lastMessageTimestamp:
+                                  anyOf:
+                                    - type: number
+                                      description: number
+                                    - type: object
+                                      additionalProperties: true
+                                      description: Long
+                                  description: number | Long
+                                lastSystemMessageTimestamp:
+                                  anyOf:
+                                    - type: number
+                                      description: number
+                                    - type: object
+                                      additionalProperties: true
+                                      description: Long
+                                  description: number | Long
+                                messages:
+                                  type: array
+                                  items:
+                                    type: object
+                                    additionalProperties: true
+                                    description: ISyncActionMessage
+                                  description: ISyncActionMessage[]
+                              additionalProperties: false
+                              description: ISyncActionMessageRange
+                          description: LastMessageList
+                      required:
+                        - markRead
+                        - lastMessages
+                      additionalProperties: false
+                      description: "{ markRead: boolean; lastMessages: LastMessageList; }"
+                    - type: object
+                      properties:
+                        delete:
+                          type: boolean
+                          description: "true"
+                        lastMessages:
+                          anyOf:
+                            - type: array
+                              items:
+                                type: object
+                                additionalProperties: true
+                                description: MinimalMessage
+                              description: MinimalMessage[]
+                            - type: object
+                              properties:
+                                lastMessageTimestamp:
+                                  anyOf:
+                                    - type: number
+                                      description: number
+                                    - type: object
+                                      additionalProperties: true
+                                      description: Long
+                                  description: number | Long
+                                lastSystemMessageTimestamp:
+                                  anyOf:
+                                    - type: number
+                                      description: number
+                                    - type: object
+                                      additionalProperties: true
+                                      description: Long
+                                  description: number | Long
+                                messages:
+                                  type: array
+                                  items:
+                                    type: object
+                                    additionalProperties: true
+                                    description: ISyncActionMessage
+                                  description: ISyncActionMessage[]
+                              additionalProperties: false
+                              description: ISyncActionMessageRange
+                          description: LastMessageList
+                      required:
+                        - delete
+                        - lastMessages
+                      additionalProperties: false
+                      description: "{ delete: true; lastMessages: LastMessageList; }"
+                    - type: object
+                      properties:
+                        contact:
+                          type: object
+                          properties:
+                            fullName:
+                              type: string
+                              description: string
+                            firstName:
+                              type: string
+                              description: string
+                            lidJid:
+                              type: string
+                              description: string
+                            saveOnPrimaryAddressbook:
+                              anyOf:
+                                - type: boolean
+                                  description: "false"
+                                - type: boolean
+                                  description: "true"
+                              description: boolean
+                            pnJid:
+                              type: string
+                              description: string
+                            username:
+                              type: string
+                              description: string
+                          additionalProperties: false
+                          description: IContactAction
+                      required:
+                        - contact
+                      additionalProperties: false
+                      description: "{ contact: IContactAction; }"
+                    - type: object
+                      properties:
+                        disableLinkPreviews:
+                          type: object
+                          properties:
+                            isPreviewsDisabled:
+                              anyOf:
+                                - type: boolean
+                                  description: "false"
+                                - type: boolean
+                                  description: "true"
+                              description: boolean
+                          additionalProperties: false
+                          description: IPrivacySettingDisableLinkPreviewsAction
+                      required:
+                        - disableLinkPreviews
+                      additionalProperties: false
+                      description: "{ disableLinkPreviews: IPrivacySettingDisableLinkPreviewsAction; }"
+                    - type: object
+                      properties:
+                        addLabel:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              description: string
+                            name:
+                              type: string
+                              description: string
+                            color:
+                              type: number
+                              description: number
+                            deleted:
+                              anyOf:
+                                - type: boolean
+                                  description: "false"
+                                - type: boolean
+                                  description: "true"
+                              description: boolean
+                            predefinedId:
+                              type: number
+                              description: number
+                          required:
+                            - id
+                          additionalProperties: false
+                          description: LabelActionBody
+                      required:
+                        - addLabel
+                      additionalProperties: false
+                      description: "{ addLabel: LabelActionBody; }"
+                    - type: object
+                      properties:
+                        addChatLabel:
+                          type: object
+                          properties:
+                            labelId:
+                              type: string
+                              description: string
+                          required:
+                            - labelId
+                          additionalProperties: false
+                          description: ChatLabelAssociationActionBody
+                      required:
+                        - addChatLabel
+                      additionalProperties: false
+                      description: "{ addChatLabel: ChatLabelAssociationActionBody; }"
+                    - type: object
+                      properties:
+                        removeChatLabel:
+                          type: object
+                          properties:
+                            labelId:
+                              type: string
+                              description: string
+                          required:
+                            - labelId
+                          additionalProperties: false
+                          description: ChatLabelAssociationActionBody
+                      required:
+                        - removeChatLabel
+                      additionalProperties: false
+                      description: "{ removeChatLabel: ChatLabelAssociationActionBody; }"
+                    - type: object
+                      properties:
+                        addMessageLabel:
+                          type: object
+                          properties:
+                            labelId:
+                              type: string
+                              description: string
+                            messageId:
+                              type: string
+                              description: string
+                          required:
+                            - labelId
+                            - messageId
+                          additionalProperties: false
+                          description: MessageLabelAssociationActionBody
+                      required:
+                        - addMessageLabel
+                      additionalProperties: false
+                      description: "{ addMessageLabel: MessageLabelAssociationActionBody; }"
+                    - type: object
+                      properties:
+                        removeMessageLabel:
+                          type: object
+                          properties:
+                            labelId:
+                              type: string
+                              description: string
+                            messageId:
+                              type: string
+                              description: string
+                          required:
+                            - labelId
+                            - messageId
+                          additionalProperties: false
+                          description: MessageLabelAssociationActionBody
+                      required:
+                        - removeMessageLabel
+                      additionalProperties: false
+                      description: "{ removeMessageLabel: MessageLabelAssociationActionBody; }"
+                    - type: object
+                      properties:
+                        quickReply:
+                          description: QuickReplyAction
+                      required:
+                        - quickReply
+                      additionalProperties: false
+                      description: "{ quickReply: QuickReplyAction; }"
+                  description: ChatModification
+                jid:
+                  type: string
+                  description: string
+              required:
+                - mod
+                - jid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/cleanDirtyBits/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: cleanDirtyBits
+      description: Invokes WASocket.cleanDirtyBits with named fields.
+      operationId: baileys_cleanDirtyBits
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - account_sync
+                    - groups
+                  description: '"account_sync" | "groups"'
+                fromTimestamp:
+                  anyOf:
+                    - type: string
+                      description: string
+                    - type: number
+                      description: number
+                  description: string | number
+              required:
+                - type
+                - fromTimestamp
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/addOrEditContact/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: addOrEditContact
+      description: Invokes WASocket.addOrEditContact with named fields.
+      operationId: baileys_addOrEditContact
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                contact:
+                  type: object
+                  properties:
+                    fullName:
+                      type: string
+                      description: string
+                    firstName:
+                      type: string
+                      description: string
+                    lidJid:
+                      type: string
+                      description: string
+                    saveOnPrimaryAddressbook:
+                      anyOf:
+                        - type: boolean
+                          description: "false"
+                        - type: boolean
+                          description: "true"
+                      description: boolean
+                    pnJid:
+                      type: string
+                      description: string
+                    username:
+                      type: string
+                      description: string
+                  additionalProperties: false
+                  description: IContactAction
+              required:
+                - jid
+                - contact
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/removeContact/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: removeContact
+      description: Invokes WASocket.removeContact with named fields.
+      operationId: baileys_removeContact
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+              required:
+                - jid
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/addLabel/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: addLabel
+      description: Invokes WASocket.addLabel with named fields.
+      operationId: baileys_addLabel
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                labels:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: string
+                    name:
+                      type: string
+                      description: string
+                    color:
+                      type: number
+                      description: number
+                    deleted:
+                      anyOf:
+                        - type: boolean
+                          description: "false"
+                        - type: boolean
+                          description: "true"
+                      description: boolean
+                    predefinedId:
+                      type: number
+                      description: number
+                  required:
+                    - id
+                  additionalProperties: false
+                  description: LabelActionBody
+              required:
+                - jid
+                - labels
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/addChatLabel/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: addChatLabel
+      description: Invokes WASocket.addChatLabel with named fields.
+      operationId: baileys_addChatLabel
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                labelId:
+                  type: string
+                  description: string
+              required:
+                - jid
+                - labelId
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/removeChatLabel/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: removeChatLabel
+      description: Invokes WASocket.removeChatLabel with named fields.
+      operationId: baileys_removeChatLabel
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                labelId:
+                  type: string
+                  description: string
+              required:
+                - jid
+                - labelId
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/addMessageLabel/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: addMessageLabel
+      description: Invokes WASocket.addMessageLabel with named fields.
+      operationId: baileys_addMessageLabel
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                messageId:
+                  type: string
+                  description: string
+                labelId:
+                  type: string
+                  description: string
+              required:
+                - jid
+                - messageId
+                - labelId
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/removeMessageLabel/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: removeMessageLabel
+      description: Invokes WASocket.removeMessageLabel with named fields.
+      operationId: baileys_removeMessageLabel
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                messageId:
+                  type: string
+                  description: string
+                labelId:
+                  type: string
+                  description: string
+              required:
+                - jid
+                - messageId
+                - labelId
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/star/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: star
+      description: Invokes WASocket.star with named fields.
+      operationId: baileys_star
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jid:
+                  type: string
+                  description: string
+                messages:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: string
+                      fromMe:
+                        anyOf:
+                          - type: boolean
+                            description: "false"
+                          - type: boolean
+                            description: "true"
+                        description: boolean
+                    required:
+                      - id
+                    additionalProperties: false
+                    description: "{ id: string; fromMe?: boolean; }"
+                  description: "{ id: string; fromMe?: boolean; }[]"
+                star:
+                  anyOf:
+                    - type: boolean
+                      description: "false"
+                    - type: boolean
+                      description: "true"
+                  description: boolean
+              required:
+                - jid
+                - messages
+                - star
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/addOrEditQuickReply/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: addOrEditQuickReply
+      description: Invokes WASocket.addOrEditQuickReply with named fields.
+      operationId: baileys_addOrEditQuickReply
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quickReply:
+                  description: QuickReplyAction
+              required:
+                - quickReply
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/removeQuickReply/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: removeQuickReply
+      description: Invokes WASocket.removeQuickReply with named fields.
+      operationId: baileys_removeQuickReply
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                timestamp:
+                  type: string
+                  description: string
+              required:
+                - timestamp
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/fetchAccountReachoutTimelock/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: fetchAccountReachoutTimelock
+      description: Invokes WASocket.fetchAccountReachoutTimelock with named fields.
+      operationId: baileys_fetchAccountReachoutTimelock
+      parameters:
+        - *a1
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/account/fetchNewChatMessageCap/{instanceName}:
+    post:
+      tags:
+        - Account & privacy
+      summary: fetchNewChatMessageCap
+      description: Invokes WASocket.fetchNewChatMessageCap with named fields.
+      operationId: baileys_fetchNewChatMessageCap
+      parameters:
+        - *a1
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/advanced/appPatch/{instanceName}:
+    post:
+      tags:
+        - Advanced protocol
+      summary: appPatch
+      description: Invokes WASocket.appPatch with named fields.
+      operationId: baileys_appPatch
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                patchCreate:
+                  type: object
+                  properties:
+                    syncAction:
+                      type: object
+                      additionalProperties: true
+                      description: ISyncActionValue
+                    index:
+                      type: array
+                      items:
+                        type: string
+                        description: string
+                      description: string[]
+                    type:
+                      type: string
+                      enum:
+                        - critical_block
+                        - critical_unblock_low
+                        - regular_high
+                        - regular_low
+                        - regular
+                      description: '"critical_block" | "critical_unblock_low" | "regular_high" | "regular_low" | "regular"'
+                    apiVersion:
+                      type: number
+                      description: number
+                    operation:
+                      type: number
+                      enum:
+                        - 0
+                        - 1
+                      description: SyncdOperation
+                  required:
+                    - syncAction
+                    - index
+                    - type
+                    - apiVersion
+                    - operation
+                  additionalProperties: false
+                  description: WAPatchCreate
+              required:
+                - patchCreate
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/advanced/query/{instanceName}:
+    post:
+      tags:
+        - Advanced protocol
+      summary: query
+      description: Invokes WASocket.query with named fields.
+      operationId: baileys_query
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                node:
+                  type: object
+                  properties:
+                    tag:
+                      type: string
+                      description: string
+                    attrs:
+                      type: object
+                      additionalProperties: true
+                      description: "{ [key: string]: string; }"
+                    content:
+                      oneOf:
+                        - type: string
+                        - type: object
+                          properties:
+                            $base64:
+                              type: string
+                              format: byte
+                          required:
+                            - $base64
+                          additionalProperties: false
+                      description: string | Uint8Array<ArrayBufferLike> | BinaryNode[]
+                  required:
+                    - tag
+                    - attrs
+                  additionalProperties: false
+                  description: BinaryNode
+                timeoutMs:
+                  type: number
+                  description: number
+              required:
+                - node
+                - timeoutMs
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/advanced/sendRawMessage/{instanceName}:
+    post:
+      tags:
+        - Advanced protocol
+      summary: sendRawMessage
+      description: Invokes WASocket.sendRawMessage with named fields.
+      operationId: baileys_sendRawMessage
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  oneOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        $base64:
+                          type: string
+                          format: byte
+                      required:
+                        - $base64
+                      additionalProperties: false
+                  description: Uint8Array<ArrayBufferLike> | Buffer<ArrayBufferLike>
+              required:
+                - data
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/advanced/uploadPreKeys/{instanceName}:
+    post:
+      tags:
+        - Advanced protocol
+      summary: uploadPreKeys
+      description: Invokes WASocket.uploadPreKeys with named fields.
+      operationId: baileys_uploadPreKeys
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                count:
+                  type: number
+                  description: number
+              required:
+                - count
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/advanced/uploadPreKeysToServerIfRequired/{instanceName}:
+    post:
+      tags:
+        - Advanced protocol
+      summary: uploadPreKeysToServerIfRequired
+      description: Invokes WASocket.uploadPreKeysToServerIfRequired with named fields.
+      operationId: baileys_uploadPreKeysToServerIfRequired
+      parameters:
+        - *a1
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/advanced/digestKeyBundle/{instanceName}:
+    post:
+      tags:
+        - Advanced protocol
+      summary: digestKeyBundle
+      description: Invokes WASocket.digestKeyBundle with named fields.
+      operationId: baileys_digestKeyBundle
+      parameters:
+        - *a1
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/advanced/rotateSignedPreKey/{instanceName}:
+    post:
+      tags:
+        - Advanced protocol
+      summary: rotateSignedPreKey
+      description: Invokes WASocket.rotateSignedPreKey with named fields.
+      operationId: baileys_rotateSignedPreKey
+      parameters:
+        - *a1
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/advanced/requestPairingCode/{instanceName}:
+    post:
+      tags:
+        - Advanced protocol
+      summary: requestPairingCode
+      description: Invokes WASocket.requestPairingCode with named fields.
+      operationId: baileys_requestPairingCode
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phoneNumber:
+                  type: string
+                  description: string
+                customPairingCode:
+                  type: string
+                  description: string
+              required:
+                - phoneNumber
+                - customPairingCode
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/advanced/sendUnifiedSession/{instanceName}:
+    post:
+      tags:
+        - Advanced protocol
+      summary: sendUnifiedSession
+      description: Invokes WASocket.sendUnifiedSession with named fields.
+      operationId: baileys_sendUnifiedSession
+      parameters:
+        - *a1
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
+  /baileys/advanced/sendWAMBuffer/{instanceName}:
+    post:
+      tags:
+        - Advanced protocol
+      summary: sendWAMBuffer
+      description: Invokes WASocket.sendWAMBuffer with named fields.
+      operationId: baileys_sendWAMBuffer
+      parameters:
+        - *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                wamBuffer:
+                  oneOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        $base64:
+                          type: string
+                          format: byte
+                      required:
+                        - $base64
+                      additionalProperties: false
+                  description: Buffer<ArrayBufferLike>
+              required:
+                - wamBuffer
+              additionalProperties: false
+      responses:
+        "200": *a2
+        "400":
+          description: Invalid method parameters.
   /baileys/{method}/{instanceName}:
     post:
-      tags: [Baileys]
-      operationId: invokeBaileysMethod
-      summary: Invoke an HTTP-compatible Baileys socket method
-      description: |
-        Every value in the `method` enum is mounted as a literal API path. The `args`
-        array follows the order documented in the Baileys API reference. Existing
-        compatibility paths such as `onWhatsapp`, `profilePictureUrl`, `assertSessions`,
-        `createParticipantNodes`, `getUSyncDevices`, `generateMessageTag`, `sendNode`,
-        `signalRepositoryDecryptMessage`, and `getAuthState` remain available with their
-        original request bodies.
+      deprecated: true
+      tags:
+        - Legacy
+      summary: Invoke a method with an ordered args array
+      description: Compatibility route. Prefer the grouped method-specific routes with named fields.
+      operationId: invokeBaileysLegacy
       parameters:
         - name: method
           in: path
           required: true
-          description: HTTP-compatible method from the Baileys WASocket API.
           schema:
             type: string
             enum:
@@ -189,90 +5295,35 @@ paths:
               - requestPairingCode
               - sendUnifiedSession
               - sendWAMBuffer
-        - $ref: '#/components/parameters/InstanceName'
+        - *a1
       requestBody:
-        required: false
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BaileysInvocation'
-            examples:
-              profileStatus:
-                summary: Update the connected account profile status
-                value:
-                  args: [Available through Evolution API]
-              binaryArgument:
-                summary: Pass bytes to a method that accepts Buffer or Uint8Array
-                value:
-                  args:
-                    - $base64: SGVsbG8=
+              type: object
+              properties:
+                args:
+                  type: array
+                  items: {}
+              additionalProperties: false
       responses:
-        '200':
-          description: Serialized Baileys method result
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BaileysResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          description: Baileys or Evolution API execution error
+        "200": *a2
 components:
   securitySchemes:
     ApiKeyAuth:
       type: apiKey
       in: header
       name: apikey
-  parameters:
-    InstanceName:
-      name: instanceName
-      in: path
-      required: true
-      description: Connected Evolution API instance name.
-      schema:
-        type: string
   schemas:
-    BaileysInvocation:
-      type: object
-      additionalProperties: false
-      properties:
-        args:
-          type: array
-          description: Ordered arguments from the corresponding Baileys method signature.
-          items: {}
-      examples:
-        - args: []
-    BaileysResult:
-      type: object
-      required: [method, result]
-      properties:
-        method:
-          type: string
-        result:
-          description: JSON-safe result. Binary values are represented with `$base64`.
-    Error:
-      type: object
-      additionalProperties: true
-  responses:
-    BadRequest:
-      description: Invalid request body, method, or arguments
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    Unauthorized:
-      description: Missing or invalid API key
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    NotFound:
-      description: Evolution API instance not found
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+    BinaryValue:
+      oneOf:
+        - type: string
+          description: A normal string when the Baileys type permits it.
+        - type: object
+          properties:
+            $base64:
+              type: string
+              format: byte
+          required:
+            - $base64
+          additionalProperties: false

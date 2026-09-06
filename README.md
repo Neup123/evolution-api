@@ -140,9 +140,20 @@ If the GitHub package is private, authenticate once with a GitHub token that has
 
 ### Baileys API and Swagger
 
-This fork exposes the HTTP-compatible Baileys 7 socket methods at
-`POST /baileys/<method>/:instanceName`. Send the ordered Baileys arguments as `{ "args": [...] }`.
-Binary arguments and results use `{ "$base64": "..." }`. The live method registry is available at
+This fork exposes typed Baileys 7 socket methods at
+`POST /baileys/<group>/<method>/:instanceName`. Request bodies use named fields generated from the Baileys
+TypeScript signatures. For example, `communityParticipantsUpdate` accepts:
+
+```json
+{
+  "jid": "120363000000000000@g.us",
+  "participants": ["5511999999999@s.whatsapp.net"],
+  "action": "add"
+}
+```
+
+The legacy `POST /baileys/<method>/:instanceName` route with `{ "args": [...] }` remains available. Binary
+arguments and results use `{ "$base64": "..." }`. The live method registry is available at
 `GET /baileys/methods/:instanceName`, and Swagger UI is served at `/docs` unless
 `SERVER_DISABLE_DOCS=true`. The source specification is in [`docs/openapi.yaml`](docs/openapi.yaml).
 
