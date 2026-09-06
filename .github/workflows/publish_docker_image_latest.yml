@@ -1,9 +1,7 @@
-name: Build Docker image
+name: Legacy Docker Hub latest publish (manual)
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   build_deploy:
