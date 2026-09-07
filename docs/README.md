@@ -97,6 +97,10 @@ The migration copies every legacy `Webhook` row into `WebhookEndpoint` with the 
 
 All events exposed by the installed Baileys event map are available for local and global webhooks, except `contacts.set`, which Baileys 7 no longer emits. In addition to the established message, contact, chat, group, call, label, presence, and connection events, the API relays history status, LID mapping, media updates, reactions, receipts, group join requests/member tags, blocklist updates, newsletter events, message capping, chat locks, and settings updates. `CREDS_UPDATE` contains only instance metadata and never credentials.
 
+For blocklist snapshots, mutations, LID/phone-number mapping requirements, and
+the exact `BLOCKLIST_SET` and `BLOCKLIST_UPDATE` cache semantics, see
+[WhatsApp blocklist behavior](webhooks.md#whatsapp-blocklist-behavior).
+
 ## Baileys references
 
 This is a REST adapter, not a replacement for Baileys behavior. See [Baileys documentation](https://baileys.wiki/) for JIDs, events, and protocol concepts, and the [Baileys repository](https://github.com/WhiskeySockets/Baileys) for source-level details and migration notes. Baileys is unofficial; use WhatsApp automation responsibly and in line with WhatsApp's terms.

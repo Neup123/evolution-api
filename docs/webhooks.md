@@ -115,3 +115,91 @@ Webhook delivery can be retried. Make downstream writes idempotent. For messages
 - `CONTACTS_SET` remains selectable for compatibility, but Baileys 7 currently does not emit it.
 - Protobuf/WhatsApp payloads evolve. Documented objects allow additional fields; workflows should read the fields they need and tolerate unknown fields.
 - Numbers represented internally as protobuf `Long` values can arrive as JSON numbers or strings. Convert explicitly in n8n before arithmetic.
+
+## WhatsApp blocklist behavior
+
+The blocklist belongs to the connected WhatsApp account. It is not scoped to an
+Evolution instance workflow, group, or community. Use it when the WhatsApp
+account itself considers a contact blocked. Keep application-specific deny
+lists separately when blocking the contact at the WhatsApp account level would
+be too broad.
+
+### Read the current blocklist
+
+Baileys `fetchBlocklist()` sends an IQ `get` request to WhatsApp's `blocklist`
+namespace and returns the JIDs from the response's `list/item` elements. Through
+the generic Baileys REST adapter, call:
+
+```http
+POST /baileys/call/{instanceName}
+Content-Type: application/json
+apikey: your-api-key
+
+{
+  "method": "fetchBlocklist",
+  "args": []
+}
+```
+
+The method result is an array of user JIDs. Depending on WhatsApp's identity
+data and the Baileys version, entries can use a phone-number JID or LID. Compare
+against both identities when both are available; do not compare only the digits
+from one representation.
+
+`fetchBlocklist()` is an authoritative snapshot at the moment of the request.
+It is preferable to reconstructing block state from webhook history, because a
+consumer may have missed an event while it was offline.
+
+### Block or unblock a contact
+
+There are two REST surfaces:
+
+- `POST /chat/updateBlockStatus/{instanceName}` accepts `number` and `status`,
+  where `status` is `block` or `unblock`. Evolution resolves the number through
+  `whatsappNumber()` and then calls Baileys.
+- The generic Baileys adapter exposes `updateBlockStatus(jid, action)`, where
+  `action` is `block` or `unblock`.
+
+Baileys 7 normalizes the supplied JID and requires a known mapping between the
+contact's LID and phone-number JID. Blocking sends both identities to WhatsApp;
+unblocking sends the LID. If the mapping cannot be resolved, Baileys rejects the
+operation instead of guessing. A successful Evolution `updateBlockStatus`
+response confirms that WhatsApp accepted the request; use `fetchBlocklist()` if
+the caller needs to verify the resulting snapshot.
+
+### Blocklist webhooks
+
+The events are notifications, not commands:
+
+```json
+{
+  "event": "blocklist.set",
+  "instance": "example",
+  "data": {
+    "blocklist": ["15551234567@s.whatsapp.net"]
+  }
+}
+```
+
+`blocklist.set` is the complete list received during connection initialization
+or synchronization. Replace a cached snapshot with its `data.blocklist` value.
+
+```json
+{
+  "event": "blocklist.update",
+  "instance": "example",
+  "data": {
+    "blocklist": ["15551234567@s.whatsapp.net"],
+    "type": "add"
+  }
+}
+```
+
+`blocklist.update` is incremental. Add all `data.blocklist` entries when
+`data.type` is `add`, and remove them when it is `remove`. Delivery can be
+missed or duplicated, so periodic or decision-time `fetchBlocklist()` calls
+remain the source of truth.
+
+Blocking is account-wide and should not be used merely to reject a group join
+request unless the same person should also be blocked from direct contact with
+the connected WhatsApp account.
