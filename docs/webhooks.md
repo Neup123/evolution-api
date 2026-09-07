@@ -131,14 +131,11 @@ namespace and returns the JIDs from the response's `list/item` elements. Through
 the generic Baileys REST adapter, call:
 
 ```http
-POST /baileys/call/{instanceName}
+POST /baileys/account/fetchBlocklist/{instanceName}
 Content-Type: application/json
 apikey: your-api-key
 
-{
-  "method": "fetchBlocklist",
-  "args": []
-}
+{}
 ```
 
 The method result is an array of user JIDs. Depending on WhatsApp's identity
@@ -157,8 +154,10 @@ There are two REST surfaces:
 - `POST /chat/updateBlockStatus/{instanceName}` accepts `number` and `status`,
   where `status` is `block` or `unblock`. Evolution resolves the number through
   `whatsappNumber()` and then calls Baileys.
-- The generic Baileys adapter exposes `updateBlockStatus(jid, action)`, where
-  `action` is `block` or `unblock`.
+- `POST /baileys/account/updateBlockStatus/{instanceName}` accepts named `jid`
+  and `action` fields, where `action` is `block` or `unblock`.
+- The compatibility route `POST /baileys/updateBlockStatus/{instanceName}`
+  accepts the positional body `{ "args": [jid, action] }`.
 
 Baileys 7 normalizes the supplied JID and requires a known mapping between the
 contact's LID and phone-number JID. Blocking sends both identities to WhatsApp;
