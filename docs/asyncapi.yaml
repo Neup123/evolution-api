@@ -1,0 +1,5714 @@
+asyncapi: 2.6.0
+id: https://github.com/Neup123/evolution-api/docs/asyncapi.yaml
+info:
+  title: Evolution API Webhook Events
+  version: 2.3.7-baileys-7.0.0-rc14
+  description: >-
+    Consumer-facing contract for webhook HTTP POST requests emitted by this Evolution API fork.
+
+
+    The documented payload is the complete HTTP body received by n8n. `data` varies by event. Schemas intentionally
+    allow additional Baileys/protobuf fields so compatible upstream additions do not break consumers.
+
+
+    When webhook-by-event is disabled, every message is posted to the configured URL. When enabled, Evolution appends
+    the kebab-case suffix shown as the channel address.
+  contact:
+    name: Neup123 Evolution API fork
+    url: https://github.com/Neup123/evolution-api
+    email: Neup123@users.noreply.github.com
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+defaultContentType: application/json
+servers:
+  webhookReceiver:
+    url: n8n.example/webhook/evolution
+    protocol: https
+    description: Your configured webhook base URL. Replace this example with the n8n production URL.
+    security: []
+channels:
+  /application-startup:
+    description: Server application started. This suffix is appended only when webhook-by-event is enabled. Without that
+      option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveApplicationStartup
+      summary: Server application started
+      description: Global webhook event; it may not be associated with a connected instance.
+      message:
+        $ref: "#/components/messages/APPLICATION_STARTUP"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Lifecycle
+  /instance-create:
+    description: Instance created. This suffix is appended only when webhook-by-event is enabled. Without that option, all
+      event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveInstanceCreate
+      summary: Instance created
+      message:
+        $ref: "#/components/messages/INSTANCE_CREATE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Lifecycle
+  /instance-delete:
+    description: Instance deleted. This suffix is appended only when webhook-by-event is enabled. Without that option, all
+      event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveInstanceDelete
+      summary: Instance deleted
+      message:
+        $ref: "#/components/messages/INSTANCE_DELETE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Lifecycle
+  /qrcode-updated:
+    description: QR or pairing code changed. This suffix is appended only when webhook-by-event is enabled. Without that
+      option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveQrcodeUpdated
+      summary: QR or pairing code changed
+      message:
+        $ref: "#/components/messages/QRCODE_UPDATED"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Connection
+  /connection-update:
+    description: WhatsApp connection state changed. This suffix is appended only when webhook-by-event is enabled. Without
+      that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveConnectionUpdate
+      summary: WhatsApp connection state changed
+      message:
+        $ref: "#/components/messages/CONNECTION_UPDATE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Connection
+  /status-instance:
+    description: Evolution instance status changed. This suffix is appended only when webhook-by-event is enabled. Without
+      that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveStatusInstance
+      summary: Evolution instance status changed
+      message:
+        $ref: "#/components/messages/STATUS_INSTANCE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Connection
+  /messages-set:
+    description: Historical messages batch prepared. This suffix is appended only when webhook-by-event is enabled. Without
+      that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveMessagesSet
+      summary: Historical messages batch prepared
+      description: "`isLatest` and `progress` can also appear at envelope level."
+      message:
+        $ref: "#/components/messages/MESSAGES_SET"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Messages
+  /messages-upsert:
+    description: One new or newly synchronized message. This suffix is appended only when webhook-by-event is enabled.
+      Without that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveMessagesUpsert
+      summary: One new or newly synchronized message
+      description: Evolution emits one prepared message per HTTP delivery, not the Baileys `{ messages, type }` batch.
+      message:
+        $ref: "#/components/messages/MESSAGES_UPSERT"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Messages
+  /messages-edited:
+    description: Message edit protocol action received. This suffix is appended only when webhook-by-event is enabled.
+      Without that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveMessagesEdited
+      summary: Message edit protocol action received
+      message:
+        $ref: "#/components/messages/MESSAGES_EDITED"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Messages
+  /messages-update:
+    description: Message status or content updated. This suffix is appended only when webhook-by-event is enabled. Without
+      that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveMessagesUpdate
+      summary: Message status or content updated
+      message:
+        $ref: "#/components/messages/MESSAGES_UPDATE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Messages
+  /messages-delete:
+    description: Message or chat messages deleted. This suffix is appended only when webhook-by-event is enabled. Without
+      that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveMessagesDelete
+      summary: Message or chat messages deleted
+      description: Shape depends on whether deletion came from a WhatsApp update or an Evolution API delete operation.
+      message:
+        $ref: "#/components/messages/MESSAGES_DELETE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Messages
+  /send-message:
+    description: Evolution sent a message. This suffix is appended only when webhook-by-event is enabled. Without that
+      option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveSendMessage
+      summary: Evolution sent a message
+      message:
+        $ref: "#/components/messages/SEND_MESSAGE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Messages
+  /send-message-update:
+    description: A sent message edit was confirmed. This suffix is appended only when webhook-by-event is enabled. Without
+      that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveSendMessageUpdate
+      summary: A sent message edit was confirmed
+      message:
+        $ref: "#/components/messages/SEND_MESSAGE_UPDATE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Messages
+  /contacts-set:
+    description: Initial contacts batch. This suffix is appended only when webhook-by-event is enabled. Without that option,
+      all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveContactsSet
+      summary: Initial contacts batch
+      description: Retained for compatibility; Baileys 7 does not currently emit contacts.set.
+      message:
+        $ref: "#/components/messages/CONTACTS_SET"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Contacts
+  /contacts-upsert:
+    description: Contacts inserted or replaced. This suffix is appended only when webhook-by-event is enabled. Without that
+      option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveContactsUpsert
+      summary: Contacts inserted or replaced
+      message:
+        $ref: "#/components/messages/CONTACTS_UPSERT"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Contacts
+  /contacts-update:
+    description: Contacts changed. This suffix is appended only when webhook-by-event is enabled. Without that option, all
+      event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveContactsUpdate
+      summary: Contacts changed
+      message:
+        $ref: "#/components/messages/CONTACTS_UPDATE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Contacts
+  /presence-update:
+    description: Typing, recording, online, or unavailable presence changed. This suffix is appended only when
+      webhook-by-event is enabled. Without that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receivePresenceUpdate
+      summary: Typing, recording, online, or unavailable presence changed
+      message:
+        $ref: "#/components/messages/PRESENCE_UPDATE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Contacts
+  /chats-set:
+    description: Initial/history chats batch prepared. This suffix is appended only when webhook-by-event is enabled.
+      Without that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveChatsSet
+      summary: Initial/history chats batch prepared
+      message:
+        $ref: "#/components/messages/CHATS_SET"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Chats
+  /chats-upsert:
+    description: Chats inserted or replaced. This suffix is appended only when webhook-by-event is enabled. Without that
+      option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveChatsUpsert
+      summary: Chats inserted or replaced
+      message:
+        $ref: "#/components/messages/CHATS_UPSERT"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Chats
+  /chats-update:
+    description: Chats changed. This suffix is appended only when webhook-by-event is enabled. Without that option, all
+      event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveChatsUpdate
+      summary: Chats changed
+      message:
+        $ref: "#/components/messages/CHATS_UPDATE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Chats
+  /chats-delete:
+    description: Chats deleted. This suffix is appended only when webhook-by-event is enabled. Without that option, all
+      event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveChatsDelete
+      summary: Chats deleted
+      message:
+        $ref: "#/components/messages/CHATS_DELETE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Chats
+  /groups-upsert:
+    description: Group metadata inserted or replaced. This suffix is appended only when webhook-by-event is enabled. Without
+      that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveGroupsUpsert
+      summary: Group metadata inserted or replaced
+      message:
+        $ref: "#/components/messages/GROUPS_UPSERT"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Groups
+  /groups-update:
+    description: Group metadata changed. This suffix is appended only when webhook-by-event is enabled. Without that option,
+      all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveGroupsUpdate
+      summary: Group metadata changed
+      message:
+        $ref: "#/components/messages/GROUPS_UPDATE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Groups
+  /group-participants-update:
+    description: Group members added, removed, promoted, demoted, or modified. This suffix is appended only when
+      webhook-by-event is enabled. Without that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveGroupParticipantsUpdate
+      summary: Group members added, removed, promoted, demoted, or modified
+      message:
+        $ref: "#/components/messages/GROUP_PARTICIPANTS_UPDATE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Groups
+  /group-join-request:
+    description: Group join request created, revoked, or rejected. This suffix is appended only when webhook-by-event is
+      enabled. Without that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveGroupJoinRequest
+      summary: Group join request created, revoked, or rejected
+      description: "`action`: created, revoked, or rejected. `method`: invite_link, linked_group_join, or non_admin_add."
+      message:
+        $ref: "#/components/messages/GROUP_JOIN_REQUEST"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Groups
+  /group-member-tag-update:
+    description: Group member tag/label changed. This suffix is appended only when webhook-by-event is enabled. Without that
+      option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveGroupMemberTagUpdate
+      summary: Group member tag/label changed
+      message:
+        $ref: "#/components/messages/GROUP_MEMBER_TAG_UPDATE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Groups
+  /call:
+    description: Call state changed. This suffix is appended only when webhook-by-event is enabled. Without that option, all
+      event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveCall
+      summary: Call state changed
+      message:
+        $ref: "#/components/messages/CALL"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Calls
+  /typebot-start:
+    description: Typebot session started. This suffix is appended only when webhook-by-event is enabled. Without that
+      option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveTypebotStart
+      summary: Typebot session started
+      message:
+        $ref: "#/components/messages/TYPEBOT_START"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Chatbots
+  /typebot-change-status:
+    description: Typebot session status changed. This suffix is appended only when webhook-by-event is enabled. Without that
+      option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveTypebotChangeStatus
+      summary: Typebot session status changed
+      description: Fields vary with the Typebot integration transition that emitted the event.
+      message:
+        $ref: "#/components/messages/TYPEBOT_CHANGE_STATUS"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Chatbots
+  /labels-edit:
+    description: WhatsApp label created, changed, or deleted. This suffix is appended only when webhook-by-event is enabled.
+      Without that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveLabelsEdit
+      summary: WhatsApp label created, changed, or deleted
+      message:
+        $ref: "#/components/messages/LABELS_EDIT"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Labels
+  /labels-association:
+    description: Label attached to or removed from a chat. This suffix is appended only when webhook-by-event is enabled.
+      Without that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveLabelsAssociation
+      summary: Label attached to or removed from a chat
+      description: "`type` is add or remove."
+      message:
+        $ref: "#/components/messages/LABELS_ASSOCIATION"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Labels
+  /creds-update:
+    description: Baileys credentials changed. This suffix is appended only when webhook-by-event is enabled. Without that
+      option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveCredsUpdate
+      summary: Baileys credentials changed
+      description: For security, Evolution emits instance metadata only; authentication keys are never included.
+      message:
+        $ref: "#/components/messages/CREDS_UPDATE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Connection
+  /messaging-history-set:
+    description: Raw Baileys history synchronization chunk. This suffix is appended only when webhook-by-event is enabled.
+      Without that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveMessagingHistorySet
+      summary: Raw Baileys history synchronization chunk
+      message:
+        $ref: "#/components/messages/MESSAGING_HISTORY_SET"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: History
+  /messaging-history-status:
+    description: History synchronization completed or paused. This suffix is appended only when webhook-by-event is enabled.
+      Without that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveMessagingHistoryStatus
+      summary: History synchronization completed or paused
+      description: "`status` is complete or paused. `explicit=false` means completion was inferred after no more chunks arrived."
+      message:
+        $ref: "#/components/messages/MESSAGING_HISTORY_STATUS"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: History
+  /lid-mapping-update:
+    description: LID-to-phone-number mapping changed. This suffix is appended only when webhook-by-event is enabled. Without
+      that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveLidMappingUpdate
+      summary: LID-to-phone-number mapping changed
+      message:
+        $ref: "#/components/messages/LID_MAPPING_UPDATE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Identity
+  /messages-media-update:
+    description: Encrypted media data or media download error changed. This suffix is appended only when webhook-by-event is
+      enabled. Without that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveMessagesMediaUpdate
+      summary: Encrypted media data or media download error changed
+      message:
+        $ref: "#/components/messages/MESSAGES_MEDIA_UPDATE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Messages
+  /messages-reaction:
+    description: Reaction added, changed, or removed. This suffix is appended only when webhook-by-event is enabled. Without
+      that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveMessagesReaction
+      summary: Reaction added, changed, or removed
+      description: An empty or missing reaction text means the reaction was removed.
+      message:
+        $ref: "#/components/messages/MESSAGES_REACTION"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Messages
+  /message-receipt-update:
+    description: Delivery, read, or played receipt changed. This suffix is appended only when webhook-by-event is enabled.
+      Without that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveMessageReceiptUpdate
+      summary: Delivery, read, or played receipt changed
+      message:
+        $ref: "#/components/messages/MESSAGE_RECEIPT_UPDATE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Messages
+  /blocklist-set:
+    description: Complete blocklist received. This suffix is appended only when webhook-by-event is enabled. Without that
+      option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveBlocklistSet
+      summary: Complete blocklist received
+      message:
+        $ref: "#/components/messages/BLOCKLIST_SET"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Privacy
+  /blocklist-update:
+    description: Contacts added to or removed from blocklist. This suffix is appended only when webhook-by-event is enabled.
+      Without that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveBlocklistUpdate
+      summary: Contacts added to or removed from blocklist
+      description: "`type` is add or remove."
+      message:
+        $ref: "#/components/messages/BLOCKLIST_UPDATE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Privacy
+  /newsletter-reaction:
+    description: Newsletter reaction count changed. This suffix is appended only when webhook-by-event is enabled. Without
+      that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveNewsletterReaction
+      summary: Newsletter reaction count changed
+      message:
+        $ref: "#/components/messages/NEWSLETTER_REACTION"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Newsletters
+  /newsletter-view:
+    description: Newsletter message view count changed. This suffix is appended only when webhook-by-event is enabled.
+      Without that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveNewsletterView
+      summary: Newsletter message view count changed
+      message:
+        $ref: "#/components/messages/NEWSLETTER_VIEW"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Newsletters
+  /newsletter-participants-update:
+    description: Newsletter participant role changed. This suffix is appended only when webhook-by-event is enabled. Without
+      that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveNewsletterParticipantsUpdate
+      summary: Newsletter participant role changed
+      message:
+        $ref: "#/components/messages/NEWSLETTER_PARTICIPANTS_UPDATE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Newsletters
+  /newsletter-settings-update:
+    description: Newsletter settings changed. This suffix is appended only when webhook-by-event is enabled. Without that
+      option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveNewsletterSettingsUpdate
+      summary: Newsletter settings changed
+      message:
+        $ref: "#/components/messages/NEWSLETTER_SETTINGS_UPDATE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Newsletters
+  /message-capping-update:
+    description: New-chat message quota changed. This suffix is appended only when webhook-by-event is enabled. Without that
+      option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveMessageCappingUpdate
+      summary: New-chat message quota changed
+      description: "`capping_status`: NONE, FIRST_WARNING, SECOND_WARNING, CAPPED. See schema description for the MV and OTE
+        states."
+      message:
+        $ref: "#/components/messages/MESSAGE_CAPPING_UPDATE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Limits
+  /chats-lock:
+    description: Chat lock state changed. This suffix is appended only when webhook-by-event is enabled. Without that
+      option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveChatsLock
+      summary: Chat lock state changed
+      message:
+        $ref: "#/components/messages/CHATS_LOCK"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Chats
+  /settings-update:
+    description: Synced WhatsApp setting changed. This suffix is appended only when webhook-by-event is enabled. Without
+      that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveSettingsUpdate
+      summary: Synced WhatsApp setting changed
+      description: "`setting` can be unarchiveChats, locale, disableLinkPreviews, timeFormat, privacySettingRelayAllCalls,
+        statusPrivacy, notificationActivitySetting, or channelsPersonalisedRecommendation."
+      message:
+        $ref: "#/components/messages/SETTINGS_UPDATE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Settings
+  /remove-instance:
+    description: Instance removed from the running monitor. This suffix is appended only when webhook-by-event is enabled.
+      Without that option, all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveRemoveInstance
+      summary: Instance removed from the running monitor
+      message:
+        $ref: "#/components/messages/REMOVE_INSTANCE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Lifecycle
+  /logout-instance:
+    description: Instance logged out. This suffix is appended only when webhook-by-event is enabled. Without that option,
+      all event messages are POSTed to the configured base URL.
+    publish:
+      operationId: receiveLogoutInstance
+      summary: Instance logged out
+      message:
+        $ref: "#/components/messages/LOGOUT_INSTANCE"
+      bindings:
+        http:
+          type: request
+          method: POST
+          bindingVersion: 0.3.0
+      tags:
+        - name: Lifecycle
+components:
+  messages:
+    APPLICATION_STARTUP:
+      messageId: APPLICATION_STARTUP
+      name: application.startup
+      title: Server application started
+      summary: Global webhook event; it may not be associated with a connected instance.
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/ApplicationStartupEnvelope"
+      examples:
+        - name: application_startupExample
+          summary: Server application started
+          payload:
+            event: application.startup
+            instance: my-instance
+            data:
+              version: 2.3.7
+            destination: https://n8n.example/webhook/evolution/application-startup
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Lifecycle
+    INSTANCE_CREATE:
+      messageId: INSTANCE_CREATE
+      name: instance.create
+      title: Instance created
+      summary: Instance created
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/InstanceCreateEnvelope"
+      examples:
+        - name: instance_createExample
+          summary: Instance created
+          payload:
+            event: instance.create
+            instance: my-instance
+            data:
+              instanceName: my-instance
+              instanceId: clx123
+            destination: https://n8n.example/webhook/evolution/instance-create
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Lifecycle
+    INSTANCE_DELETE:
+      messageId: INSTANCE_DELETE
+      name: instance.delete
+      title: Instance deleted
+      summary: Instance deleted
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/InstanceDeleteEnvelope"
+      examples:
+        - name: instance_deleteExample
+          summary: Instance deleted
+          payload:
+            event: instance.delete
+            instance: my-instance
+            data:
+              instanceName: my-instance
+              instanceId: clx123
+            destination: https://n8n.example/webhook/evolution/instance-delete
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Lifecycle
+    QRCODE_UPDATED:
+      messageId: QRCODE_UPDATED
+      name: qrcode.updated
+      title: QR or pairing code changed
+      summary: QR or pairing code changed
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/QrcodeUpdatedEnvelope"
+      examples:
+        - name: qrcode_updatedExample
+          summary: QR or pairing code changed
+          payload:
+            event: qrcode.updated
+            instance: my-instance
+            data:
+              qrcode:
+                pairingCode: ABCD-EFGH
+                code: 2@...
+            destination: https://n8n.example/webhook/evolution/qrcode-updated
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Connection
+    CONNECTION_UPDATE:
+      messageId: CONNECTION_UPDATE
+      name: connection.update
+      title: WhatsApp connection state changed
+      summary: WhatsApp connection state changed
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/ConnectionUpdateEnvelope"
+      examples:
+        - name: connection_updateExample
+          summary: WhatsApp connection state changed
+          payload:
+            event: connection.update
+            instance: my-instance
+            data:
+              instance: my-instance
+              state: open
+              statusReason: 200
+            destination: https://n8n.example/webhook/evolution/connection-update
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Connection
+    STATUS_INSTANCE:
+      messageId: STATUS_INSTANCE
+      name: status.instance
+      title: Evolution instance status changed
+      summary: Evolution instance status changed
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/StatusInstanceEnvelope"
+      examples:
+        - name: status_instanceExample
+          summary: Evolution instance status changed
+          payload:
+            event: status.instance
+            instance: my-instance
+            data:
+              instance: my-instance
+              state: open
+            destination: https://n8n.example/webhook/evolution/status-instance
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Connection
+    MESSAGES_SET:
+      messageId: MESSAGES_SET
+      name: messages.set
+      title: Historical messages batch prepared
+      summary: "`isLatest` and `progress` can also appear at envelope level."
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/MessagesSetEnvelope"
+      examples:
+        - name: messages_setExample
+          summary: Historical messages batch prepared
+          payload:
+            event: messages.set
+            instance: my-instance
+            data:
+              - key:
+                  remoteJid: 15551234567@s.whatsapp.net
+                  id: ABC123
+                  fromMe: false
+                message:
+                  conversation: Older message
+                messageType: conversation
+                messageTimestamp: 1760000000
+            destination: https://n8n.example/webhook/evolution/messages-set
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Messages
+    MESSAGES_UPSERT:
+      messageId: MESSAGES_UPSERT
+      name: messages.upsert
+      title: One new or newly synchronized message
+      summary: Evolution emits one prepared message per HTTP delivery, not the Baileys `{ messages, type }` batch.
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/MessagesUpsertEnvelope"
+      examples:
+        - name: messages_upsertExample
+          summary: One new or newly synchronized message
+          payload:
+            event: messages.upsert
+            instance: my-instance
+            data:
+              key:
+                remoteJid: 15551234567@s.whatsapp.net
+                id: ABC123
+                fromMe: false
+              pushName: Alice
+              message:
+                conversation: Hello
+              messageType: conversation
+              messageTimestamp: 1760000000
+            destination: https://n8n.example/webhook/evolution/messages-upsert
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Messages
+    MESSAGES_EDITED:
+      messageId: MESSAGES_EDITED
+      name: messages.edited
+      title: Message edit protocol action received
+      summary: Message edit protocol action received
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/MessagesEditedEnvelope"
+      examples:
+        - name: messages_editedExample
+          summary: Message edit protocol action received
+          payload:
+            event: messages.edited
+            instance: my-instance
+            data:
+              key:
+                remoteJid: 15551234567@s.whatsapp.net
+                id: ABC123
+                fromMe: false
+              editedMessage:
+                conversation: Corrected text
+            destination: https://n8n.example/webhook/evolution/messages-edited
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Messages
+    MESSAGES_UPDATE:
+      messageId: MESSAGES_UPDATE
+      name: messages.update
+      title: Message status or content updated
+      summary: Message status or content updated
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/MessagesUpdateEnvelope"
+      examples:
+        - name: messages_updateExample
+          summary: Message status or content updated
+          payload:
+            event: messages.update
+            instance: my-instance
+            data:
+              key:
+                remoteJid: 15551234567@s.whatsapp.net
+                id: ABC123
+                fromMe: true
+              status: READ
+              instanceId: clx123
+            destination: https://n8n.example/webhook/evolution/messages-update
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Messages
+    MESSAGES_DELETE:
+      messageId: MESSAGES_DELETE
+      name: messages.delete
+      title: Message or chat messages deleted
+      summary: Shape depends on whether deletion came from a WhatsApp update or an Evolution API delete operation.
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/MessagesDeleteEnvelope"
+      examples:
+        - name: messages_deleteExample
+          summary: Message or chat messages deleted
+          payload:
+            event: messages.delete
+            instance: my-instance
+            data:
+              remoteJid: 15551234567@s.whatsapp.net
+              id: ABC123
+              fromMe: true
+              status: DELETED
+            destination: https://n8n.example/webhook/evolution/messages-delete
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Messages
+    SEND_MESSAGE:
+      messageId: SEND_MESSAGE
+      name: send.message
+      title: Evolution sent a message
+      summary: Evolution sent a message
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/SendMessageEnvelope"
+      examples:
+        - name: send_messageExample
+          summary: Evolution sent a message
+          payload:
+            event: send.message
+            instance: my-instance
+            data:
+              key:
+                remoteJid: 15551234567@s.whatsapp.net
+                id: OUT123
+                fromMe: true
+              message:
+                conversation: Sent text
+              messageType: conversation
+              messageTimestamp: 1760000000
+            destination: https://n8n.example/webhook/evolution/send-message
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Messages
+    SEND_MESSAGE_UPDATE:
+      messageId: SEND_MESSAGE_UPDATE
+      name: send.message.update
+      title: A sent message edit was confirmed
+      summary: A sent message edit was confirmed
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/SendMessageUpdateEnvelope"
+      examples:
+        - name: send_message_updateExample
+          summary: A sent message edit was confirmed
+          payload:
+            event: send.message.update
+            instance: my-instance
+            data:
+              key:
+                remoteJid: 15551234567@s.whatsapp.net
+                id: OUT123
+                fromMe: true
+              editedMessage:
+                conversation: Updated text
+            destination: https://n8n.example/webhook/evolution/send-message-update
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Messages
+    CONTACTS_SET:
+      messageId: CONTACTS_SET
+      name: contacts.set
+      title: Initial contacts batch
+      summary: Retained for compatibility; Baileys 7 does not currently emit contacts.set.
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/ContactsSetEnvelope"
+      examples:
+        - name: contacts_setExample
+          summary: Initial contacts batch
+          payload:
+            event: contacts.set
+            instance: my-instance
+            data:
+              - remoteJid: 15551234567@s.whatsapp.net
+                pushName: Alice
+            destination: https://n8n.example/webhook/evolution/contacts-set
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Contacts
+    CONTACTS_UPSERT:
+      messageId: CONTACTS_UPSERT
+      name: contacts.upsert
+      title: Contacts inserted or replaced
+      summary: Contacts inserted or replaced
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/ContactsUpsertEnvelope"
+      examples:
+        - name: contacts_upsertExample
+          summary: Contacts inserted or replaced
+          payload:
+            event: contacts.upsert
+            instance: my-instance
+            data:
+              - remoteJid: 15551234567@s.whatsapp.net
+                pushName: Alice
+                profilePicUrl: null
+                instanceId: clx123
+            destination: https://n8n.example/webhook/evolution/contacts-upsert
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Contacts
+    CONTACTS_UPDATE:
+      messageId: CONTACTS_UPDATE
+      name: contacts.update
+      title: Contacts changed
+      summary: Contacts changed
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/ContactsUpdateEnvelope"
+      examples:
+        - name: contacts_updateExample
+          summary: Contacts changed
+          payload:
+            event: contacts.update
+            instance: my-instance
+            data:
+              - remoteJid: 15551234567@s.whatsapp.net
+                pushName: Alice
+                profilePicUrl: https://example.test/avatar.jpg
+                instanceId: clx123
+            destination: https://n8n.example/webhook/evolution/contacts-update
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Contacts
+    PRESENCE_UPDATE:
+      messageId: PRESENCE_UPDATE
+      name: presence.update
+      title: Typing, recording, online, or unavailable presence changed
+      summary: Typing, recording, online, or unavailable presence changed
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/PresenceUpdateEnvelope"
+      examples:
+        - name: presence_updateExample
+          summary: Typing, recording, online, or unavailable presence changed
+          payload:
+            event: presence.update
+            instance: my-instance
+            data:
+              id: 15551234567@s.whatsapp.net
+              presences:
+                15551234567@s.whatsapp.net:
+                  lastKnownPresence: composing
+                  lastSeen: 1760000000
+            destination: https://n8n.example/webhook/evolution/presence-update
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Contacts
+    CHATS_SET:
+      messageId: CHATS_SET
+      name: chats.set
+      title: Initial/history chats batch prepared
+      summary: Initial/history chats batch prepared
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/ChatsSetEnvelope"
+      examples:
+        - name: chats_setExample
+          summary: Initial/history chats batch prepared
+          payload:
+            event: chats.set
+            instance: my-instance
+            data:
+              - remoteJid: 15551234567@s.whatsapp.net
+                name: Alice
+                instanceId: clx123
+            destination: https://n8n.example/webhook/evolution/chats-set
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Chats
+    CHATS_UPSERT:
+      messageId: CHATS_UPSERT
+      name: chats.upsert
+      title: Chats inserted or replaced
+      summary: Chats inserted or replaced
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/ChatsUpsertEnvelope"
+      examples:
+        - name: chats_upsertExample
+          summary: Chats inserted or replaced
+          payload:
+            event: chats.upsert
+            instance: my-instance
+            data:
+              - remoteJid: 15551234567@s.whatsapp.net
+                name: Alice
+                unreadMessages: 1
+                instanceId: clx123
+            destination: https://n8n.example/webhook/evolution/chats-upsert
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Chats
+    CHATS_UPDATE:
+      messageId: CHATS_UPDATE
+      name: chats.update
+      title: Chats changed
+      summary: Chats changed
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/ChatsUpdateEnvelope"
+      examples:
+        - name: chats_updateExample
+          summary: Chats changed
+          payload:
+            event: chats.update
+            instance: my-instance
+            data:
+              - remoteJid: 15551234567@s.whatsapp.net
+                instanceId: clx123
+            destination: https://n8n.example/webhook/evolution/chats-update
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Chats
+    CHATS_DELETE:
+      messageId: CHATS_DELETE
+      name: chats.delete
+      title: Chats deleted
+      summary: Chats deleted
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/ChatsDeleteEnvelope"
+      examples:
+        - name: chats_deleteExample
+          summary: Chats deleted
+          payload:
+            event: chats.delete
+            instance: my-instance
+            data:
+              - 15551234567@s.whatsapp.net
+            destination: https://n8n.example/webhook/evolution/chats-delete
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Chats
+    GROUPS_UPSERT:
+      messageId: GROUPS_UPSERT
+      name: groups.upsert
+      title: Group metadata inserted or replaced
+      summary: Group metadata inserted or replaced
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/GroupsUpsertEnvelope"
+      examples:
+        - name: groups_upsertExample
+          summary: Group metadata inserted or replaced
+          payload:
+            event: groups.upsert
+            instance: my-instance
+            data:
+              - id: 120363000000000000@g.us
+                subject: Community team
+                owner: 15551234567@s.whatsapp.net
+                participants: []
+            destination: https://n8n.example/webhook/evolution/groups-upsert
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Groups
+    GROUPS_UPDATE:
+      messageId: GROUPS_UPDATE
+      name: groups.update
+      title: Group metadata changed
+      summary: Group metadata changed
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/GroupsUpdateEnvelope"
+      examples:
+        - name: groups_updateExample
+          summary: Group metadata changed
+          payload:
+            event: groups.update
+            instance: my-instance
+            data:
+              - id: 120363000000000000@g.us
+                subject: New subject
+                announce: false
+            destination: https://n8n.example/webhook/evolution/groups-update
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Groups
+    GROUP_PARTICIPANTS_UPDATE:
+      messageId: GROUP_PARTICIPANTS_UPDATE
+      name: group-participants.update
+      title: Group members added, removed, promoted, demoted, or modified
+      summary: Group members added, removed, promoted, demoted, or modified
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/GroupParticipantsUpdateEnvelope"
+      examples:
+        - name: group_participants_updateExample
+          summary: Group members added, removed, promoted, demoted, or modified
+          payload:
+            event: group-participants.update
+            instance: my-instance
+            data:
+              id: 120363000000000000@g.us
+              participants:
+                - 151672961659093@lid
+              action: add
+              participantsData:
+                - jid: 151672961659093@lid
+                  phoneNumber: "15551234567"
+                  name: Alice
+            destination: https://n8n.example/webhook/evolution/group-participants-update
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Groups
+    GROUP_JOIN_REQUEST:
+      messageId: GROUP_JOIN_REQUEST
+      name: group.join-request
+      title: Group join request created, revoked, or rejected
+      summary: "`action`: created, revoked, or rejected. `method`: invite_link, linked_group_join, or non_admin_add."
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/GroupJoinRequestEnvelope"
+      examples:
+        - name: group_join_requestExample
+          summary: Group join request created, revoked, or rejected
+          payload:
+            event: group.join-request
+            instance: my-instance
+            data:
+              id: 120363000000000000@g.us
+              author: 15551234567@s.whatsapp.net
+              participant: 16661234567@s.whatsapp.net
+              action: created
+              method: invite_link
+            destination: https://n8n.example/webhook/evolution/group-join-request
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Groups
+    GROUP_MEMBER_TAG_UPDATE:
+      messageId: GROUP_MEMBER_TAG_UPDATE
+      name: group.member-tag.update
+      title: Group member tag/label changed
+      summary: Group member tag/label changed
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/GroupMemberTagUpdateEnvelope"
+      examples:
+        - name: group_member_tag_updateExample
+          summary: Group member tag/label changed
+          payload:
+            event: group.member-tag.update
+            instance: my-instance
+            data:
+              groupId: 120363000000000000@g.us
+              participant: 15551234567@s.whatsapp.net
+              label: admin
+              messageTimestamp: 1760000000
+            destination: https://n8n.example/webhook/evolution/group-member-tag-update
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Groups
+    CALL:
+      messageId: CALL
+      name: call
+      title: Call state changed
+      summary: Call state changed
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/CallEnvelope"
+      examples:
+        - name: callExample
+          summary: Call state changed
+          payload:
+            event: call
+            instance: my-instance
+            data:
+              id: CALL123
+              chatId: 15551234567@s.whatsapp.net
+              from: 15551234567@s.whatsapp.net
+              status: offer
+              isVideo: false
+              offline: false
+              date: 2026-09-07T12:00:00.000Z
+            destination: https://n8n.example/webhook/evolution/call
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Calls
+    TYPEBOT_START:
+      messageId: TYPEBOT_START
+      name: typebot.start
+      title: Typebot session started
+      summary: Typebot session started
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/TypebotStartEnvelope"
+      examples:
+        - name: typebot_startExample
+          summary: Typebot session started
+          payload:
+            event: typebot.start
+            instance: my-instance
+            data:
+              remoteJid: 15551234567@s.whatsapp.net
+              url: https://typebot.example
+              typebot: support
+              variables: []
+              sessionId: session-123
+            destination: https://n8n.example/webhook/evolution/typebot-start
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Chatbots
+    TYPEBOT_CHANGE_STATUS:
+      messageId: TYPEBOT_CHANGE_STATUS
+      name: typebot.change-status
+      title: Typebot session status changed
+      summary: Fields vary with the Typebot integration transition that emitted the event.
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/TypebotChangeStatusEnvelope"
+      examples:
+        - name: typebot_change_statusExample
+          summary: Typebot session status changed
+          payload:
+            event: typebot.change-status
+            instance: my-instance
+            data:
+              remoteJid: 15551234567@s.whatsapp.net
+              status: opened
+              sessionId: session-123
+            destination: https://n8n.example/webhook/evolution/typebot-change-status
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Chatbots
+    LABELS_EDIT:
+      messageId: LABELS_EDIT
+      name: labels.edit
+      title: WhatsApp label created, changed, or deleted
+      summary: WhatsApp label created, changed, or deleted
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/LabelsEditEnvelope"
+      examples:
+        - name: labels_editExample
+          summary: WhatsApp label created, changed, or deleted
+          payload:
+            event: labels.edit
+            instance: my-instance
+            data:
+              id: "1"
+              name: Important
+              color: 1
+              deleted: false
+              instance: my-instance
+            destination: https://n8n.example/webhook/evolution/labels-edit
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Labels
+    LABELS_ASSOCIATION:
+      messageId: LABELS_ASSOCIATION
+      name: labels.association
+      title: Label attached to or removed from a chat
+      summary: "`type` is add or remove."
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/LabelsAssociationEnvelope"
+      examples:
+        - name: labels_associationExample
+          summary: Label attached to or removed from a chat
+          payload:
+            event: labels.association
+            instance: my-instance
+            data:
+              instance: my-instance
+              type: add
+              chatId: 15551234567@s.whatsapp.net
+              labelId: "1"
+            destination: https://n8n.example/webhook/evolution/labels-association
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Labels
+    CREDS_UPDATE:
+      messageId: CREDS_UPDATE
+      name: creds.update
+      title: Baileys credentials changed
+      summary: For security, Evolution emits instance metadata only; authentication keys are never included.
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/CredsUpdateEnvelope"
+      examples:
+        - name: creds_updateExample
+          summary: Baileys credentials changed
+          payload:
+            event: creds.update
+            instance: my-instance
+            data:
+              instance: my-instance
+            destination: https://n8n.example/webhook/evolution/creds-update
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Connection
+    MESSAGING_HISTORY_SET:
+      messageId: MESSAGING_HISTORY_SET
+      name: messaging-history.set
+      title: Raw Baileys history synchronization chunk
+      summary: Raw Baileys history synchronization chunk
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/MessagingHistorySetEnvelope"
+      examples:
+        - name: messaging_history_setExample
+          summary: Raw Baileys history synchronization chunk
+          payload:
+            event: messaging-history.set
+            instance: my-instance
+            data:
+              chats: []
+              contacts: []
+              messages: []
+              isLatest: false
+              progress: 42
+              syncType: 1
+              chunkOrder: 2
+            destination: https://n8n.example/webhook/evolution/messaging-history-set
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: History
+    MESSAGING_HISTORY_STATUS:
+      messageId: MESSAGING_HISTORY_STATUS
+      name: messaging-history.status
+      title: History synchronization completed or paused
+      summary: "`status` is complete or paused. `explicit=false` means completion was inferred after no more chunks arrived."
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/MessagingHistoryStatusEnvelope"
+      examples:
+        - name: messaging_history_statusExample
+          summary: History synchronization completed or paused
+          payload:
+            event: messaging-history.status
+            instance: my-instance
+            data:
+              syncType: 1
+              status: complete
+              explicit: true
+            destination: https://n8n.example/webhook/evolution/messaging-history-status
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: History
+    LID_MAPPING_UPDATE:
+      messageId: LID_MAPPING_UPDATE
+      name: lid-mapping.update
+      title: LID-to-phone-number mapping changed
+      summary: LID-to-phone-number mapping changed
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/LidMappingUpdateEnvelope"
+      examples:
+        - name: lid_mapping_updateExample
+          summary: LID-to-phone-number mapping changed
+          payload:
+            event: lid-mapping.update
+            instance: my-instance
+            data:
+              lid: 151672961659093@lid
+              pn: 15551234567@s.whatsapp.net
+            destination: https://n8n.example/webhook/evolution/lid-mapping-update
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Identity
+    MESSAGES_MEDIA_UPDATE:
+      messageId: MESSAGES_MEDIA_UPDATE
+      name: messages.media-update
+      title: Encrypted media data or media download error changed
+      summary: Encrypted media data or media download error changed
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/MessagesMediaUpdateEnvelope"
+      examples:
+        - name: messages_media_updateExample
+          summary: Encrypted media data or media download error changed
+          payload:
+            event: messages.media-update
+            instance: my-instance
+            data:
+              - key:
+                  remoteJid: 15551234567@s.whatsapp.net
+                  id: ABC123
+                  fromMe: false
+                media:
+                  ciphertext: AAEC
+                  iv: AAEC
+            destination: https://n8n.example/webhook/evolution/messages-media-update
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Messages
+    MESSAGES_REACTION:
+      messageId: MESSAGES_REACTION
+      name: messages.reaction
+      title: Reaction added, changed, or removed
+      summary: An empty or missing reaction text means the reaction was removed.
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/MessagesReactionEnvelope"
+      examples:
+        - name: messages_reactionExample
+          summary: Reaction added, changed, or removed
+          payload:
+            event: messages.reaction
+            instance: my-instance
+            data:
+              - key:
+                  remoteJid: 15551234567@s.whatsapp.net
+                  id: ABC123
+                  fromMe: false
+                reaction:
+                  text: 👍
+                  key:
+                    remoteJid: 15551234567@s.whatsapp.net
+                    id: TARGET123
+                    fromMe: true
+            destination: https://n8n.example/webhook/evolution/messages-reaction
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Messages
+    MESSAGE_RECEIPT_UPDATE:
+      messageId: MESSAGE_RECEIPT_UPDATE
+      name: message-receipt.update
+      title: Delivery, read, or played receipt changed
+      summary: Delivery, read, or played receipt changed
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/MessageReceiptUpdateEnvelope"
+      examples:
+        - name: message_receipt_updateExample
+          summary: Delivery, read, or played receipt changed
+          payload:
+            event: message-receipt.update
+            instance: my-instance
+            data:
+              - key:
+                  remoteJid: 15551234567@s.whatsapp.net
+                  id: ABC123
+                  fromMe: true
+                receipt:
+                  userJid: 15551234567@s.whatsapp.net
+                  readTimestamp: 1760000000
+            destination: https://n8n.example/webhook/evolution/message-receipt-update
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Messages
+    BLOCKLIST_SET:
+      messageId: BLOCKLIST_SET
+      name: blocklist.set
+      title: Complete blocklist received
+      summary: Complete blocklist received
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/BlocklistSetEnvelope"
+      examples:
+        - name: blocklist_setExample
+          summary: Complete blocklist received
+          payload:
+            event: blocklist.set
+            instance: my-instance
+            data:
+              blocklist:
+                - 15551234567@s.whatsapp.net
+            destination: https://n8n.example/webhook/evolution/blocklist-set
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Privacy
+    BLOCKLIST_UPDATE:
+      messageId: BLOCKLIST_UPDATE
+      name: blocklist.update
+      title: Contacts added to or removed from blocklist
+      summary: "`type` is add or remove."
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/BlocklistUpdateEnvelope"
+      examples:
+        - name: blocklist_updateExample
+          summary: Contacts added to or removed from blocklist
+          payload:
+            event: blocklist.update
+            instance: my-instance
+            data:
+              blocklist:
+                - 15551234567@s.whatsapp.net
+              type: add
+            destination: https://n8n.example/webhook/evolution/blocklist-update
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Privacy
+    NEWSLETTER_REACTION:
+      messageId: NEWSLETTER_REACTION
+      name: newsletter.reaction
+      title: Newsletter reaction count changed
+      summary: Newsletter reaction count changed
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/NewsletterReactionEnvelope"
+      examples:
+        - name: newsletter_reactionExample
+          summary: Newsletter reaction count changed
+          payload:
+            event: newsletter.reaction
+            instance: my-instance
+            data:
+              id: 120363000000000000@newsletter
+              server_id: "123"
+              reaction:
+                code: 👍
+                count: 3
+                removed: false
+            destination: https://n8n.example/webhook/evolution/newsletter-reaction
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Newsletters
+    NEWSLETTER_VIEW:
+      messageId: NEWSLETTER_VIEW
+      name: newsletter.view
+      title: Newsletter message view count changed
+      summary: Newsletter message view count changed
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/NewsletterViewEnvelope"
+      examples:
+        - name: newsletter_viewExample
+          summary: Newsletter message view count changed
+          payload:
+            event: newsletter.view
+            instance: my-instance
+            data:
+              id: 120363000000000000@newsletter
+              server_id: "123"
+              count: 42
+            destination: https://n8n.example/webhook/evolution/newsletter-view
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Newsletters
+    NEWSLETTER_PARTICIPANTS_UPDATE:
+      messageId: NEWSLETTER_PARTICIPANTS_UPDATE
+      name: newsletter-participants.update
+      title: Newsletter participant role changed
+      summary: Newsletter participant role changed
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/NewsletterParticipantsUpdateEnvelope"
+      examples:
+        - name: newsletter_participants_updateExample
+          summary: Newsletter participant role changed
+          payload:
+            event: newsletter-participants.update
+            instance: my-instance
+            data:
+              id: 120363000000000000@newsletter
+              author: 15551234567@s.whatsapp.net
+              user: 16661234567@s.whatsapp.net
+              new_role: ADMIN
+              action: promote
+            destination: https://n8n.example/webhook/evolution/newsletter-participants-update
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Newsletters
+    NEWSLETTER_SETTINGS_UPDATE:
+      messageId: NEWSLETTER_SETTINGS_UPDATE
+      name: newsletter-settings.update
+      title: Newsletter settings changed
+      summary: Newsletter settings changed
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/NewsletterSettingsUpdateEnvelope"
+      examples:
+        - name: newsletter_settings_updateExample
+          summary: Newsletter settings changed
+          payload:
+            event: newsletter-settings.update
+            instance: my-instance
+            data:
+              id: 120363000000000000@newsletter
+              update:
+                name: News
+            destination: https://n8n.example/webhook/evolution/newsletter-settings-update
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Newsletters
+    MESSAGE_CAPPING_UPDATE:
+      messageId: MESSAGE_CAPPING_UPDATE
+      name: message-capping.update
+      title: New-chat message quota changed
+      summary: "`capping_status`: NONE, FIRST_WARNING, SECOND_WARNING, CAPPED. See schema description for the MV and OTE
+        states."
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/MessageCappingUpdateEnvelope"
+      examples:
+        - name: message_capping_updateExample
+          summary: New-chat message quota changed
+          payload:
+            event: message-capping.update
+            instance: my-instance
+            data:
+              total_quota: 1000
+              used_quota: 25
+              capping_status: NONE
+              mv_status: ACTIVE
+              ote_status: ELIGIBLE
+            destination: https://n8n.example/webhook/evolution/message-capping-update
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Limits
+    CHATS_LOCK:
+      messageId: CHATS_LOCK
+      name: chats.lock
+      title: Chat lock state changed
+      summary: Chat lock state changed
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/ChatsLockEnvelope"
+      examples:
+        - name: chats_lockExample
+          summary: Chat lock state changed
+          payload:
+            event: chats.lock
+            instance: my-instance
+            data:
+              id: 15551234567@s.whatsapp.net
+              locked: true
+            destination: https://n8n.example/webhook/evolution/chats-lock
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Chats
+    SETTINGS_UPDATE:
+      messageId: SETTINGS_UPDATE
+      name: settings.update
+      title: Synced WhatsApp setting changed
+      summary: "`setting` can be unarchiveChats, locale, disableLinkPreviews, timeFormat, privacySettingRelayAllCalls,
+        statusPrivacy, notificationActivitySetting, or channelsPersonalisedRecommendation."
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/SettingsUpdateEnvelope"
+      examples:
+        - name: settings_updateExample
+          summary: Synced WhatsApp setting changed
+          payload:
+            event: settings.update
+            instance: my-instance
+            data:
+              setting: unarchiveChats
+              value: true
+            destination: https://n8n.example/webhook/evolution/settings-update
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Settings
+    REMOVE_INSTANCE:
+      messageId: REMOVE_INSTANCE
+      name: remove.instance
+      title: Instance removed from the running monitor
+      summary: Instance removed from the running monitor
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/RemoveInstanceEnvelope"
+      examples:
+        - name: remove_instanceExample
+          summary: Instance removed from the running monitor
+          payload:
+            event: remove.instance
+            instance: my-instance
+            data: null
+            destination: https://n8n.example/webhook/evolution/remove-instance
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Lifecycle
+    LOGOUT_INSTANCE:
+      messageId: LOGOUT_INSTANCE
+      name: logout.instance
+      title: Instance logged out
+      summary: Instance logged out
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/LogoutInstanceEnvelope"
+      examples:
+        - name: logout_instanceExample
+          summary: Instance logged out
+          payload:
+            event: logout.instance
+            instance: my-instance
+            data: null
+            destination: https://n8n.example/webhook/evolution/logout-instance
+            date_time: 2026-09-07T12:00:00.000Z
+            sender: 15550000000@s.whatsapp.net
+            server_url: https://evolution.example
+            apikey: null
+      tags:
+        - name: Lifecycle
+  schemas:
+    Jid:
+      type: string
+      description: WhatsApp JID. Common suffixes are @s.whatsapp.net (phone), @lid (linked identity), @g.us (group),
+        @newsletter, and @broadcast.
+      examples:
+        - 120363000000000000@g.us
+    MessageKey:
+      type: object
+      required:
+        - remoteJid
+        - id
+        - fromMe
+      properties:
+        remoteJid:
+          $ref: "#/components/schemas/Jid"
+        remoteJidAlt:
+          $ref: "#/components/schemas/Jid"
+        id:
+          type: string
+          description: WhatsApp message ID. Use this as the primary idempotency key together with remoteJid.
+        fromMe:
+          type: boolean
+          description: True when the connected account sent the message.
+        participant:
+          $ref: "#/components/schemas/Jid"
+        participantAlt:
+          $ref: "#/components/schemas/Jid"
+      additionalProperties: true
+    MessageContent:
+      type: object
+      description: Exactly one principal message variant is normally present. Wrapper variants such as ephemeralMessage and
+        viewOnceMessage contain another message object.
+      properties:
+        conversation:
+          type: string
+          description: Plain text message.
+        extendedTextMessage:
+          type: object
+          properties:
+            text:
+              type: string
+            contextInfo:
+              type: object
+              additionalProperties: true
+          additionalProperties: true
+        imageMessage:
+          $ref: "#/components/schemas/MediaMessage"
+        videoMessage:
+          $ref: "#/components/schemas/MediaMessage"
+        audioMessage:
+          $ref: "#/components/schemas/MediaMessage"
+        documentMessage:
+          $ref: "#/components/schemas/MediaMessage"
+        stickerMessage:
+          $ref: "#/components/schemas/MediaMessage"
+        contactMessage:
+          type: object
+          properties:
+            displayName:
+              type: string
+            vcard:
+              type: string
+          additionalProperties: true
+        contactsArrayMessage:
+          type: object
+          additionalProperties: true
+        locationMessage:
+          $ref: "#/components/schemas/LocationMessage"
+        liveLocationMessage:
+          $ref: "#/components/schemas/LocationMessage"
+        reactionMessage:
+          type: object
+          properties:
+            key:
+              $ref: "#/components/schemas/MessageKey"
+            text:
+              type: string
+              description: Emoji; empty means reaction removed.
+          additionalProperties: true
+        pollCreationMessage:
+          type: object
+          additionalProperties: true
+        pollUpdateMessage:
+          type: object
+          additionalProperties: true
+        buttonsResponseMessage:
+          type: object
+          additionalProperties: true
+        listResponseMessage:
+          type: object
+          additionalProperties: true
+        templateButtonReplyMessage:
+          type: object
+          additionalProperties: true
+        interactiveResponseMessage:
+          type: object
+          additionalProperties: true
+        protocolMessage:
+          type: object
+          description: Protocol action such as edit, revoke, or history sync.
+          additionalProperties: true
+        editedMessage:
+          type: object
+          properties:
+            message:
+              $ref: "#/components/schemas/MessageContent"
+          additionalProperties: true
+        ephemeralMessage:
+          type: object
+          properties:
+            message:
+              $ref: "#/components/schemas/MessageContent"
+          additionalProperties: true
+        viewOnceMessage:
+          type: object
+          properties:
+            message:
+              $ref: "#/components/schemas/MessageContent"
+          additionalProperties: true
+        viewOnceMessageV2:
+          type: object
+          properties:
+            message:
+              $ref: "#/components/schemas/MessageContent"
+          additionalProperties: true
+      additionalProperties: true
+    MediaMessage:
+      type: object
+      properties:
+        url:
+          type: string
+          description: Temporary media URL when supplied by WhatsApp.
+        mimetype:
+          type: string
+        caption:
+          type: string
+        fileName:
+          type: string
+        fileLength:
+          oneOf:
+            - type: integer
+            - type: string
+          description: May serialize as a number or Long-compatible string.
+        seconds:
+          type: integer
+        ptt:
+          type: boolean
+          description: True for a voice note.
+        mediaKey:
+          type: string
+          format: byte
+        directPath:
+          type: string
+        jpegThumbnail:
+          type: string
+          format: byte
+        base64:
+          type: string
+          format: byte
+          description: Present only when webhook base64 delivery is enabled and Evolution prepared media data.
+      additionalProperties: true
+    LocationMessage:
+      type: object
+      properties:
+        degreesLatitude:
+          type: number
+        degreesLongitude:
+          type: number
+        name:
+          type: string
+        address:
+          type: string
+      additionalProperties: true
+    Message:
+      type: object
+      required:
+        - key
+      properties:
+        key:
+          $ref: "#/components/schemas/MessageKey"
+        pushName:
+          type:
+            - string
+            - "null"
+          description: Sender display name when known.
+        message:
+          $ref: "#/components/schemas/MessageContent"
+        messageType:
+          type: string
+          description: Evolution-derived principal message type, for example conversation, imageMessage, or reactionMessage.
+        messageTimestamp:
+          oneOf:
+            - type: integer
+            - type: string
+          description: Unix time in seconds; large protobuf Long values may serialize as strings.
+        status:
+          type:
+            - string
+            - "null"
+          enum:
+            - ERROR
+            - PENDING
+            - SERVER_ACK
+            - DELIVERY_ACK
+            - READ
+            - DELETED
+            - PLAYED
+            - EDITED
+            - null
+        source:
+          type: string
+        contextInfo:
+          type: object
+          additionalProperties: true
+        instanceId:
+          type: string
+          description: Evolution database instance ID when the event was prepared for persistence.
+      additionalProperties: true
+    MessageArray:
+      type: array
+      items:
+        $ref: "#/components/schemas/Message"
+    MessageUpdate:
+      type: object
+      required:
+        - key
+      properties:
+        key:
+          $ref: "#/components/schemas/MessageKey"
+        status:
+          type:
+            - string
+            - "null"
+          enum:
+            - ERROR
+            - PENDING
+            - SERVER_ACK
+            - DELIVERY_ACK
+            - READ
+            - DELETED
+            - PLAYED
+            - EDITED
+            - null
+        update:
+          type: object
+          description: Raw Baileys update fields.
+          additionalProperties: true
+        message:
+          type: object
+          description: Evolution normalized update when available.
+          additionalProperties: true
+        messageId:
+          type: string
+          description: Evolution database message ID when found.
+        instanceId:
+          type: string
+      additionalProperties: true
+    Contact:
+      type: object
+      required:
+        - remoteJid
+      properties:
+        remoteJid:
+          $ref: "#/components/schemas/Jid"
+        pushName:
+          type:
+            - string
+            - "null"
+        profilePicUrl:
+          type:
+            - string
+            - "null"
+          format: uri
+        instanceId:
+          type: string
+      additionalProperties: true
+    ContactArray:
+      type: array
+      items:
+        $ref: "#/components/schemas/Contact"
+    Chat:
+      type: object
+      required:
+        - remoteJid
+      properties:
+        remoteJid:
+          $ref: "#/components/schemas/Jid"
+        name:
+          type:
+            - string
+            - "null"
+        unreadMessages:
+          type: integer
+        instanceId:
+          type: string
+      additionalProperties: true
+    ChatArray:
+      type: array
+      items:
+        $ref: "#/components/schemas/Chat"
+    Presence:
+      type: object
+      required:
+        - id
+        - presences
+      properties:
+        id:
+          $ref: "#/components/schemas/Jid"
+        presences:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              lastKnownPresence:
+                type: string
+                enum:
+                  - unavailable
+                  - available
+                  - composing
+                  - recording
+                  - paused
+              lastSeen:
+                type: integer
+                description: Unix timestamp in seconds.
+              groupOnlineCount:
+                type: integer
+            additionalProperties: true
+    GroupParticipant:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          $ref: "#/components/schemas/Jid"
+        phoneNumber:
+          type: string
+          description: Resolved phone number when available.
+        name:
+          type: string
+        imgUrl:
+          type:
+            - string
+            - "null"
+          format: uri
+        admin:
+          type:
+            - string
+            - "null"
+          enum:
+            - admin
+            - superadmin
+            - null
+        isAdmin:
+          type: boolean
+        isSuperAdmin:
+          type: boolean
+      additionalProperties: true
+    GroupMetadata:
+      type: object
+      required:
+        - id
+        - subject
+      properties:
+        id:
+          $ref: "#/components/schemas/Jid"
+        subject:
+          type: string
+        owner:
+          $ref: "#/components/schemas/Jid"
+        addressingMode:
+          type: string
+          enum:
+            - lid
+            - pn
+        desc:
+          type: string
+        linkedParent:
+          $ref: "#/components/schemas/Jid"
+        restrict:
+          type: boolean
+        announce:
+          type: boolean
+        memberAddMode:
+          type: boolean
+        joinApprovalMode:
+          type: boolean
+        isCommunity:
+          type: boolean
+        isCommunityAnnounce:
+          type: boolean
+        size:
+          type: integer
+        participants:
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupParticipant"
+        ephemeralDuration:
+          type: integer
+      additionalProperties: true
+    GroupMetadataArray:
+      type: array
+      items:
+        $ref: "#/components/schemas/GroupMetadata"
+    GroupParticipantsUpdate:
+      type: object
+      required:
+        - id
+        - participants
+        - action
+      properties:
+        id:
+          $ref: "#/components/schemas/Jid"
+        participants:
+          type: array
+          items:
+            $ref: "#/components/schemas/Jid"
+        action:
+          type: string
+          enum:
+            - add
+            - remove
+            - promote
+            - demote
+            - modify
+        author:
+          $ref: "#/components/schemas/Jid"
+        authorPn:
+          $ref: "#/components/schemas/Jid"
+        authorUsername:
+          type: string
+        participantsData:
+          type: array
+          description: Evolution enhancement. May be omitted if participant resolution fails.
+          items:
+            $ref: "#/components/schemas/ResolvedParticipant"
+      additionalProperties: true
+    ResolvedParticipant:
+      type: object
+      required:
+        - jid
+        - phoneNumber
+      properties:
+        jid:
+          $ref: "#/components/schemas/Jid"
+        phoneNumber:
+          type: string
+        name:
+          type: string
+        imgUrl:
+          type:
+            - string
+            - "null"
+          format: uri
+    Connection:
+      type: object
+      properties:
+        instance:
+          type: string
+        state:
+          type: string
+          enum:
+            - open
+            - connecting
+            - close
+            - refused
+        statusReason:
+          type: integer
+          description: Disconnect reason/status code when available.
+        connection:
+          type: string
+          enum:
+            - open
+            - connecting
+            - close
+        isNewLogin:
+          type: boolean
+        isOnline:
+          type: boolean
+        lastDisconnect:
+          type: object
+          properties:
+            error:
+              type: object
+              additionalProperties: true
+            date:
+              type: string
+              format: date-time
+          additionalProperties: true
+      additionalProperties: true
+    History:
+      type: object
+      required:
+        - chats
+        - contacts
+        - messages
+      properties:
+        chats:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        contacts:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        messages:
+          $ref: "#/components/schemas/MessageArray"
+        lidPnMappings:
+          type: array
+          items:
+            $ref: "#/components/schemas/LidMapping"
+        isLatest:
+          type: boolean
+        progress:
+          type:
+            - number
+            - "null"
+          minimum: 0
+          maximum: 100
+        syncType:
+          oneOf:
+            - type: integer
+            - type: string
+        chunkOrder:
+          type:
+            - integer
+            - "null"
+        peerDataRequestSessionId:
+          type:
+            - string
+            - "null"
+      additionalProperties: true
+    LidMapping:
+      type: object
+      description: Mapping between a linked-identity JID and phone-number JID.
+      properties:
+        lid:
+          $ref: "#/components/schemas/Jid"
+        pn:
+          $ref: "#/components/schemas/Jid"
+      additionalProperties: true
+    Receipt:
+      type: object
+      required:
+        - key
+        - receipt
+      properties:
+        key:
+          $ref: "#/components/schemas/MessageKey"
+        receipt:
+          type: object
+          properties:
+            userJid:
+              $ref: "#/components/schemas/Jid"
+            readTimestamp:
+              type: integer
+            playedTimestamp:
+              type: integer
+            receiptTimestamp:
+              type: integer
+          additionalProperties: true
+      additionalProperties: true
+    ReceiptArray:
+      type: array
+      items:
+        $ref: "#/components/schemas/Receipt"
+    JidArray:
+      type: array
+      items:
+        $ref: "#/components/schemas/Jid"
+    MediaUpdateArray:
+      type: array
+      items:
+        type: object
+        required:
+          - key
+        properties:
+          key:
+            $ref: "#/components/schemas/MessageKey"
+          media:
+            type: object
+            properties:
+              ciphertext:
+                type: string
+                format: byte
+              iv:
+                type: string
+                format: byte
+            additionalProperties: true
+          error:
+            type: object
+            description: Serialized media retrieval error when media is unavailable.
+            additionalProperties: true
+        additionalProperties: true
+    ReactionArray:
+      type: array
+      items:
+        type: object
+        required:
+          - key
+          - reaction
+        properties:
+          key:
+            $ref: "#/components/schemas/MessageKey"
+          reaction:
+            type: object
+            properties:
+              key:
+                $ref: "#/components/schemas/MessageKey"
+              text:
+                type: string
+                description: Reaction emoji; empty means removed.
+              senderTimestampMs:
+                oneOf:
+                  - type: integer
+                  - type: string
+            additionalProperties: true
+        additionalProperties: true
+    Call:
+      type: object
+      required:
+        - id
+        - from
+        - status
+      properties:
+        id:
+          type: string
+        from:
+          $ref: "#/components/schemas/Jid"
+        chatId:
+          $ref: "#/components/schemas/Jid"
+        callerPn:
+          $ref: "#/components/schemas/Jid"
+        status:
+          type: string
+          enum:
+            - offer
+            - ringing
+            - preaccept
+            - transport
+            - relaylatency
+            - timeout
+            - reject
+            - accept
+            - terminate
+        isGroup:
+          type: boolean
+        groupJid:
+          $ref: "#/components/schemas/Jid"
+        isVideo:
+          type: boolean
+        offline:
+          type: boolean
+        latencyMs:
+          type: number
+        date:
+          type: string
+          format: date-time
+      additionalProperties: true
+    ApplicationStartup:
+      type: object
+      properties:
+        version:
+          type: string
+        message:
+          type: string
+      description: Startup details depend on the configured global event publisher.
+      additionalProperties: true
+    InstanceLifecycle:
+      type: object
+      required:
+        - instanceName
+      properties:
+        instanceName:
+          type: string
+        instanceId:
+          type: string
+          description: Evolution database instance ID when still available.
+      additionalProperties: true
+    QrCodeUpdate:
+      type: object
+      properties:
+        qrcode:
+          type: object
+          properties:
+            count:
+              type: integer
+              description: Number of QR generations/refreshes.
+            pairingCode:
+              type: string
+            base64:
+              type: string
+              description: QR image data URL when generated.
+            code:
+              type: string
+              description: Raw QR content.
+          additionalProperties: true
+        pairingCode:
+          type: string
+        code:
+          type: string
+        base64:
+          type: string
+        count:
+          type: integer
+      additionalProperties: true
+    EditedMessage:
+      type: object
+      properties:
+        key:
+          $ref: "#/components/schemas/MessageKey"
+        editedMessage:
+          $ref: "#/components/schemas/MessageContent"
+        type:
+          oneOf:
+            - type: integer
+            - type: string
+          description: WhatsApp protocol message type.
+        timestampMs:
+          oneOf:
+            - type: integer
+            - type: string
+      additionalProperties: true
+    MessageDelete:
+      oneOf:
+        - type: object
+          required:
+            - remoteJid
+            - id
+          properties:
+            remoteJid:
+              $ref: "#/components/schemas/Jid"
+            id:
+              type: string
+            fromMe:
+              type: boolean
+            participant:
+              $ref: "#/components/schemas/Jid"
+            status:
+              type: string
+              enum:
+                - DELETED
+          additionalProperties: true
+        - type: object
+          required:
+            - key
+          properties:
+            key:
+              $ref: "#/components/schemas/MessageKey"
+            messageId:
+              type: string
+            instanceId:
+              type: string
+            messageType:
+              type: string
+          additionalProperties: true
+        - type: object
+          required:
+            - jid
+            - all
+          properties:
+            jid:
+              $ref: "#/components/schemas/Jid"
+            all:
+              type: boolean
+              enum:
+                - true
+          additionalProperties: true
+    GroupJoinRequest:
+      type: object
+      required:
+        - id
+        - author
+        - participant
+        - action
+      properties:
+        id:
+          $ref: "#/components/schemas/Jid"
+        author:
+          $ref: "#/components/schemas/Jid"
+        authorPn:
+          $ref: "#/components/schemas/Jid"
+        authorUsername:
+          type: string
+        participant:
+          $ref: "#/components/schemas/Jid"
+        participantPn:
+          $ref: "#/components/schemas/Jid"
+        action:
+          type: string
+          enum:
+            - created
+            - revoked
+            - rejected
+        method:
+          type:
+            - string
+            - "null"
+          enum:
+            - invite_link
+            - linked_group_join
+            - non_admin_add
+            - null
+      additionalProperties: true
+    GroupMemberTagUpdate:
+      type: object
+      required:
+        - groupId
+        - participant
+        - label
+      properties:
+        groupId:
+          $ref: "#/components/schemas/Jid"
+        participant:
+          $ref: "#/components/schemas/Jid"
+        participantAlt:
+          $ref: "#/components/schemas/Jid"
+        label:
+          type: string
+        messageTimestamp:
+          type: integer
+      additionalProperties: true
+    TypebotStart:
+      type: object
+      required:
+        - remoteJid
+        - url
+        - typebot
+        - sessionId
+      properties:
+        remoteJid:
+          $ref: "#/components/schemas/Jid"
+        url:
+          type: string
+          format: uri
+        typebot:
+          type: string
+        variables:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        sessionId:
+          type: string
+      additionalProperties: true
+    TypebotStatus:
+      type: object
+      properties:
+        remoteJid:
+          $ref: "#/components/schemas/Jid"
+        sessionId:
+          type: string
+        status:
+          type: string
+          description: Integration status/transition name.
+      additionalProperties: true
+    LabelEdit:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        color:
+          oneOf:
+            - type: integer
+            - type: string
+        predefinedId:
+          type: string
+        deleted:
+          type: boolean
+        instance:
+          type: string
+      additionalProperties: true
+    LabelAssociation:
+      type: object
+      required:
+        - instance
+        - type
+        - chatId
+        - labelId
+      properties:
+        instance:
+          type: string
+        type:
+          type: string
+          enum:
+            - add
+            - remove
+        chatId:
+          $ref: "#/components/schemas/Jid"
+        labelId:
+          type: string
+      additionalProperties: true
+    CredentialsUpdate:
+      type: object
+      required:
+        - instance
+      properties:
+        instance:
+          type: string
+      additionalProperties: false
+      description: Deliberately excludes authentication state, keys, and tokens.
+    HistoryStatus:
+      type: object
+      required:
+        - syncType
+        - status
+        - explicit
+      properties:
+        syncType:
+          oneOf:
+            - type: integer
+            - type: string
+        status:
+          type: string
+          enum:
+            - complete
+            - paused
+        explicit:
+          type: boolean
+          description: False when completion was inferred after no more chunks arrived.
+      additionalProperties: true
+    BlocklistSet:
+      type: object
+      required:
+        - blocklist
+      properties:
+        blocklist:
+          type: array
+          items:
+            $ref: "#/components/schemas/Jid"
+      additionalProperties: true
+    BlocklistUpdate:
+      type: object
+      required:
+        - blocklist
+        - type
+      properties:
+        blocklist:
+          type: array
+          items:
+            $ref: "#/components/schemas/Jid"
+        type:
+          type: string
+          enum:
+            - add
+            - remove
+      additionalProperties: true
+    NewsletterReaction:
+      type: object
+      required:
+        - id
+        - server_id
+        - reaction
+      properties:
+        id:
+          $ref: "#/components/schemas/Jid"
+        server_id:
+          type: string
+        reaction:
+          type: object
+          properties:
+            code:
+              type: string
+            count:
+              type: integer
+            removed:
+              type: boolean
+          additionalProperties: true
+      additionalProperties: true
+    NewsletterView:
+      type: object
+      required:
+        - id
+        - server_id
+        - count
+      properties:
+        id:
+          $ref: "#/components/schemas/Jid"
+        server_id:
+          type: string
+        count:
+          type: integer
+      additionalProperties: true
+    NewsletterParticipantsUpdate:
+      type: object
+      required:
+        - id
+        - author
+        - user
+        - new_role
+        - action
+      properties:
+        id:
+          $ref: "#/components/schemas/Jid"
+        author:
+          $ref: "#/components/schemas/Jid"
+        user:
+          $ref: "#/components/schemas/Jid"
+        new_role:
+          type: string
+        action:
+          type: string
+      additionalProperties: true
+    NewsletterSettingsUpdate:
+      type: object
+      required:
+        - id
+        - update
+      properties:
+        id:
+          $ref: "#/components/schemas/Jid"
+        update:
+          type: object
+          additionalProperties: true
+      additionalProperties: true
+    MessageCappingUpdate:
+      type: object
+      properties:
+        total_quota:
+          type: integer
+        used_quota:
+          type: integer
+        cycle_start_timestamp:
+          type: string
+        cycle_end_timestamp:
+          type: string
+        server_sent_timestamp:
+          type: string
+        capping_status:
+          type: string
+          enum:
+            - NONE
+            - FIRST_WARNING
+            - SECOND_WARNING
+            - CAPPED
+        mv_status:
+          type: string
+          enum:
+            - NOT_ELIGIBLE
+            - NOT_ACTIVE
+            - ACTIVE
+            - ACTIVE_UPGRADE_AVAILABLE
+        ote_status:
+          type: string
+          enum:
+            - NOT_ELIGIBLE
+            - ELIGIBLE
+            - ACTIVE_IN_CURRENT_CYCLE
+            - EXHAUSTED
+      additionalProperties: true
+    ChatLock:
+      type: object
+      required:
+        - id
+        - locked
+      properties:
+        id:
+          $ref: "#/components/schemas/Jid"
+        locked:
+          type: boolean
+      additionalProperties: true
+    SettingsUpdate:
+      oneOf:
+        - type: object
+          required:
+            - setting
+            - value
+          properties:
+            setting:
+              type: string
+              enum:
+                - unarchiveChats
+            value:
+              type: boolean
+          additionalProperties: true
+        - type: object
+          required:
+            - setting
+            - value
+          properties:
+            setting:
+              type: string
+              enum:
+                - locale
+            value:
+              type: string
+          additionalProperties: true
+        - type: object
+          required:
+            - setting
+            - value
+          properties:
+            setting:
+              type: string
+              enum:
+                - disableLinkPreviews
+                - privacySettingRelayAllCalls
+                - statusPrivacy
+                - channelsPersonalisedRecommendation
+            value:
+              type: object
+              additionalProperties: true
+          additionalProperties: true
+        - type: object
+          required:
+            - setting
+            - value
+          properties:
+            setting:
+              type: string
+              enum:
+                - timeFormat
+                - notificationActivitySetting
+            value:
+              oneOf:
+                - type: string
+                - type: integer
+                - type: object
+                  additionalProperties: true
+          additionalProperties: true
+    GenericObject:
+      type: object
+      additionalProperties: true
+    NullableObject:
+      oneOf:
+        - type: object
+          additionalProperties: true
+        - type: "null"
+    ApplicationStartupEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - application.startup
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/ApplicationStartup"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    InstanceCreateEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - instance.create
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/InstanceLifecycle"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    InstanceDeleteEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - instance.delete
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/InstanceLifecycle"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    QrcodeUpdatedEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - qrcode.updated
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/QrCodeUpdate"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    ConnectionUpdateEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - connection.update
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/Connection"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    StatusInstanceEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - status.instance
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/Connection"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    MessagesSetEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - messages.set
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/MessageArray"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    MessagesUpsertEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - messages.upsert
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/Message"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    MessagesEditedEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - messages.edited
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/EditedMessage"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    MessagesUpdateEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - messages.update
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/MessageUpdate"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    MessagesDeleteEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - messages.delete
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/MessageDelete"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    SendMessageEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - send.message
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/Message"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    SendMessageUpdateEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - send.message.update
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/EditedMessage"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    ContactsSetEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - contacts.set
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/ContactArray"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    ContactsUpsertEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - contacts.upsert
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/ContactArray"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    ContactsUpdateEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - contacts.update
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/ContactArray"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    PresenceUpdateEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - presence.update
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/Presence"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    ChatsSetEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - chats.set
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/ChatArray"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    ChatsUpsertEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - chats.upsert
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/ChatArray"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    ChatsUpdateEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - chats.update
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/ChatArray"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    ChatsDeleteEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - chats.delete
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/JidArray"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    GroupsUpsertEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - groups.upsert
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/GroupMetadataArray"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    GroupsUpdateEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - groups.update
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/GroupMetadataArray"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    GroupParticipantsUpdateEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - group-participants.update
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/GroupParticipantsUpdate"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    GroupJoinRequestEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - group.join-request
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/GroupJoinRequest"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    GroupMemberTagUpdateEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - group.member-tag.update
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/GroupMemberTagUpdate"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    CallEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - call
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/Call"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    TypebotStartEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - typebot.start
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/TypebotStart"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    TypebotChangeStatusEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - typebot.change-status
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/TypebotStatus"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    LabelsEditEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - labels.edit
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/LabelEdit"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    LabelsAssociationEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - labels.association
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/LabelAssociation"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    CredsUpdateEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - creds.update
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/CredentialsUpdate"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    MessagingHistorySetEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - messaging-history.set
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/History"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    MessagingHistoryStatusEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - messaging-history.status
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/HistoryStatus"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    LidMappingUpdateEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - lid-mapping.update
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/LidMapping"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    MessagesMediaUpdateEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - messages.media-update
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/MediaUpdateArray"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    MessagesReactionEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - messages.reaction
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/ReactionArray"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    MessageReceiptUpdateEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - message-receipt.update
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/ReceiptArray"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    BlocklistSetEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - blocklist.set
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/BlocklistSet"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    BlocklistUpdateEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - blocklist.update
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/BlocklistUpdate"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    NewsletterReactionEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - newsletter.reaction
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/NewsletterReaction"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    NewsletterViewEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - newsletter.view
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/NewsletterView"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    NewsletterParticipantsUpdateEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - newsletter-participants.update
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/NewsletterParticipantsUpdate"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    NewsletterSettingsUpdateEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - newsletter-settings.update
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/NewsletterSettingsUpdate"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    MessageCappingUpdateEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - message-capping.update
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/MessageCappingUpdate"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    ChatsLockEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - chats.lock
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/ChatLock"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    SettingsUpdateEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - settings.update
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/SettingsUpdate"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    RemoveInstanceEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - remove.instance
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/NullableObject"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+    LogoutInstanceEnvelope:
+      type: object
+      required:
+        - event
+        - instance
+        - data
+        - destination
+        - date_time
+        - server_url
+      properties:
+        event:
+          type: string
+          enum:
+            - logout.instance
+          description: Stable lowercase event name. In n8n, switch on `$json.event`.
+        instance:
+          type: string
+          description: Evolution instance name.
+        data:
+          $ref: "#/components/schemas/NullableObject"
+        destination:
+          type: string
+          format: uri
+          description: Exact URL Evolution attempted. Includes the event suffix when webhook-by-event is enabled.
+        date_time:
+          type: string
+          format: date-time
+          description: Evolution server-local ISO timestamp.
+        sender:
+          type:
+            - string
+            - "null"
+          description: Connected account JID when available.
+        server_url:
+          type: string
+          format: uri
+          description: Configured public Evolution API URL.
+        apikey:
+          type:
+            - string
+            - "null"
+          description: Instance API key only when AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES is enabled. Do not depend on or log it.
+        isLatest:
+          type: boolean
+          description: History batch metadata; present mainly on messages.set.
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: History synchronization progress; present mainly on messages.set.
+      additionalProperties: true
+tags:
+  - name: Calls
+  - name: Chatbots
+  - name: Chats
+  - name: Connection
+  - name: Contacts
+  - name: Groups
+  - name: History
+  - name: Identity
+  - name: Labels
+  - name: Lifecycle
+  - name: Limits
+  - name: Messages
+  - name: Newsletters
+  - name: Privacy
+  - name: Settings

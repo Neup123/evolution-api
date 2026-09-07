@@ -49,6 +49,12 @@ if (!serverConfig.DISABLE_DOCS) {
   router.get('/docs/openapi.yaml', (_req, res) => {
     res.type('application/yaml').sendFile(path.join(process.cwd(), 'docs', 'openapi.yaml'));
   });
+  router.get('/webhooks/asyncapi.yaml', (_req, res) => {
+    res.type('application/yaml').sendFile(path.join(process.cwd(), 'docs', 'asyncapi.yaml'));
+  });
+  router.get(['/webhooks/docs', '/webhooks/docs/'], (_req, res) => {
+    res.sendFile(path.join(process.cwd(), 'docs', 'webhooks', 'index.html'));
+  });
   router.use(
     '/docs',
     swaggerUi.serve,
@@ -223,6 +229,7 @@ router
       clientName: databaseConfig.CONNECTION.CLIENT_NAME,
       manager: !serverConfig.DISABLE_MANAGER ? `${req.protocol}://${req.get('host')}/manager` : undefined,
       swagger: `${req.protocol}://${req.get('host')}/docs`,
+      webhookDocumentation: `${req.protocol}://${req.get('host')}/webhooks/docs`,
       documentation: 'https://github.com/Neup123/evolution-api/tree/main/docs',
       whatsappWebVersion: (await fetchLatestWaWebVersion({})).version.join('.'),
     });

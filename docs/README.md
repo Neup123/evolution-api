@@ -2,6 +2,14 @@
 
 This fork exposes the installed Baileys 7 socket API as stable HTTP routes while preserving Evolution API's existing routes. Use the live Swagger UI at `/docs` for a form-based request editor; its source file is [`openapi.yaml`](./openapi.yaml).
 
+Webhook responses have their own interactive **AsyncAPI** reference at `/webhooks/docs`. It documents all 49 event POST bodies, field types, enum options, examples, and n8n expressions. Its source is [`asyncapi.yaml`](./asyncapi.yaml), with an easier introductory guide in [`webhooks.md`](./webhooks.md).
+
+Regenerate the webhook contract after event changes with `npm run generate:webhook-docs`, validate it with `npm run audit:webhook-docs`, and render the self-contained site with the official AsyncAPI HTML template:
+
+```bash
+npx @asyncapi/cli generate fromTemplate docs/asyncapi.yaml @asyncapi/html-template@3.5.4 --output docs/webhooks --param singleFile=true --force-write --no-interactive
+```
+
 ## Start here
 
 1. Create and connect an Evolution API instance.
@@ -47,7 +55,7 @@ The older `POST /baileys/{method}/{instanceName}` route with `{ "args": [] }` re
 
 Methods that require process-local streams, callbacks, or socket lifecycle control are intentionally excluded. In particular, use media values accepted by `sendMessage`, product, newsletter, and profile-picture operations instead of calling Baileys's internal `waUploadToServer` function directly.
 
-The manager's **Webhooks** page provides an **Add destination** button, independent event selectors for every destination, and the complete event list below. Its sidebar links open this server's Swagger UI and this fork's documentation.
+The manager's **Webhooks** page provides an **Add webhook** button, named and collapsible webhook cards, independent event selectors for every webhook, and the complete event list below. Its sidebar links open this server's Swagger, webhook event reference, and this fork's documentation.
 
 ## Multiple webhooks per instance
 
