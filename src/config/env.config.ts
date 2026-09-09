@@ -65,6 +65,16 @@ export type Database = {
   READ_THROUGH: ReadThrough;
 };
 
+export type Archive = {
+  ENABLED: boolean;
+  MASTER_KEY: string;
+  API_KEY: string;
+  API_SCOPES: string[];
+  DEFAULT_POLICY: Record<string, unknown>;
+  CONFIRM_TTL_SECONDS: number;
+  S3_PREFIX: string;
+};
+
 export type DeleteData = {
   LOGICAL_MESSAGE_DELETE: boolean;
 };
@@ -441,6 +451,7 @@ export interface Env {
   SSL_CONF: SslConf;
   PROVIDER: ProviderSession;
   DATABASE: Database;
+  ARCHIVE: Archive;
   RABBITMQ: Rabbitmq;
   NATS: Nats;
   SQS: Sqs;
@@ -569,6 +580,30 @@ export class ConfigService {
           TTL_SECONDS: parseNonNegativeInteger(process.env?.DATABASE_READ_THROUGH_TTL_SECONDS, 3600),
           TTL_OVERRIDES: parseReadThroughOverrides(process.env?.DATABASE_READ_THROUGH_TTL_OVERRIDES),
         },
+      },
+      ARCHIVE: {
+        ENABLED: process.env?.ARCHIVE_ENABLED === 'true',
+        MASTER_KEY: process.env?.ARCHIVE_MASTER_KEY || '',
+        API_KEY: process.env?.ARCHIVE_API_KEY || '',
+        API_SCOPES: (
+          process.env?.ARCHIVE_API_SCOPES ||
+          'archive:read,archive:media,archive:export,archive:verify,archive:policy,archive:admin'
+        )
+          .split(',')
+          .map((scope) => scope.trim())
+          .filter(Boolean),
+        DEFAULT_POLICY: (() => {
+          try {
+            return JSON.parse(
+              process.env?.ARCHIVE_DEFAULT_POLICY ||
+                '{"capture":{"events":true,"messages":true,"contacts":true,"chats":true,"groups":true,"calls":true,"receipts":true,"reactions":true},"media":{"mode":"all"},"retentionDays":null}',
+            );
+          } catch {
+            return {};
+          }
+        })(),
+        CONFIRM_TTL_SECONDS: parseNonNegativeInteger(process.env?.ARCHIVE_CONFIRM_TTL_SECONDS, 900),
+        S3_PREFIX: process.env?.ARCHIVE_S3_PREFIX || 'whatsapp-archive',
       },
       RABBITMQ: {
         ENABLED: process.env?.RABBITMQ_ENABLED === 'true',

@@ -804,3 +804,251 @@ model EvoaiSetting {
   Instance        Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   instanceId      String    @unique
 }
+
+
+model ArchiveAccount {
+  id           String   @id
+  instanceName String   @unique @db.VarChar(255)
+  ownerJid     String?  @db.VarChar(100)
+  lastSequence BigInt   @default(0)
+  headHash     String?  @db.VarChar(64)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(6)
+}
+
+model ArchivePolicy {
+  id          String   @id
+  scope       String   @db.VarChar(32)
+  selector    Json     @db.JsonB
+  policy      Json     @db.JsonB
+  version     Int      @default(1)
+  enabled     Boolean  @default(true)
+  effectiveAt DateTime @default(now()) @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+
+  @@index([scope, enabled, effectiveAt])
+}
+
+model ArchiveEvent {
+  id                String    @id
+  accountId         String    @db.VarChar(36)
+  instanceName      String    @db.VarChar(255)
+  sequence          BigInt
+  eventType         String    @db.VarChar(100)
+  entityType        String    @db.VarChar(32)
+  entityJid         String?   @db.VarChar(255)
+  messageId         String?   @db.VarChar(255)
+  occurredAt        DateTime  @db.Timestamptz(6)
+  capturedAt        DateTime  @default(now()) @db.Timestamptz(6)
+  projection        Json      @db.JsonB
+  payloadCiphertext Bytes?
+  payloadIv         Bytes?
+  payloadTag        Bytes?
+  payloadHash       String    @db.VarChar(64)
+  previousHash      String?   @db.VarChar(64)
+  recordHash        String    @db.VarChar(64)
+  excluded          Boolean   @default(false)
+  purgeJobId        String?   @db.VarChar(36)
+
+  @@unique([accountId, sequence])
+  @@index([accountId, eventType, occurredAt])
+  @@index([accountId, entityJid, occurredAt])
+  @@index([accountId, messageId])
+}
+
+model ArchiveMedia {
+  id          String    @id
+  accountId   String    @db.VarChar(36)
+  eventId     String    @db.VarChar(36)
+  messageId   String?   @db.VarChar(255)
+  entityJid   String?   @db.VarChar(255)
+  mediaType   String    @db.VarChar(32)
+  mimeType    String?   @db.VarChar(255)
+  objectKey   String?   @db.VarChar(1024)
+  contentHash String?   @db.VarChar(64)
+  sizeBytes   BigInt?
+  state       String    @default("metadata_only") @db.VarChar(32)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  purgedAt    DateTime? @db.Timestamptz(6)
+
+  @@index([accountId, entityJid, createdAt])
+  @@index([eventId])
+}
+
+model ArchiveIdentityMapping {
+  id          String    @id
+  accountId   String    @db.VarChar(36)
+  pnJid       String?   @db.VarChar(255)
+  lidJid      String?   @db.VarChar(255)
+  sourceEvent String    @db.VarChar(36)
+  validFrom   DateTime  @default(now()) @db.Timestamptz(6)
+  validTo     DateTime? @db.Timestamptz(6)
+
+  @@index([accountId, pnJid])
+  @@index([accountId, lidJid])
+}
+
+model ArchivePurgePreview {
+  id              String   @id
+  accountId       String   @db.VarChar(36)
+  criteria        Json     @db.JsonB
+  summary         Json     @db.JsonB
+  confirmationHash String  @db.VarChar(64)
+  expiresAt       DateTime @db.Timestamptz(6)
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model ArchivePurgeJob {
+  id          String    @id
+  accountId   String    @db.VarChar(36)
+  previewId   String    @unique @db.VarChar(36)
+  criteria    Json      @db.JsonB
+  summary     Json      @db.JsonB
+  status      String    @db.VarChar(32)
+  requestedAt DateTime  @default(now()) @db.Timestamptz(6)
+  completedAt DateTime? @db.Timestamptz(6)
+  error       String?
+}
+
+model ArchivePurgeTombstone {
+  id             String   @id
+  accountId      String   @db.VarChar(36)
+  purgeJobId     String   @unique @db.VarChar(36)
+  criteriaHash   String   @db.VarChar(64)
+  deletedSummary Json     @db.JsonB
+  previousHash   String?  @db.VarChar(64)
+  tombstoneHash  String   @db.VarChar(64)
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model ArchiveAccessLog {
+  id         String   @id
+  accountId  String?  @db.VarChar(36)
+  operation  String   @db.VarChar(100)
+  scope      String   @db.VarChar(100)
+  actorHash  String   @db.VarChar(64)
+  parameters Json     @db.JsonB
+  result     String   @db.VarChar(32)
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([accountId, createdAt])
+}
+
+
+model ArchiveMessage {
+  id             String    @id
+  accountId      String    @db.VarChar(36)
+  waMessageId    String    @db.VarChar(255)
+  chatJid        String    @db.VarChar(255)
+  participantJid String?   @db.VarChar(255)
+  fromMe         Boolean?
+  messageType    String?   @db.VarChar(100)
+  sentAt         DateTime  @db.Timestamptz(6)
+  firstEventId   String    @db.VarChar(36)
+  latestRevision Int       @default(1)
+  deletedAt      DateTime? @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(6)
+
+  @@unique([accountId, chatJid, waMessageId])
+  @@index([accountId, chatJid, sentAt])
+}
+
+model ArchiveMessageRevision {
+  id               String   @id
+  accountId        String   @db.VarChar(36)
+  archiveMessageId String   @db.VarChar(36)
+  eventId          String   @db.VarChar(36)
+  revision         Int
+  projection       Json     @db.JsonB
+  occurredAt       DateTime @db.Timestamptz(6)
+
+  @@unique([archiveMessageId, revision])
+  @@index([accountId, eventId])
+}
+
+model ArchiveReceipt {
+  id             String   @id
+  accountId      String   @db.VarChar(36)
+  eventId        String   @db.VarChar(36)
+  waMessageId    String?  @db.VarChar(255)
+  chatJid        String?  @db.VarChar(255)
+  participantJid String?  @db.VarChar(255)
+  status         String?  @db.VarChar(64)
+  occurredAt     DateTime @db.Timestamptz(6)
+
+  @@index([accountId, waMessageId, occurredAt])
+}
+
+model ArchiveReaction {
+  id             String   @id
+  accountId      String   @db.VarChar(36)
+  eventId        String   @db.VarChar(36)
+  waMessageId    String?  @db.VarChar(255)
+  chatJid        String?  @db.VarChar(255)
+  participantJid String?  @db.VarChar(255)
+  reaction       String?  @db.VarChar(64)
+  removed        Boolean  @default(false)
+  occurredAt     DateTime @db.Timestamptz(6)
+
+  @@index([accountId, waMessageId, occurredAt])
+}
+
+model ArchiveEntityRevision {
+  id         String   @id
+  accountId  String   @db.VarChar(36)
+  eventId    String   @db.VarChar(36)
+  entityType String   @db.VarChar(32)
+  entityJid  String   @db.VarChar(255)
+  sequence   BigInt
+  projection Json     @db.JsonB
+  occurredAt DateTime @db.Timestamptz(6)
+
+  @@unique([accountId, entityType, entityJid, sequence])
+  @@index([accountId, entityType, entityJid, occurredAt])
+}
+
+model ArchiveGroupMembership {
+  id             String    @id
+  accountId      String    @db.VarChar(36)
+  groupJid       String    @db.VarChar(255)
+  participantJid String    @db.VarChar(255)
+  role           String?   @db.VarChar(32)
+  state          String    @db.VarChar(32)
+  sourceEventId  String    @db.VarChar(36)
+  validFrom      DateTime  @db.Timestamptz(6)
+  validTo        DateTime? @db.Timestamptz(6)
+
+  @@index([accountId, groupJid, participantJid, validFrom])
+}
+
+model ArchiveCall {
+  id         String   @id
+  accountId  String   @db.VarChar(36)
+  eventId    String   @db.VarChar(36)
+  callId     String?  @db.VarChar(255)
+  peerJid    String?  @db.VarChar(255)
+  groupJid   String?  @db.VarChar(255)
+  status     String?  @db.VarChar(64)
+  video      Boolean?
+  occurredAt DateTime @db.Timestamptz(6)
+
+  @@index([accountId, peerJid, occurredAt])
+}
+
+model ArchiveSyncGap {
+  id          String    @id
+  accountId   String    @db.VarChar(36)
+  sourceEvent String    @db.VarChar(36)
+  entityJid   String?   @db.VarChar(255)
+  gapType     String    @db.VarChar(64)
+  rangeStart  DateTime? @db.Timestamptz(6)
+  rangeEnd    DateTime? @db.Timestamptz(6)
+  status      String    @db.VarChar(32)
+  details     Json      @db.JsonB
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  resolvedAt  DateTime? @db.Timestamptz(6)
+
+  @@index([accountId, status, createdAt])
+}

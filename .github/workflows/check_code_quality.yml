@@ -10,6 +10,25 @@ jobs:
   check-lint-and-build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: evolution_test
+          POSTGRES_DB: evolution_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d evolution_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://postgres:evolution_test@localhost:5432/evolution_test?schema=public
+      ARCHIVE_ENABLED: "true"
+      ARCHIVE_MASTER_KEY: AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=
+      ARCHIVE_API_KEY: archive-test-key
 
     steps:
     - uses: actions/checkout@v5
@@ -38,8 +57,17 @@ jobs:
     - name: Check webhook event documentation
       run: npm run audit:webhook-docs
 
+    - name: Check archive API documentation
+      run: npm run audit:archive-docs
+
     - name: Generate Prisma client
       run: npm run db:generate
+
+    - name: Apply PostgreSQL migrations
+      run: npm run db:deploy
+
+    - name: Test archive lifecycle
+      run: npm run test:archive
 
     - name: Check build
       run: npm run build

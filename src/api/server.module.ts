@@ -36,9 +36,11 @@ import { TypebotController } from './integrations/chatbot/typebot/controllers/ty
 import { TypebotService } from './integrations/chatbot/typebot/services/typebot.service';
 import { EventManager } from './integrations/event/event.manager';
 import { S3Controller } from './integrations/storage/s3/controllers/s3.controller';
+import { deleteFile } from './integrations/storage/s3/libs/minio.server';
 import { S3Service } from './integrations/storage/s3/services/s3.service';
 import { ProviderFiles } from './provider/sessions';
 import { PrismaRepository } from './repository/repository.service';
+import { ArchiveService } from './services/archive.service';
 import { CacheService } from './services/cache.service';
 import { LocalReadService } from './services/local-read.service';
 import { WAMonitoringService } from './services/monitor.service';
@@ -62,6 +64,9 @@ if (configService.get<ProviderSession>('PROVIDER').ENABLED) {
 }
 
 export const prismaRepository = new PrismaRepository(configService);
+export const archiveService = new ArchiveService(prismaRepository, configService, (objectKey) =>
+  deleteFile('', objectKey),
+);
 export const localReadService = new LocalReadService(prismaRepository, configService);
 
 export const waMonitor = new WAMonitoringService(
@@ -109,7 +114,7 @@ export const businessController = new BusinessController(waMonitor);
 export const groupController = new GroupController(waMonitor, localReadService);
 export const labelController = new LabelController(waMonitor);
 
-export const eventManager = new EventManager(prismaRepository, waMonitor);
+export const eventManager = new EventManager(prismaRepository, waMonitor, archiveService);
 export const chatbotController = new ChatbotController(prismaRepository, waMonitor);
 export const channelController = new ChannelController(prismaRepository, waMonitor);
 

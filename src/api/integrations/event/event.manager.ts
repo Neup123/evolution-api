@@ -6,6 +6,7 @@ import { SqsController } from '@api/integrations/event/sqs/sqs.controller';
 import { WebhookController } from '@api/integrations/event/webhook/webhook.controller';
 import { WebsocketController } from '@api/integrations/event/websocket/websocket.controller';
 import { PrismaRepository } from '@api/repository/repository.service';
+import { ArchiveService } from '@api/services/archive.service';
 import { WAMonitoringService } from '@api/services/monitor.service';
 import { Server } from 'http';
 
@@ -20,7 +21,11 @@ export class EventManager {
   private pusherController: PusherController;
   private kafkaController: KafkaController;
 
-  constructor(prismaRepository: PrismaRepository, waMonitor: WAMonitoringService) {
+  constructor(
+    prismaRepository: PrismaRepository,
+    waMonitor: WAMonitoringService,
+    private readonly archiveService?: ArchiveService,
+  ) {
     this.prisma = prismaRepository;
     this.monitor = waMonitor;
 
@@ -125,6 +130,7 @@ export class EventManager {
     integration?: string[];
     extra?: Record<string, any>;
   }): Promise<void> {
+    await this.archiveService?.capture(eventData);
     await this.websocket.emit(eventData);
     await this.rabbitmq.emit(eventData);
     await this.nats.emit(eventData);

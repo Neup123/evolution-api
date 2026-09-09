@@ -5,6 +5,7 @@ import { ChannelRouter } from '@api/integrations/channel/channel.router';
 import { ChatbotRouter } from '@api/integrations/chatbot/chatbot.router';
 import { EventRouter } from '@api/integrations/event/event.router';
 import { StorageRouter } from '@api/integrations/storage/storage.router';
+import { ArchiveRouter } from '@api/routes/archive.router';
 import { waMonitor } from '@api/server.module';
 import { configService, Database, Facebook } from '@config/env.config';
 import { fetchLatestWaWebVersion } from '@utils/fetchLatestWaWebVersion';
@@ -245,6 +246,7 @@ router
     });
   })
   .use('/instance', new InstanceRouter(configService, ...guards).router)
+  .use('/archive', new ArchiveRouter(authGuard['apikey']).router)
   .use('/message', new MessageRouter(...guards).router)
   .use('/call', new CallRouter(...guards).router)
   .use('/chat', new ChatRouter(...guards).router)
