@@ -2,7 +2,7 @@ asyncapi: 2.6.0
 id: https://github.com/Neup123/evolution-api/docs/asyncapi.yaml
 info:
   title: Evolution API Webhook Events
-  version: 2.3.7-baileys-7.0.0-rc14
+  version: 3.0.0-baileys-7.0.0-rc14
   description: >-
     Consumer-facing contract for webhook HTTP POST requests emitted by this Evolution API fork.
 
@@ -796,7 +796,7 @@ components:
             event: application.startup
             instance: my-instance
             data:
-              version: 2.3.7
+              version: 3.0.0
             destination: https://n8n.example/webhook/evolution/application-startup
             date_time: 2026-09-07T12:00:00.000Z
             sender: 15550000000@s.whatsapp.net

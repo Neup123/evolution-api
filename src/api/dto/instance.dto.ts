@@ -4,6 +4,7 @@ import { WAPresence } from 'baileys';
 
 export class InstanceDto extends IntegrationDto {
   instanceName: string;
+  live?: boolean;
   instanceId?: string;
   qrcode?: boolean;
   businessId?: string;

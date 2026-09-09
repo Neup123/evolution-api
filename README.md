@@ -199,6 +199,7 @@ Local storage or S3/MinIO. Automatic media download from WhatsApp. Optional audi
 | Website | [evolutionfoundation.com.br](https://evolutionfoundation.com.br) |
 | Swagger UI | [`/docs`](./docs/openapi.yaml) |
 | Fork documentation | [`docs/README.md`](./docs/README.md) |
+| Local-first reads | [`docs/local-first-reads.md`](./docs/local-first-reads.md) |
 | Community | [evolutionfoundation.com.br/community](https://evolutionfoundation.com.br/community) |
 | Docker Hub | [evoapicloud/evolution-api](https://hub.docker.com/r/evoapicloud/evolution-api) |
 | Changelog | [CHANGELOG.md](./CHANGELOG.md) |

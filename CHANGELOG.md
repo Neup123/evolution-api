@@ -1,3 +1,17 @@
+# 3.0.0 (2026-09-09)
+
+### Breaking changes
+
+* Removed the duplicate flat `POST /baileys/{method}/{instanceName}` routes. Use `POST /baileys/{group}/{method}/{instanceName}`.
+* Recreated `IsOnWhatsapp` as an instance-scoped cache; existing unscoped cache rows are discarded by the migration.
+
+### Features
+
+* Added persistent local-first read snapshots with global and per-method TTLs.
+* Added body/query `live: true` overrides while preserving endpoint response bodies.
+* Persisted group and blocklist event snapshots and invalidated affected reads after mutations.
+* Corrected phone/LID verification so unknown offline LIDs are not reported as real contacts.
+
 # 2.3.7 (2025-12-05)
 
 ### Features

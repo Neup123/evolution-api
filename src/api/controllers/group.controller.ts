@@ -13,33 +13,80 @@ import {
   GroupUpdateSettingDto,
 } from '@api/dto/group.dto';
 import { InstanceDto } from '@api/dto/instance.dto';
+import { forceLiveRead, LocalReadService } from '@api/services/local-read.service';
 import { WAMonitoringService } from '@api/services/monitor.service';
 
 export class GroupController {
-  constructor(private readonly waMonitor: WAMonitoringService) {}
+  constructor(
+    private readonly waMonitor: WAMonitoringService,
+    private readonly localReadService: LocalReadService,
+  ) {}
+
+  private async invalidateGroupReads(instanceName: string) {
+    await this.localReadService.invalidateByInstanceName(instanceName, [
+      'groupMetadata',
+      'groupRequestParticipantsList',
+      'groupInviteCode',
+      'groupGetInviteInfo',
+      'groupFetchAllParticipating',
+      'communityMetadata',
+      'communityFetchLinkedGroups',
+      'communityRequestParticipantsList',
+      'communityInviteCode',
+      'communityGetInviteInfo',
+      'communityFetchAllParticipating',
+      'group.findGroupInfos',
+      'group.fetchAllGroups',
+      'group.participants',
+    ]);
+  }
 
   public async createGroup(instance: InstanceDto, create: CreateGroupDto) {
-    return await this.waMonitor.waInstances[instance.instanceName].createGroup(create);
+    const response = await this.waMonitor.waInstances[instance.instanceName].createGroup(create);
+    await this.invalidateGroupReads(instance.instanceName);
+    return response;
   }
 
   public async updateGroupPicture(instance: InstanceDto, update: GroupPictureDto) {
-    return await this.waMonitor.waInstances[instance.instanceName].updateGroupPicture(update);
+    const response = await this.waMonitor.waInstances[instance.instanceName].updateGroupPicture(update);
+    await this.invalidateGroupReads(instance.instanceName);
+    return response;
   }
 
   public async updateGroupSubject(instance: InstanceDto, update: GroupSubjectDto) {
-    return await this.waMonitor.waInstances[instance.instanceName].updateGroupSubject(update);
+    const response = await this.waMonitor.waInstances[instance.instanceName].updateGroupSubject(update);
+    await this.invalidateGroupReads(instance.instanceName);
+    return response;
   }
 
   public async updateGroupDescription(instance: InstanceDto, update: GroupDescriptionDto) {
-    return await this.waMonitor.waInstances[instance.instanceName].updateGroupDescription(update);
+    const response = await this.waMonitor.waInstances[instance.instanceName].updateGroupDescription(update);
+    await this.invalidateGroupReads(instance.instanceName);
+    return response;
   }
 
   public async findGroupInfo(instance: InstanceDto, groupJid: GroupJid) {
-    return await this.waMonitor.waInstances[instance.instanceName].findGroup(groupJid);
+    return (
+      await this.localReadService.execute({
+        instanceName: instance.instanceName,
+        method: 'group.findGroupInfos',
+        args: [groupJid.groupJid],
+        live: forceLiveRead(groupJid.live, instance.live),
+        callLive: () => this.waMonitor.waInstances[instance.instanceName].findGroup(groupJid),
+      })
+    ).value;
   }
 
   public async fetchAllGroups(instance: InstanceDto, getPaticipants: GetParticipant) {
-    return await this.waMonitor.waInstances[instance.instanceName].fetchAllGroups(getPaticipants);
+    return (
+      await this.localReadService.execute({
+        instanceName: instance.instanceName,
+        method: 'group.fetchAllGroups',
+        args: [getPaticipants.getParticipants],
+        live: forceLiveRead(getPaticipants.live, instance.live),
+        callLive: () => this.waMonitor.waInstances[instance.instanceName].fetchAllGroups(getPaticipants),
+      })
+    ).value;
   }
 
   public async inviteCode(instance: InstanceDto, groupJid: GroupJid) {
@@ -59,26 +106,44 @@ export class GroupController {
   }
 
   public async revokeInviteCode(instance: InstanceDto, groupJid: GroupJid) {
-    return await this.waMonitor.waInstances[instance.instanceName].revokeInviteCode(groupJid);
+    const response = await this.waMonitor.waInstances[instance.instanceName].revokeInviteCode(groupJid);
+    await this.invalidateGroupReads(instance.instanceName);
+    return response;
   }
 
   public async findParticipants(instance: InstanceDto, groupJid: GroupJid) {
-    return await this.waMonitor.waInstances[instance.instanceName].findParticipants(groupJid);
+    return (
+      await this.localReadService.execute({
+        instanceName: instance.instanceName,
+        method: 'group.participants',
+        args: [groupJid.groupJid],
+        live: forceLiveRead(groupJid.live, instance.live),
+        callLive: () => this.waMonitor.waInstances[instance.instanceName].findParticipants(groupJid),
+      })
+    ).value;
   }
 
   public async updateGParticipate(instance: InstanceDto, update: GroupUpdateParticipantDto) {
-    return await this.waMonitor.waInstances[instance.instanceName].updateGParticipant(update);
+    const response = await this.waMonitor.waInstances[instance.instanceName].updateGParticipant(update);
+    await this.invalidateGroupReads(instance.instanceName);
+    return response;
   }
 
   public async updateGSetting(instance: InstanceDto, update: GroupUpdateSettingDto) {
-    return await this.waMonitor.waInstances[instance.instanceName].updateGSetting(update);
+    const response = await this.waMonitor.waInstances[instance.instanceName].updateGSetting(update);
+    await this.invalidateGroupReads(instance.instanceName);
+    return response;
   }
 
   public async toggleEphemeral(instance: InstanceDto, update: GroupToggleEphemeralDto) {
-    return await this.waMonitor.waInstances[instance.instanceName].toggleEphemeral(update);
+    const response = await this.waMonitor.waInstances[instance.instanceName].toggleEphemeral(update);
+    await this.invalidateGroupReads(instance.instanceName);
+    return response;
   }
 
   public async leaveGroup(instance: InstanceDto, groupJid: GroupJid) {
-    return await this.waMonitor.waInstances[instance.instanceName].leaveGroup(groupJid);
+    const response = await this.waMonitor.waInstances[instance.instanceName].leaveGroup(groupJid);
+    await this.invalidateGroupReads(instance.instanceName);
+    return response;
   }
 }

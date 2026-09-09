@@ -602,7 +602,8 @@ export class ChannelStartupService {
       id?: string;
       fromMe?: boolean;
       remoteJid?: string;
-      participants?: string;
+      remoteJidAlt?: string;
+      participant?: string;
     };
 
     const timestampFilter = {};
@@ -624,9 +625,20 @@ export class ChannelStartupService {
         ...timestampFilter,
         AND: [
           keyFilters?.id ? { key: { path: ['id'], equals: keyFilters?.id } } : {},
-          keyFilters?.fromMe ? { key: { path: ['fromMe'], equals: keyFilters?.fromMe } } : {},
-          keyFilters?.remoteJid ? { key: { path: ['remoteJid'], equals: keyFilters?.remoteJid } } : {},
-          keyFilters?.participants ? { key: { path: ['participants'], equals: keyFilters?.participants } } : {},
+          keyFilters?.fromMe !== undefined ? { key: { path: ['fromMe'], equals: keyFilters.fromMe } } : {},
+          keyFilters?.participant ? { key: { path: ['participant'], equals: keyFilters?.participant } } : {},
+          ...(keyFilters?.remoteJid || keyFilters?.remoteJidAlt
+            ? [
+                {
+                  OR: [
+                    ...(keyFilters.remoteJid ? [{ key: { path: ['remoteJid'], equals: keyFilters.remoteJid } }] : []),
+                    ...(keyFilters.remoteJidAlt
+                      ? [{ key: { path: ['remoteJidAlt'], equals: keyFilters.remoteJidAlt } }]
+                      : []),
+                  ],
+                },
+              ]
+            : []),
         ],
       },
     });
@@ -648,9 +660,20 @@ export class ChannelStartupService {
         ...timestampFilter,
         AND: [
           keyFilters?.id ? { key: { path: ['id'], equals: keyFilters?.id } } : {},
-          keyFilters?.fromMe ? { key: { path: ['fromMe'], equals: keyFilters?.fromMe } } : {},
-          keyFilters?.remoteJid ? { key: { path: ['remoteJid'], equals: keyFilters?.remoteJid } } : {},
-          keyFilters?.participants ? { key: { path: ['participants'], equals: keyFilters?.participants } } : {},
+          keyFilters?.fromMe !== undefined ? { key: { path: ['fromMe'], equals: keyFilters.fromMe } } : {},
+          keyFilters?.participant ? { key: { path: ['participant'], equals: keyFilters?.participant } } : {},
+          ...(keyFilters?.remoteJid || keyFilters?.remoteJidAlt
+            ? [
+                {
+                  OR: [
+                    ...(keyFilters.remoteJid ? [{ key: { path: ['remoteJid'], equals: keyFilters.remoteJid } }] : []),
+                    ...(keyFilters.remoteJidAlt
+                      ? [{ key: { path: ['remoteJidAlt'], equals: keyFilters.remoteJidAlt } }]
+                      : []),
+                  ],
+                },
+              ]
+            : []),
         ],
       },
       orderBy: {
@@ -763,7 +786,7 @@ export class ChannelStartupService {
           "Message"."id" AS "lastMessageId",
           "Message"."key" AS "lastMessage_key",
           CASE
-            WHEN "Message"."key"->>'fromMe' = 'true' THEN 'Você'
+            WHEN "Message"."key"->>'fromMe' = 'true' THEN 'You'
             ELSE "Message"."pushName"
           END AS "lastMessagePushName",
           "Message"."participant" AS "lastMessageParticipant",
