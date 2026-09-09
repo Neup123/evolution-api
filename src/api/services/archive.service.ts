@@ -138,7 +138,7 @@ export class ArchiveService {
   }
 
   public async authorize(key: string | undefined, requiredScope: string) {
-    const actorHash = this.hash(Buffer.from(key || 'missing'));
+    const actorHash = this.credentialFingerprint(key);
     const audit = async (result: 'allowed' | 'denied') =>
       this.prisma.archiveAccessLog.create({
         data: {
@@ -1044,6 +1044,13 @@ export class ArchiveService {
 
   private hash(value: Buffer) {
     return createHash('sha256').update(value).digest('hex');
+  }
+
+  private credentialFingerprint(value: string | undefined) {
+    const auditKey = this.key || Buffer.from(this.config.API_KEY || 'archive-audit-unconfigured');
+    return createHmac('sha256', auditKey)
+      .update(value || 'missing')
+      .digest('hex');
   }
 
   private objectKeyFromUrl(value?: string): string | null {

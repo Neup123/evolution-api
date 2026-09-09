@@ -31,7 +31,7 @@ const operations = [
 for (const [method, route, documented] of operations) {
   if (!router.includes(`.${method}('${route}'`)) throw new Error(`Archive router is missing ${method.toUpperCase()} ${route}`);
   if (!openapi.paths?.[documented]?.[method]) throw new Error(`OpenAPI is missing ${method.toUpperCase()} ${documented}`);
-  if (!guide.includes(documented.replaceAll('{instanceName}', '{instanceName}'))) throw new Error(`Archive guide is missing ${documented}`);
+  if (!guide.includes(documented)) throw new Error(`Archive guide is missing ${documented}`);
 }
 for (const schema of ['ArchiveStatus', 'ArchiveEvent', 'ArchiveMedia', 'ArchiveMessageHistory', 'ArchiveReceipt', 'ArchiveReaction', 'ArchiveMembership', 'ArchiveCall', 'ArchiveSyncGap', 'ArchivePolicyInput', 'ArchivePolicy', 'ArchivePurgeCriteria', 'ArchivePurgePreview', 'ArchiveTombstone']) {
   if (!openapi.components?.['x-archive-schemas']?.[schema]) throw new Error(`OpenAPI is missing ${schema}`);
