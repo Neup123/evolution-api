@@ -500,7 +500,7 @@ export class ArchiveService {
         accountId: account.id,
         criteria: criteria as Prisma.InputJsonValue,
         summary: { events, media },
-        confirmationHash: this.hash(Buffer.from(token)),
+        confirmationHash: this.credentialFingerprint(token),
         expiresAt: new Date(Date.now() + this.config.CONFIRM_TTL_SECONDS * 1000),
       },
     });
@@ -517,7 +517,7 @@ export class ArchiveService {
     const preview = await this.prisma.archivePurgePreview.findUnique({ where: { id: previewId } });
     if (!preview) throw new NotFoundException('Purge preview not found');
     if (preview.expiresAt <= new Date()) throw new BadRequestException('Purge preview expired');
-    if (preview.confirmationHash !== this.hash(Buffer.from(token || '')))
+    if (preview.confirmationHash !== this.credentialFingerprint(token))
       throw new ForbiddenException('Invalid confirmation token');
     const consumed = await this.prisma.archivePurgeJob.findUnique({ where: { previewId } });
     if (consumed) throw new BadRequestException('Purge preview has already been consumed');
