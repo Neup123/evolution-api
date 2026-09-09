@@ -158,7 +158,7 @@ import { useVoiceCallsBaileys } from './voiceCalls/useVoiceCallsBaileys';
 
 const groupMetadataCache = new CacheService(new CacheEngine(configService, 'groups').getEngine());
 
-// Adicione a função getVideoDuration no início do arquivo
+// Keep getVideoDuration near the beginning of the file.
 async function getVideoDuration(input: Buffer | string | Readable): Promise<number> {
   const MediaInfoFactory = (await import('mediainfo.js')).default;
   const mediainfo = await MediaInfoFactory({ format: 'JSON' });
@@ -2267,7 +2267,7 @@ export class BaileysStartupService extends ChannelStartupService {
 
     if (ephemeralExpiration) option.ephemeralExpiration = ephemeralExpiration;
 
-    // NOTE: NÃO DEVEMOS GERAR O messageId AQUI, SOMENTE SE VIER INFORMADO POR PARAMETRO. A GERAÇÃO ANTERIOR IMPEDE O WZAP DE IDENTIFICAR A SOURCE.
+    // Do not generate messageId here. Use it only when supplied by the caller; generating it here prevents WhatsApp from identifying the source.
     if (messageId) option.messageId = messageId;
 
     if (message['viewOnceMessage']) {
@@ -3048,7 +3048,7 @@ export class BaileysStartupService extends ChannelStartupService {
         return await sharp(imageBuffer).webp().toBuffer();
       }
     } catch (error) {
-      console.error('Erro ao converter a imagem para WebP:', error);
+      console.error('Error converting the image to WebP:', error);
       throw error;
     }
   }
@@ -3764,7 +3764,7 @@ export class BaileysStartupService extends ChannelStartupService {
     // Combine results
     onWhatsapp.push(...verifiedUsers);
 
-    // TODO: Salvar no cache apenas números que NÃO estavam no cache
+    // TODO: Save only numbers that were not already cached.
     const numbersToCache = onWhatsapp.filter((user) => {
       // Verifica se estava no cache usando jidOptions
       const cached = cachedNumbers?.find((cached) => cached.jidOptions.includes(user.jid.replace('+', '')));
@@ -3772,7 +3772,7 @@ export class BaileysStartupService extends ChannelStartupService {
     });
 
     if (numbersToCache.length > 0) {
-      this.logger.verbose(`Salvando ${numbersToCache.length} números no cache`);
+      this.logger.verbose(`Saving ${numbersToCache.length} numbers to the cache`);
       await saveOnWhatsappCache(
         numbersToCache.map((user) => ({
           remoteJid: user.jid,
@@ -4774,7 +4774,7 @@ export class BaileysStartupService extends ChannelStartupService {
       pushName:
         message.pushName ||
         (message.key.fromMe
-          ? 'Você'
+          ? 'You'
           : message?.participant || (message.key?.participant ? message.key.participant.split('@')[0] : null)),
       status: status[message.status],
       message: this.deserializeMessageBuffers({ ...message.message }),

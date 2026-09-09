@@ -786,7 +786,7 @@ export class ChannelStartupService {
           "Message"."id" AS "lastMessageId",
           "Message"."key" AS "lastMessage_key",
           CASE
-            WHEN "Message"."key"->>'fromMe' = 'true' THEN 'Você'
+            WHEN "Message"."key"->>'fromMe' = 'true' THEN 'You'
             ELSE "Message"."pushName"
           END AS "lastMessagePushName",
           "Message"."participant" AS "lastMessageParticipant",

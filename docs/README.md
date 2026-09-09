@@ -57,6 +57,8 @@ Evolution API 3 exposes only the typed grouped routes. The older `POST /baileys/
 
 Eligible reads use a persistent, instance-scoped database snapshot before contacting WhatsApp. A missing or expired snapshot is refreshed from WhatsApp and saved. Add `live=true` as a query parameter or `"live": true` to a JSON body to force a refresh. The response body is unchanged; grouped Baileys routes expose `X-Evolution-Data-Source: local|live` and, for cached responses, `X-Evolution-Data-Age`.
 
+See the [local-first read-through reference](./local-first-reads.md) for the complete method matrix, configuration, identity rules, invalidation behavior, migration sequence, examples, and rollback guidance.
+
 Configure the policy with `DATABASE_READ_THROUGH_ENABLED`, `DATABASE_READ_THROUGH_TTL_SECONDS`, and a JSON map in `DATABASE_READ_THROUGH_TTL_OVERRIDES`, for example `{"groupMetadata":300,"fetchPrivacySettings":3600}`. A live refresh failure is returned to the caller; stale data is never substituted silently.
 
 The v3 migration recreates `IsOnWhatsapp` as an instance-scoped table and therefore clears the old unscoped number cache. It also creates `LocalReadSnapshot`. Apply the PostgreSQL or MySQL migrations before starting v3.
