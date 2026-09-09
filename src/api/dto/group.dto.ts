@@ -22,10 +22,12 @@ export class GroupDescriptionDto {
 
 export class GroupJid {
   groupJid: string;
+  live?: boolean;
 }
 
 export class GetParticipant {
   getParticipants: string;
+  live?: boolean;
 }
 
 export class GroupInvite {

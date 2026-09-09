@@ -118,17 +118,11 @@ Webhook delivery can be retried. Make downstream writes idempotent. For messages
 
 ## WhatsApp blocklist behavior
 
-The blocklist belongs to the connected WhatsApp account. It is not scoped to an
-Evolution instance workflow, group, or community. Use it when the WhatsApp
-account itself considers a contact blocked. Keep application-specific deny
-lists separately when blocking the contact at the WhatsApp account level would
-be too broad.
+The blocklist belongs to the connected WhatsApp account. It is not scoped to an Evolution workflow, group, or community. Use it when the WhatsApp account itself considers a contact blocked. Keep application-specific deny lists separately when account-level blocking would be too broad.
 
 ### Read the current blocklist
 
-Baileys `fetchBlocklist()` sends an IQ `get` request to WhatsApp's `blocklist`
-namespace and returns the JIDs from the response's `list/item` elements. Through
-the generic Baileys REST adapter, call:
+Baileys `fetchBlocklist()` sends an IQ request to WhatsApp and returns the JIDs in the response. Through the grouped REST adapter, call:
 
 ```http
 POST /baileys/account/fetchBlocklist/{instanceName}
@@ -138,67 +132,19 @@ apikey: your-api-key
 {}
 ```
 
-The method result is an array of user JIDs. Depending on WhatsApp's identity
-data and the Baileys version, entries can use a phone-number JID or LID. Compare
-against both identities when both are available; do not compare only the digits
-from one representation.
-
-`fetchBlocklist()` is an authoritative snapshot at the moment of the request.
-It is preferable to reconstructing block state from webhook history, because a
-consumer may have missed an event while it was offline.
+Evolution API v3 serves a fresh persistent snapshot first. Send `live=true` in the query or JSON body when the caller needs an authoritative decision-time refresh. Depending on WhatsApp identity data, entries can use a phone-number JID or LID; compare both identities when available.
 
 ### Block or unblock a contact
 
 There are two REST surfaces:
 
-- `POST /chat/updateBlockStatus/{instanceName}` accepts `number` and `status`,
-  where `status` is `block` or `unblock`. Evolution resolves the number through
-  `whatsappNumber()` and then calls Baileys.
-- `POST /baileys/account/updateBlockStatus/{instanceName}` accepts named `jid`
-  and `action` fields, where `action` is `block` or `unblock`.
-- The compatibility route `POST /baileys/updateBlockStatus/{instanceName}`
-  accepts the positional body `{ "args": [jid, action] }`.
+- `POST /chat/updateBlockStatus/{instanceName}` accepts `number` and `status`, where `status` is `block` or `unblock`.
+- `POST /baileys/account/updateBlockStatus/{instanceName}` accepts named `jid` and `action` fields, where `action` is `block` or `unblock`.
 
-Baileys 7 normalizes the supplied JID and requires a known mapping between the
-contact's LID and phone-number JID. Blocking sends both identities to WhatsApp;
-unblocking sends the LID. If the mapping cannot be resolved, Baileys rejects the
-operation instead of guessing. A successful Evolution `updateBlockStatus`
-response confirms that WhatsApp accepted the request; use `fetchBlocklist()` if
-the caller needs to verify the resulting snapshot.
+The former flat compatibility route was removed in v3. Baileys normalizes the JID and requires a known mapping between LID and phone-number JID. If the mapping cannot be resolved, it rejects the operation instead of guessing.
 
 ### Blocklist webhooks
 
-The events are notifications, not commands:
+`blocklist.set` is a complete snapshot and replaces the local read snapshot. `blocklist.update` is incremental, so Evolution invalidates the snapshot and refreshes it on the next read. Deliveries can be missed or duplicated; use `live=true` for decisions that must reflect WhatsApp immediately.
 
-```json
-{
-  "event": "blocklist.set",
-  "instance": "example",
-  "data": {
-    "blocklist": ["15551234567@s.whatsapp.net"]
-  }
-}
-```
-
-`blocklist.set` is the complete list received during connection initialization
-or synchronization. Replace a cached snapshot with its `data.blocklist` value.
-
-```json
-{
-  "event": "blocklist.update",
-  "instance": "example",
-  "data": {
-    "blocklist": ["15551234567@s.whatsapp.net"],
-    "type": "add"
-  }
-}
-```
-
-`blocklist.update` is incremental. Add all `data.blocklist` entries when
-`data.type` is `add`, and remove them when it is `remove`. Delivery can be
-missed or duplicated, so periodic or decision-time `fetchBlocklist()` calls
-remain the source of truth.
-
-Blocking is account-wide and should not be used merely to reject a group join
-request unless the same person should also be blocked from direct contact with
-the connected WhatsApp account.
+Blocking is account-wide and should not be used merely to reject a group join request unless the same person should also be blocked from direct contact with the connected WhatsApp account.

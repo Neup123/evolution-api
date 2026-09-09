@@ -55,8 +55,8 @@ import {
 import { chatwootImport } from '@api/integrations/chatbot/chatwoot/utils/chatwoot-import-helper';
 import * as s3Service from '@api/integrations/storage/s3/libs/minio.server';
 import { ProviderFiles } from '@api/provider/sessions';
-import { PrismaRepository, Query } from '@api/repository/repository.service';
-import { chatbotController, waMonitor } from '@api/server.module';
+import { PrismaRepository } from '@api/repository/repository.service';
+import { chatbotController, localReadService, waMonitor } from '@api/server.module';
 import { CacheService } from '@api/services/cache.service';
 import { ChannelStartupService } from '@api/services/channel.service';
 import { Events, MessageSubtype, TypeMediaMessage, wa } from '@api/types/wa.types';
@@ -79,7 +79,7 @@ import { BadRequestException, InternalServerErrorException, NotFoundException } 
 import ffmpegPath from '@ffmpeg-installer/ffmpeg';
 import { Boom } from '@hapi/boom';
 import { createId as cuid } from '@paralleldrive/cuid2';
-import { Instance, Message } from '@prisma/client';
+import { Instance } from '@prisma/client';
 import { createJid } from '@utils/createJid';
 import { fetchLatestWaWebVersion } from '@utils/fetchLatestWaWebVersion';
 import { makeProxyAgent, makeProxyAgentUndici } from '@utils/makeProxyAgent';
@@ -155,13 +155,6 @@ import { v4 } from 'uuid';
 import { BaileysApiMethod, isBaileysApiMethod } from './baileys.methods';
 import { BaileysMessageProcessor } from './baileysMessage.processor';
 import { useVoiceCallsBaileys } from './voiceCalls/useVoiceCallsBaileys';
-
-export interface ExtendedIMessageKey extends proto.IMessageKey {
-  remoteJidAlt?: string;
-  participantAlt?: string;
-  server_id?: string;
-  isViewOnce?: boolean;
-}
 
 const groupMetadataCache = new CacheService(new CacheEngine(configService, 'groups').getEngine());
 
@@ -824,7 +817,10 @@ export class BaileysStartupService extends ChannelStartupService {
 
           const usersContacts = contactsRaw.filter((c) => c.remoteJid.includes('@s.whatsapp'));
           if (usersContacts) {
-            await saveOnWhatsappCache(usersContacts.map((c) => ({ remoteJid: c.remoteJid })));
+            await saveOnWhatsappCache(
+              usersContacts.map((c) => ({ remoteJid: c.remoteJid })),
+              this.instanceId,
+            );
           }
         }
 
@@ -844,51 +840,13 @@ export class BaileysStartupService extends ChannelStartupService {
           );
         }
 
-        const updatedContacts = await Promise.all(
-          contacts.map(async (contact) => ({
-            remoteJid: contact.id,
-            pushName: contact?.name || contact?.verifiedName || contact.id.split('@')[0],
-            profilePicUrl: (await this.profilePicture(contact.id)).profilePictureUrl,
-            instanceId: this.instanceId,
-          })),
-        );
-
-        if (updatedContacts.length > 0) {
-          const usersContacts = updatedContacts.filter((c) => c.remoteJid.includes('@s.whatsapp'));
-          if (usersContacts) {
-            await saveOnWhatsappCache(usersContacts.map((c) => ({ remoteJid: c.remoteJid })));
-          }
-
-          this.sendDataWebhook(Events.CONTACTS_UPDATE, updatedContacts);
-          await Promise.all(
-            updatedContacts.map(async (contact) => {
-              if (this.configService.get<Database>('DATABASE').SAVE_DATA.CONTACTS) {
-                await this.prismaRepository.contact.updateMany({
-                  where: { remoteJid: contact.remoteJid, instanceId: this.instanceId },
-                  data: { profilePicUrl: contact.profilePicUrl },
-                });
-              }
-
-              if (this.configService.get<Chatwoot>('CHATWOOT').ENABLED && this.localChatwoot?.enabled) {
-                const instance = { instanceName: this.instance.name, instanceId: this.instance.id };
-
-                const findParticipant = await this.chatwootService.findContact(
-                  instance,
-                  contact.remoteJid.split('@')[0],
-                );
-
-                if (!findParticipant) {
-                  return;
-                }
-
-                this.chatwootService.updateContact(instance, findParticipant.id, {
-                  name: contact.pushName,
-                  avatar_url: contact.profilePicUrl,
-                });
-              }
-            }),
-          );
-        }
+        await localReadService.invalidate(this.instanceId, [
+          'chat.fetchProfilePictureUrl',
+          'chat.fetchProfile',
+          'chat.fetchBusinessProfile',
+          'fetchStatus',
+          'getBusinessProfile',
+        ]);
       } catch (error) {
         console.error(error);
         this.logger.error(`Error: ${error.message}`);
@@ -902,7 +860,6 @@ export class BaileysStartupService extends ChannelStartupService {
         contactsRaw.push({
           remoteJid: contact.id,
           pushName: contact?.name ?? contact?.verifiedName,
-          profilePicUrl: (await this.profilePicture(contact.id)).profilePictureUrl,
           instanceId: this.instanceId,
         });
       }
@@ -920,6 +877,14 @@ export class BaileysStartupService extends ChannelStartupService {
         await this.prismaRepository.$transaction(updateTransactions);
       }
 
+      await localReadService.invalidate(this.instanceId, [
+        'chat.fetchProfilePictureUrl',
+        'chat.fetchProfile',
+        'chat.fetchBusinessProfile',
+        'fetchStatus',
+        'getBusinessProfile',
+      ]);
+
       //const usersContacts = contactsRaw.filter((c) => c.remoteJid.includes('@s.whatsapp'));
     },
   };
@@ -932,6 +897,7 @@ export class BaileysStartupService extends ChannelStartupService {
       isLatest,
       progress,
       syncType,
+      lidPnMappings,
     }: {
       chats: Chat[];
       contacts: Contact[];
@@ -939,8 +905,26 @@ export class BaileysStartupService extends ChannelStartupService {
       isLatest?: boolean;
       progress?: number;
       syncType?: proto.HistorySync.HistorySyncType;
+      lidPnMappings?: { pn: string; lid: string }[];
     }) => {
       try {
+        if (lidPnMappings?.length) {
+          await saveOnWhatsappCache(
+            lidPnMappings.map((mapping) => ({
+              remoteJid: mapping.pn,
+              remoteJidAlt: mapping.lid,
+              lid: 'lid' as const,
+              exists: true,
+            })),
+            this.instanceId,
+          );
+          await localReadService.invalidate(this.instanceId, [
+            'onWhatsapp',
+            'chat.whatsappNumbers',
+            'chat.fetchProfile',
+          ]);
+        }
+
         if (syncType === proto.HistorySync.HistorySyncType.ON_DEMAND) {
           console.log('received on-demand history sync, messages=', messages);
         }
@@ -1502,7 +1486,6 @@ export class BaileysStartupService extends ChannelStartupService {
           } = {
             remoteJid: received.key.remoteJid,
             pushName: received.key.fromMe ? '' : received.key.fromMe == null ? '' : received.pushName,
-            profilePicUrl: (await this.profilePicture(received.key.remoteJid)).profilePictureUrl,
             instanceId: this.instanceId,
           };
 
@@ -1511,14 +1494,17 @@ export class BaileysStartupService extends ChannelStartupService {
           }
 
           if (contactRaw.remoteJid.includes('@s.whatsapp') || contactRaw.remoteJid.includes('@lid')) {
-            await saveOnWhatsappCache([
-              {
-                remoteJid:
-                  messageRaw.key.addressingMode === 'lid' ? messageRaw.key.remoteJidAlt : messageRaw.key.remoteJid,
-                remoteJidAlt: messageRaw.key.remoteJidAlt,
-                lid: messageRaw.key.addressingMode === 'lid' ? 'lid' : null,
-              },
-            ]);
+            await saveOnWhatsappCache(
+              [
+                {
+                  remoteJid:
+                    messageRaw.key.addressingMode === 'lid' ? messageRaw.key.remoteJidAlt : messageRaw.key.remoteJid,
+                  remoteJidAlt: messageRaw.key.remoteJidAlt,
+                  lid: messageRaw.key.addressingMode === 'lid' ? 'lid' : null,
+                },
+              ],
+              this.instanceId,
+            );
           }
 
           if (contact) {
@@ -1732,12 +1718,36 @@ export class BaileysStartupService extends ChannelStartupService {
   };
 
   private readonly groupHandler = {
-    'groups.upsert': (groupMetadata: GroupMetadata[]) => {
+    'groups.upsert': async (groupMetadata: GroupMetadata[]) => {
       this.sendDataWebhook(Events.GROUPS_UPSERT, groupMetadata);
+      await Promise.all(
+        groupMetadata.map((group) =>
+          localReadService.store(this.instanceId, 'groupMetadata', [group.id], {
+            method: 'groupMetadata',
+            result: group,
+          }),
+        ),
+      );
+      await localReadService.invalidate(this.instanceId, [
+        'groupFetchAllParticipating',
+        'communityFetchAllParticipating',
+        'communityFetchLinkedGroups',
+        'group.fetchAllGroups',
+      ]);
     },
 
-    'groups.update': (groupMetadataUpdate: Partial<GroupMetadata>[]) => {
+    'groups.update': async (groupMetadataUpdate: Partial<GroupMetadata>[]) => {
       this.sendDataWebhook(Events.GROUPS_UPDATE, groupMetadataUpdate);
+      await localReadService.invalidate(this.instanceId, [
+        'groupMetadata',
+        'communityMetadata',
+        'groupFetchAllParticipating',
+        'communityFetchAllParticipating',
+        'communityFetchLinkedGroups',
+        'group.findGroupInfos',
+        'group.fetchAllGroups',
+        'group.participants',
+      ]);
 
       groupMetadataUpdate.forEach((group) => {
         if (isJidGroup(group.id)) {
@@ -1808,6 +1818,18 @@ export class BaileysStartupService extends ChannelStartupService {
       }
 
       this.updateGroupMetadataCache(participantsUpdate.id);
+      await localReadService.invalidate(this.instanceId, [
+        'groupMetadata',
+        'communityMetadata',
+        'groupRequestParticipantsList',
+        'communityRequestParticipantsList',
+        'groupFetchAllParticipating',
+        'communityFetchAllParticipating',
+        'communityFetchLinkedGroups',
+        'group.findGroupInfos',
+        'group.fetchAllGroups',
+        'group.participants',
+      ]);
     },
   };
 
@@ -1920,7 +1942,17 @@ export class BaileysStartupService extends ChannelStartupService {
             }
 
             if (events['lid-mapping.update']) {
-              this.sendDataWebhook(Events.LID_MAPPING_UPDATE, events['lid-mapping.update']);
+              const mapping = events['lid-mapping.update'];
+              this.sendDataWebhook(Events.LID_MAPPING_UPDATE, mapping);
+              await saveOnWhatsappCache(
+                [{ remoteJid: mapping.pn, remoteJidAlt: mapping.lid, lid: 'lid', exists: true }],
+                this.instanceId,
+              );
+              await localReadService.invalidate(this.instanceId, [
+                'onWhatsapp',
+                'chat.whatsappNumbers',
+                'chat.fetchProfile',
+              ]);
             }
 
             if (events['messages.upsert']) {
@@ -1974,17 +2006,17 @@ export class BaileysStartupService extends ChannelStartupService {
             if (!settings?.groupsIgnore) {
               if (events['groups.upsert']) {
                 const payload = events['groups.upsert'];
-                this.groupHandler['groups.upsert'](payload);
+                await this.groupHandler['groups.upsert'](payload);
               }
 
               if (events['groups.update']) {
                 const payload = events['groups.update'];
-                this.groupHandler['groups.update'](payload);
+                await this.groupHandler['groups.update'](payload);
               }
 
               if (events['group-participants.update']) {
                 const payload = events['group-participants.update'] as any;
-                this.groupHandler['group-participants.update'](payload);
+                await this.groupHandler['group-participants.update'](payload);
               }
 
               if (events['group.join-request']) {
@@ -2013,20 +2045,25 @@ export class BaileysStartupService extends ChannelStartupService {
 
             if (events['contacts.upsert']) {
               const payload = events['contacts.upsert'];
-              this.contactHandle['contacts.upsert'](payload);
+              await this.contactHandle['contacts.upsert'](payload);
             }
 
             if (events['contacts.update']) {
               const payload = events['contacts.update'];
-              this.contactHandle['contacts.update'](payload);
+              await this.contactHandle['contacts.update'](payload);
             }
 
             if (events['blocklist.set']) {
               this.sendDataWebhook(Events.BLOCKLIST_SET, events['blocklist.set']);
+              await localReadService.store(this.instanceId, 'fetchBlocklist', [], {
+                method: 'fetchBlocklist',
+                result: events['blocklist.set'].blocklist,
+              });
             }
 
             if (events['blocklist.update']) {
               this.sendDataWebhook(Events.BLOCKLIST_UPDATE, events['blocklist.update']);
+              await localReadService.invalidate(this.instanceId, ['fetchBlocklist']);
             }
 
             if (events['newsletter.reaction']) {
@@ -2039,14 +2076,21 @@ export class BaileysStartupService extends ChannelStartupService {
 
             if (events['newsletter-participants.update']) {
               this.sendDataWebhook(Events.NEWSLETTER_PARTICIPANTS_UPDATE, events['newsletter-participants.update']);
+              await localReadService.invalidate(this.instanceId, [
+                'newsletterSubscribers',
+                'newsletterMetadata',
+                'newsletterAdminCount',
+              ]);
             }
 
             if (events['newsletter-settings.update']) {
               this.sendDataWebhook(Events.NEWSLETTER_SETTINGS_UPDATE, events['newsletter-settings.update']);
+              await localReadService.invalidate(this.instanceId, ['newsletterMetadata']);
             }
 
             if (events['message-capping.update']) {
               this.sendDataWebhook(Events.MESSAGE_CAPPING_UPDATE, events['message-capping.update']);
+              await localReadService.invalidate(this.instanceId, ['fetchNewChatMessageCap']);
             }
 
             if (events['chats.lock']) {
@@ -2055,6 +2099,11 @@ export class BaileysStartupService extends ChannelStartupService {
 
             if (events['settings.update']) {
               this.sendDataWebhook(Events.SETTINGS_UPDATE, events['settings.update']);
+              await localReadService.invalidate(this.instanceId, [
+                'fetchPrivacySettings',
+                'fetchDisappearingDuration',
+                'chat.fetchPrivacySettings',
+              ]);
             }
 
             if (events[Events.LABELS_ASSOCIATION]) {
@@ -2113,8 +2162,10 @@ export class BaileysStartupService extends ChannelStartupService {
       const profilePictureUrl = await this.client.profilePictureUrl(jid, 'image');
 
       return { wuid: jid, profilePictureUrl };
-    } catch {
-      return { wuid: jid, profilePictureUrl: null };
+    } catch (error) {
+      const statusCode = error?.output?.statusCode ?? error?.statusCode ?? error?.status;
+      if (statusCode === 404) return { wuid: jid, profilePictureUrl: null };
+      throw new InternalServerErrorException('Error fetching profile picture', error?.message ?? error?.toString());
     }
   }
 
@@ -2128,10 +2179,10 @@ export class BaileysStartupService extends ChannelStartupService {
     }
   }
 
-  public async fetchProfile(instanceName: string, number?: string) {
+  public async fetchProfile(instanceName: string, number?: string, forceLive = false) {
     const jid = number ? createJid(number) : this.client?.user?.id;
 
-    const onWhatsapp = (await this.whatsappNumber({ numbers: [jid] }))?.shift();
+    const onWhatsapp = (await this.whatsappNumber({ numbers: [jid] }, forceLive))?.shift();
 
     if (!onWhatsapp.exists) {
       throw new BadRequestException(onWhatsapp);
@@ -2139,10 +2190,10 @@ export class BaileysStartupService extends ChannelStartupService {
 
     try {
       if (number) {
-        const info = (await this.whatsappNumber({ numbers: [jid] }))?.shift();
+        const info = (await this.whatsappNumber({ numbers: [jid] }, forceLive))?.shift();
         const picture = await this.profilePicture(info?.jid);
         const status = await this.getStatus(info?.jid);
-        const business = await this.fetchBusinessProfile(info?.jid);
+        const business = await this.fetchBusinessProfile(info?.jid, forceLive);
 
         return {
           wuid: info?.jid || jid,
@@ -2158,7 +2209,7 @@ export class BaileysStartupService extends ChannelStartupService {
       } else {
         const instanceNames = instanceName ? [instanceName] : null;
         const info: Instance = await waMonitor.instanceInfo(instanceNames);
-        const business = await this.fetchBusinessProfile(jid);
+        const business = await this.fetchBusinessProfile(jid, forceLive);
 
         return {
           wuid: jid,
@@ -2172,8 +2223,8 @@ export class BaileysStartupService extends ChannelStartupService {
           website: business?.website?.shift(),
         };
       }
-    } catch {
-      return { wuid: jid, name: null, picture: null, status: null, os: null, isBusiness: false };
+    } catch (error) {
+      throw new InternalServerErrorException('Error fetching profile', error?.message ?? error?.toString());
     }
   }
 
@@ -3568,7 +3619,7 @@ export class BaileysStartupService extends ChannelStartupService {
   }
 
   // Chat Controller
-  public async whatsappNumber(data: WhatsAppNumberDto) {
+  public async whatsappNumber(data: WhatsAppNumberDto, forceLive = false) {
     const jids: {
       groups: { number: string; jid: string }[];
       broadcast: { number: string; jid: string }[];
@@ -3615,7 +3666,7 @@ export class BaileysStartupService extends ChannelStartupService {
     const numbersToVerify = jids.users.map(({ jid }) => jid.replace('+', ''));
 
     // Get all numbers from cache
-    const cachedNumbers = await getOnWhatsappCache(numbersToVerify);
+    const cachedNumbers = forceLive ? [] : await getOnWhatsappCache(numbersToVerify, this.instanceId);
 
     // Separate numbers that are and are not in cache
     const cachedJids = new Set(cachedNumbers.flatMap((cached) => cached.jidOptions));
@@ -3639,21 +3690,18 @@ export class BaileysStartupService extends ChannelStartupService {
           this.logger.verbose(`Number ${user.number} found in cache`);
           return new OnWhatsAppDto(
             cached.remoteJid,
-            true,
+            cached.exists,
             user.number,
             contacts.find((c) => c.remoteJid === cached.remoteJid)?.pushName,
             cached.lid || (cached.remoteJid.includes('@lid') ? 'lid' : undefined),
           );
         }
 
-        // If it's a LID number and not in cache, consider it valid
+        // WhatsApp cannot authoritatively verify an unknown LID. Never invent success.
         if (user.jid.includes('@lid')) {
-          return new OnWhatsAppDto(
-            user.jid,
-            true,
-            user.number,
-            contacts.find((c) => c.remoteJid === user.jid)?.pushName,
-            'lid',
+          throw new BadRequestException(
+            `Unknown LID ${user.jid}`,
+            'Use a phone-number JID or wait until this instance receives an authoritative PN/LID mapping.',
           );
         }
 
@@ -3718,7 +3766,6 @@ export class BaileysStartupService extends ChannelStartupService {
 
     // TODO: Salvar no cache apenas números que NÃO estavam no cache
     const numbersToCache = onWhatsapp.filter((user) => {
-      if (!user.exists) return false;
       // Verifica se estava no cache usando jidOptions
       const cached = cachedNumbers?.find((cached) => cached.jidOptions.includes(user.jid.replace('+', '')));
       return !cached;
@@ -3730,7 +3777,9 @@ export class BaileysStartupService extends ChannelStartupService {
         numbersToCache.map((user) => ({
           remoteJid: user.jid,
           lid: user.lid === 'lid' ? 'lid' : undefined,
+          exists: user.exists,
         })),
+        this.instanceId,
       );
     }
 
@@ -4082,14 +4131,14 @@ export class BaileysStartupService extends ChannelStartupService {
     }
   }
 
-  public async fetchBusinessProfile(number: string): Promise<NumberBusiness> {
+  public async fetchBusinessProfile(number: string, forceLive = false): Promise<NumberBusiness> {
     try {
       const jid = number ? createJid(number) : this.instance.wuid;
 
       const profile = await this.client.getBusinessProfile(jid);
 
       if (!profile) {
-        const info = await this.whatsappNumber({ numbers: [jid] });
+        const info = await this.whatsappNumber({ numbers: [jid] }, forceLive);
 
         return { isBusiness: false, message: 'Not is business profile', ...info?.shift() };
       }
@@ -4619,7 +4668,10 @@ export class BaileysStartupService extends ChannelStartupService {
 
       const usersContacts = parsedParticipants.filter((c) => c.id.includes('@s.whatsapp'));
       if (usersContacts) {
-        await saveOnWhatsappCache(usersContacts.map((c) => ({ remoteJid: c.id })));
+        await saveOnWhatsappCache(
+          usersContacts.map((c) => ({ remoteJid: c.id })),
+          this.instanceId,
+        );
       }
 
       return { participants: parsedParticipants };
@@ -5186,112 +5238,5 @@ export class BaileysStartupService extends ChannelStartupService {
     } catch (error) {
       throw new InternalServerErrorException('Error getCatalog', error.toString());
     }
-  }
-
-  public async fetchMessages(query: Query<Message>) {
-    const keyFilters = query?.where?.key as ExtendedIMessageKey;
-
-    const timestampFilter = {};
-    if (query?.where?.messageTimestamp) {
-      if (query.where.messageTimestamp['gte'] && query.where.messageTimestamp['lte']) {
-        timestampFilter['messageTimestamp'] = {
-          gte: Math.floor(new Date(query.where.messageTimestamp['gte']).getTime() / 1000),
-          lte: Math.floor(new Date(query.where.messageTimestamp['lte']).getTime() / 1000),
-        };
-      }
-    }
-
-    const count = await this.prismaRepository.message.count({
-      where: {
-        instanceId: this.instanceId,
-        id: query?.where?.id,
-        source: query?.where?.source,
-        messageType: query?.where?.messageType,
-        ...timestampFilter,
-        AND: [
-          keyFilters?.id ? { key: { path: ['id'], equals: keyFilters?.id } } : {},
-          keyFilters?.fromMe ? { key: { path: ['fromMe'], equals: keyFilters?.fromMe } } : {},
-          keyFilters?.participant ? { key: { path: ['participant'], equals: keyFilters?.participant } } : {},
-          {
-            OR: [
-              keyFilters?.remoteJid ? { key: { path: ['remoteJid'], equals: keyFilters?.remoteJid } } : {},
-              keyFilters?.remoteJidAlt ? { key: { path: ['remoteJidAlt'], equals: keyFilters?.remoteJidAlt } } : {},
-            ],
-          },
-        ],
-      },
-    });
-
-    if (!query?.offset) {
-      query.offset = 50;
-    }
-
-    if (!query?.page) {
-      query.page = 1;
-    }
-
-    const messages = await this.prismaRepository.message.findMany({
-      where: {
-        instanceId: this.instanceId,
-        id: query?.where?.id,
-        source: query?.where?.source,
-        messageType: query?.where?.messageType,
-        ...timestampFilter,
-        AND: [
-          keyFilters?.id ? { key: { path: ['id'], equals: keyFilters?.id } } : {},
-          keyFilters?.fromMe ? { key: { path: ['fromMe'], equals: keyFilters?.fromMe } } : {},
-          keyFilters?.participant ? { key: { path: ['participant'], equals: keyFilters?.participant } } : {},
-          {
-            OR: [
-              keyFilters?.remoteJid ? { key: { path: ['remoteJid'], equals: keyFilters?.remoteJid } } : {},
-              keyFilters?.remoteJidAlt ? { key: { path: ['remoteJidAlt'], equals: keyFilters?.remoteJidAlt } } : {},
-            ],
-          },
-        ],
-      },
-      orderBy: { messageTimestamp: 'desc' },
-      skip: query.offset * (query?.page === 1 ? 0 : (query?.page as number) - 1),
-      take: query.offset,
-      select: {
-        id: true,
-        key: true,
-        pushName: true,
-        messageType: true,
-        message: true,
-        messageTimestamp: true,
-        instanceId: true,
-        source: true,
-        contextInfo: true,
-        MessageUpdate: { select: { status: true } },
-      },
-    });
-
-    const formattedMessages = messages.map((message) => {
-      const messageKey = message.key as { fromMe: boolean; remoteJid: string; id: string; participant?: string };
-
-      if (!message.pushName) {
-        if (messageKey.fromMe) {
-          message.pushName = 'Você';
-        } else if (message.contextInfo) {
-          const contextInfo = message.contextInfo as { participant?: string };
-          if (contextInfo.participant) {
-            message.pushName = contextInfo.participant.split('@')[0];
-          } else if (messageKey.participant) {
-            message.pushName = messageKey.participant.split('@')[0];
-          }
-        }
-      }
-
-      return message;
-    });
-
-    return {
-      messages: {
-        total: count,
-        pages: Math.ceil(count / query.offset),
-        currentPage: query.page,
-        records: formattedMessages,
-      },
-    };
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "evolution-api",
-  "version": "2.3.7",
+  "version": "3.0.0",
   "description": "Rest api for communication with WhatsApp",
   "main": "./dist/main.js",
   "type": "commonjs",
@@ -10,6 +10,7 @@
     "start:prod": "node dist/main",
     "dev:server": "tsx watch ./src/main.ts",
     "test": "tsx watch ./test/all.test.ts",
+    "test:local-read": "tsx ./test/local-read.test.ts",
     "lint": "eslint --fix --ext .ts src",
     "lint:check": "eslint --ext .ts src",
     "generate:baileys-api": "node scripts/generate-baileys-openapi.mjs",

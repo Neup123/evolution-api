@@ -112,6 +112,8 @@ model Instance {
   N8nSetting              N8nSetting[]
   Evoai                   Evoai[]
   EvoaiSetting            EvoaiSetting?
+  LocalReadSnapshot       LocalReadSnapshot[]
+  IsOnWhatsapp            IsOnWhatsapp[]
 }
 
 model Session {
@@ -676,11 +678,34 @@ model FlowiseSetting {
 
 model IsOnWhatsapp {
   id         String   @id @default(cuid())
-  remoteJid  String   @unique @db.VarChar(100)
+  remoteJid  String   @db.VarChar(100)
   jidOptions String
   lid        String?  @db.VarChar(100)
+  exists     Boolean  @default(true) @db.Boolean
+  verifiedAt DateTime @default(now()) @db.Timestamp
   createdAt  DateTime @default(now()) @db.Timestamp
   updatedAt  DateTime @updatedAt @db.Timestamp
+  Instance   Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  instanceId String
+
+  @@unique([instanceId, remoteJid])
+  @@index([instanceId])
+}
+
+model LocalReadSnapshot {
+  id           String   @id @default(cuid())
+  method       String   @db.VarChar(100)
+  argumentsKey String   @db.VarChar(64)
+  result       Json     @db.JsonB
+  complete     Boolean  @default(true) @db.Boolean
+  fetchedAt    DateTime @default(now()) @db.Timestamp
+  createdAt    DateTime @default(now()) @db.Timestamp
+  updatedAt    DateTime @updatedAt @db.Timestamp
+  Instance     Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  instanceId   String
+
+  @@unique([instanceId, method, argumentsKey])
+  @@index([instanceId, method])
 }
 
 model N8n {

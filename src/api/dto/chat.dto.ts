@@ -24,10 +24,12 @@ export class getBase64FromMediaMessageDto {
 
 export class WhatsAppNumberDto {
   numbers: string[];
+  live?: boolean;
 }
 
 export class NumberDto {
   number: string;
+  live?: boolean;
 }
 
 export class NumberBusiness {
@@ -57,6 +59,7 @@ export class ProfileStatusDto {
 
 export class ProfilePictureDto {
   number?: string;
+  live?: boolean;
   // url or base64
   picture?: string;
 }

@@ -52,11 +52,17 @@ export type DBConnection = {
   URI: string;
   CLIENT_NAME: string;
 };
+export type ReadThrough = {
+  ENABLED: boolean;
+  TTL_SECONDS: number;
+  TTL_OVERRIDES: Record<string, number>;
+};
 export type Database = {
   CONNECTION: DBConnection;
   PROVIDER: string;
   SAVE_DATA: SaveData;
   DELETE_DATA: DeleteData;
+  READ_THROUGH: ReadThrough;
 };
 
 export type DeleteData = {
@@ -471,6 +477,26 @@ export interface Env {
 
 export type Key = keyof Env;
 
+function parseReadThroughOverrides(value?: string): Record<string, number> {
+  if (!value) return {};
+
+  try {
+    const parsed = JSON.parse(value) as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.entries(parsed)
+        .map(([method, ttl]) => [method, Number(ttl)] as const)
+        .filter(([, ttl]) => Number.isFinite(ttl) && ttl >= 0),
+    );
+  } catch {
+    return {};
+  }
+}
+
+function parseNonNegativeInteger(value: string | undefined, fallback: number): number {
+  const parsed = Number.parseInt(value ?? '');
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
 export class ConfigService {
   constructor() {
     this.loadEnv();
@@ -537,6 +563,11 @@ export class ConfigService {
         },
         DELETE_DATA: {
           LOGICAL_MESSAGE_DELETE: process.env?.DATABASE_DELETE_MESSAGE === 'true',
+        },
+        READ_THROUGH: {
+          ENABLED: process.env?.DATABASE_READ_THROUGH_ENABLED !== 'false',
+          TTL_SECONDS: parseNonNegativeInteger(process.env?.DATABASE_READ_THROUGH_TTL_SECONDS, 3600),
+          TTL_OVERRIDES: parseReadThroughOverrides(process.env?.DATABASE_READ_THROUGH_TTL_OVERRIDES),
         },
       },
       RABBITMQ: {

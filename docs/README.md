@@ -51,7 +51,15 @@ apikey: YOUR_GLOBAL_API_KEY
 }
 ```
 
-The older `POST /baileys/{method}/{instanceName}` route with `{ "args": [] }` remains available for compatibility, but is deprecated in Swagger. For bytes, use `{ "$base64": "AAECAw==" }` in requests and expect the same envelope in responses.
+Evolution API 3 exposes only the typed grouped routes. The older `POST /baileys/{method}/{instanceName}` route with `{ "args": [] }` was removed as a breaking change. For bytes, use `{ "$base64": "AAECAw==" }` in requests and expect the same envelope in responses.
+
+## Local-first reads
+
+Eligible reads use a persistent, instance-scoped database snapshot before contacting WhatsApp. A missing or expired snapshot is refreshed from WhatsApp and saved. Add `live=true` as a query parameter or `"live": true` to a JSON body to force a refresh. The response body is unchanged; grouped Baileys routes expose `X-Evolution-Data-Source: local|live` and, for cached responses, `X-Evolution-Data-Age`.
+
+Configure the policy with `DATABASE_READ_THROUGH_ENABLED`, `DATABASE_READ_THROUGH_TTL_SECONDS`, and a JSON map in `DATABASE_READ_THROUGH_TTL_OVERRIDES`, for example `{"groupMetadata":300,"fetchPrivacySettings":3600}`. A live refresh failure is returned to the caller; stale data is never substituted silently.
+
+The v3 migration recreates `IsOnWhatsapp` as an instance-scoped table and therefore clears the old unscoped number cache. It also creates `LocalReadSnapshot`. Apply the PostgreSQL or MySQL migrations before starting v3.
 
 Methods that require process-local streams, callbacks, or socket lifecycle control are intentionally excluded. In particular, use media values accepted by `sendMessage`, product, newsletter, and profile-picture operations instead of calling Baileys's internal `waUploadToServer` function directly.
 

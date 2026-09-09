@@ -116,6 +116,7 @@ export abstract class RouterBroker {
     Object.assign(body, {
       groupJid: groupJid,
     });
+    if (request.query?.live !== undefined) Object.assign(body, { live: request.query.live });
 
     const ref = new ClassRef();
 

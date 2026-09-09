@@ -63,6 +63,7 @@ interface ISaveOnWhatsappCacheParams {
   remoteJid: string;
   remoteJidAlt?: string;
   lid?: 'lid' | undefined;
+  exists?: boolean;
 }
 
 function normalizeJid(jid: string | null | undefined): string | null {
@@ -70,7 +71,7 @@ function normalizeJid(jid: string | null | undefined): string | null {
   return jid.startsWith('+') ? jid.slice(1) : jid;
 }
 
-export async function saveOnWhatsappCache(data: ISaveOnWhatsappCacheParams[]) {
+export async function saveOnWhatsappCache(data: ISaveOnWhatsappCacheParams[], instanceId: string) {
   if (!configService.get<Database>('DATABASE').SAVE_DATA.IS_ON_WHATSAPP) {
     return;
   }
@@ -100,6 +101,7 @@ export async function saveOnWhatsappCache(data: ISaveOnWhatsappCacheParams[]) {
       // Isso acontece principalmente em grupos que possuem o número do criador no ID (ex.: '559911223345-1234567890@g.us')
       const existingRecord = await prismaRepository.isOnWhatsapp.findFirst({
         where: {
+          instanceId,
           OR: [
             ...expandedJids.map((jid) => ({ jidOptions: { contains: jid } })),
             { remoteJid: remoteJid }, // TODO: Descobrir o motivo que causa o remoteJid não estar (às vezes) incluso na lista de jidOptions
@@ -132,26 +134,13 @@ export async function saveOnWhatsappCache(data: ISaveOnWhatsappCacheParams[]) {
         remoteJid: remoteJid,
         jidOptions: newJidOptionsString,
         lid: newLid,
+        exists: item.exists ?? true,
+        verifiedAt: new Date(),
+        instanceId,
       };
 
       // 4. Decide entre Criar ou Atualizar
       if (existingRecord) {
-        // Compara a string de JIDs ordenada existente com a nova
-        const existingJidOptionsString = existingRecord.jidOptions
-          ? existingRecord.jidOptions.split(',').sort().join(',')
-          : '';
-
-        const isDataSame =
-          existingRecord.remoteJid === dataPayload.remoteJid &&
-          existingJidOptionsString === dataPayload.jidOptions &&
-          existingRecord.lid === dataPayload.lid;
-
-        if (isDataSame) {
-          logger.verbose(`[saveOnWhatsappCache] Data for ${remoteJid} is already up-to-date. Skipping update.`);
-          return; // Pula para o próximo item
-        }
-
-        // Os dados são diferentes, então atualiza
         logger.verbose(
           `[saveOnWhatsappCache] Register exists, updating: remoteJid=${remoteJid}, jidOptions=${dataPayload.jidOptions}, lid=${dataPayload.lid}`,
         );
@@ -179,12 +168,13 @@ export async function saveOnWhatsappCache(data: ISaveOnWhatsappCacheParams[]) {
   await Promise.allSettled(processingPromises);
 }
 
-export async function getOnWhatsappCache(remoteJids: string[]) {
+export async function getOnWhatsappCache(remoteJids: string[], instanceId: string) {
   let results: {
     remoteJid: string;
     number: string;
     jidOptions: string[];
     lid?: string;
+    exists: boolean;
   }[] = [];
 
   if (configService.get<Database>('DATABASE').SAVE_DATA.IS_ON_WHATSAPP) {
@@ -192,6 +182,7 @@ export async function getOnWhatsappCache(remoteJids: string[]) {
 
     const onWhatsappCache = await prismaRepository.isOnWhatsapp.findMany({
       where: {
+        instanceId,
         OR: remoteJidsWithoutPlus.map((remoteJid) => ({ jidOptions: { contains: remoteJid } })),
         updatedAt: {
           gte: dayjs().subtract(configService.get<Database>('DATABASE').SAVE_DATA.IS_ON_WHATSAPP_DAYS, 'days').toDate(),
@@ -204,6 +195,7 @@ export async function getOnWhatsappCache(remoteJids: string[]) {
       number: item.remoteJid.split('@')[0],
       jidOptions: item.jidOptions.split(','),
       lid: item.lid,
+      exists: item.exists,
     }));
   }
 

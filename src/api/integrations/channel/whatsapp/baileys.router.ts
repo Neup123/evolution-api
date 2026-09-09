@@ -1,40 +1,45 @@
 import { RouterBroker } from '@api/abstract/abstract.router';
-import { BaileysInvokeDto, BaileysNamedInvokeDto } from '@api/dto/baileys.dto';
+import { BaileysNamedInvokeDto } from '@api/dto/baileys.dto';
 import { InstanceDto } from '@api/dto/instance.dto';
 import { HttpStatus } from '@api/routes/index.router';
 import { baileysController } from '@api/server.module';
-import { baileysInvokeSchema } from '@validate/baileys.schema';
 import { instanceSchema } from '@validate/instance.schema';
-import { RequestHandler, Router } from 'express';
+import { RequestHandler, Response, Router } from 'express';
 
 import { getBaileysNamedBodySchema, mapBaileysNamedBodyToArgs, mapBaileysNamedQueryToBody } from './baileys.metadata';
-import { BAILEYS_API_METHODS, BAILEYS_METHOD_GROUPS } from './baileys.methods';
+import { BAILEYS_METHOD_GROUPS } from './baileys.methods';
 
 export class BaileysRouter extends RouterBroker {
   constructor(...guards: RequestHandler[]) {
     super();
     this.router
-      .post(this.routerPath('onWhatsapp'), ...guards, async (req, res) => {
-        const response = await this.dataValidate<InstanceDto>({
+      .post('/account/onWhatsapp/:instanceName', ...guards, async (req, res) => {
+        const live = req.query.live === 'true' || req.body?.live === true;
+        if (req.body) delete req.body.live;
+        const invocation = await this.dataValidate<InstanceDto>({
           request: req,
           schema: instanceSchema,
           ClassRef: InstanceDto,
-          execute: (instance) => baileysController.onWhatsapp(instance, req.body),
+          execute: (instance) => baileysController.onWhatsapp(instance, req.body, live),
         });
 
-        res.status(HttpStatus.OK).json(response);
+        this.setReadHeaders(res, invocation);
+        res.status(HttpStatus.OK).json(invocation.response);
       })
-      .post(this.routerPath('profilePictureUrl'), ...guards, async (req, res) => {
-        const response = await this.dataValidate<InstanceDto>({
+      .post('/account/profilePictureUrl/:instanceName', ...guards, async (req, res) => {
+        const live = req.query.live === 'true' || req.body?.live === true;
+        if (req.body) delete req.body.live;
+        const invocation = await this.dataValidate<InstanceDto>({
           request: req,
           schema: instanceSchema,
           ClassRef: InstanceDto,
-          execute: (instance) => baileysController.profilePictureUrl(instance, req.body),
+          execute: (instance) => baileysController.profilePictureUrl(instance, req.body, live),
         });
 
-        res.status(HttpStatus.OK).json(response);
+        this.setReadHeaders(res, invocation);
+        res.status(HttpStatus.OK).json(invocation.response);
       })
-      .post(this.routerPath('assertSessions'), ...guards, async (req, res) => {
+      .post('/advanced/assertSessions/:instanceName', ...guards, async (req, res) => {
         const response = await this.dataValidate<InstanceDto>({
           request: req,
           schema: instanceSchema,
@@ -44,7 +49,7 @@ export class BaileysRouter extends RouterBroker {
 
         res.status(HttpStatus.OK).json(response);
       })
-      .post(this.routerPath('createParticipantNodes'), ...guards, async (req, res) => {
+      .post('/advanced/createParticipantNodes/:instanceName', ...guards, async (req, res) => {
         const response = await this.dataValidate<InstanceDto>({
           request: req,
           schema: instanceSchema,
@@ -54,7 +59,7 @@ export class BaileysRouter extends RouterBroker {
 
         res.status(HttpStatus.OK).json(response);
       })
-      .post(this.routerPath('getUSyncDevices'), ...guards, async (req, res) => {
+      .post('/advanced/getUSyncDevices/:instanceName', ...guards, async (req, res) => {
         const response = await this.dataValidate<InstanceDto>({
           request: req,
           schema: instanceSchema,
@@ -64,7 +69,7 @@ export class BaileysRouter extends RouterBroker {
 
         res.status(HttpStatus.OK).json(response);
       })
-      .post(this.routerPath('generateMessageTag'), ...guards, async (req, res) => {
+      .post('/advanced/generateMessageTag/:instanceName', ...guards, async (req, res) => {
         const response = await this.dataValidate<InstanceDto>({
           request: req,
           schema: instanceSchema,
@@ -74,7 +79,7 @@ export class BaileysRouter extends RouterBroker {
 
         res.status(HttpStatus.OK).json(response);
       })
-      .post(this.routerPath('sendNode'), ...guards, async (req, res) => {
+      .post('/advanced/sendNode/:instanceName', ...guards, async (req, res) => {
         const response = await this.dataValidate<InstanceDto>({
           request: req,
           schema: instanceSchema,
@@ -84,7 +89,7 @@ export class BaileysRouter extends RouterBroker {
 
         res.status(HttpStatus.OK).json(response);
       })
-      .post(this.routerPath('signalRepositoryDecryptMessage'), ...guards, async (req, res) => {
+      .post('/advanced/signalRepositoryDecryptMessage/:instanceName', ...guards, async (req, res) => {
         const response = await this.dataValidate<InstanceDto>({
           request: req,
           schema: instanceSchema,
@@ -94,7 +99,7 @@ export class BaileysRouter extends RouterBroker {
 
         res.status(HttpStatus.OK).json(response);
       })
-      .post(this.routerPath('getAuthState'), ...guards, async (req, res) => {
+      .post('/advanced/getAuthState/:instanceName', ...guards, async (req, res) => {
         const response = await this.dataValidate<InstanceDto>({
           request: req,
           schema: instanceSchema,
@@ -109,36 +114,31 @@ export class BaileysRouter extends RouterBroker {
       res.status(HttpStatus.OK).json(baileysController.listMethods());
     });
 
-    for (const method of BAILEYS_API_METHODS) {
-      this.router.post(this.routerPath(method), ...guards, async (req, res) => {
-        const response = await this.dataValidate<BaileysInvokeDto>({
-          request: req,
-          schema: baileysInvokeSchema,
-          ClassRef: BaileysInvokeDto,
-          execute: (instance, data) => baileysController.invoke(instance, method, data.args),
-        });
-
-        res.status(HttpStatus.OK).json(response);
-      });
-    }
-
     for (const [group, methods] of Object.entries(BAILEYS_METHOD_GROUPS)) {
       for (const method of methods) {
         this.router.post(`/${group}/${method}/:instanceName`, ...guards, async (req, res) => {
+          const live = req.query.live === 'true' || req.body?.live === true;
+          if (req.body) delete req.body.live;
           Object.assign(req.body, mapBaileysNamedQueryToBody(method, req.query as Record<string, unknown>));
-          const response = await this.dataValidate<BaileysNamedInvokeDto>({
+          const invocation = await this.dataValidate<BaileysNamedInvokeDto>({
             request: req,
             schema: getBaileysNamedBodySchema(method),
             ClassRef: BaileysNamedInvokeDto,
             execute: (instance, data) =>
-              baileysController.invoke(instance, method, mapBaileysNamedBodyToArgs(method, data)),
+              baileysController.invoke(instance, method, mapBaileysNamedBodyToArgs(method, data), live),
           });
 
-          res.status(HttpStatus.OK).json(response);
+          this.setReadHeaders(res, invocation);
+          res.status(HttpStatus.OK).json(invocation.response);
         });
       }
     }
   }
 
   public readonly router: Router = Router();
+
+  private setReadHeaders(res: Response, invocation: { source: string; ageSeconds?: number }) {
+    res.setHeader('X-Evolution-Data-Source', invocation.source);
+    if (invocation.ageSeconds !== undefined) res.setHeader('X-Evolution-Data-Age', invocation.ageSeconds.toString());
+  }
 }

@@ -40,6 +40,7 @@ import { S3Service } from './integrations/storage/s3/services/s3.service';
 import { ProviderFiles } from './provider/sessions';
 import { PrismaRepository } from './repository/repository.service';
 import { CacheService } from './services/cache.service';
+import { LocalReadService } from './services/local-read.service';
 import { WAMonitoringService } from './services/monitor.service';
 import { ProxyService } from './services/proxy.service';
 import { SettingsService } from './services/settings.service';
@@ -61,6 +62,7 @@ if (configService.get<ProviderSession>('PROVIDER').ENABLED) {
 }
 
 export const prismaRepository = new PrismaRepository(configService);
+export const localReadService = new LocalReadService(prismaRepository, configService);
 
 export const waMonitor = new WAMonitoringService(
   eventEmitter,
@@ -102,9 +104,9 @@ export const instanceController = new InstanceController(
 );
 export const sendMessageController = new SendMessageController(waMonitor);
 export const callController = new CallController(waMonitor);
-export const chatController = new ChatController(waMonitor);
+export const chatController = new ChatController(waMonitor, localReadService);
 export const businessController = new BusinessController(waMonitor);
-export const groupController = new GroupController(waMonitor);
+export const groupController = new GroupController(waMonitor, localReadService);
 export const labelController = new LabelController(waMonitor);
 
 export const eventManager = new EventManager(prismaRepository, waMonitor);
@@ -114,7 +116,7 @@ export const channelController = new ChannelController(prismaRepository, waMonit
 // channels
 export const evolutionController = new EvolutionController(prismaRepository, waMonitor);
 export const metaController = new MetaController(prismaRepository, waMonitor);
-export const baileysController = new BaileysController(waMonitor);
+export const baileysController = new BaileysController(waMonitor, localReadService);
 
 const openaiService = new OpenaiService(waMonitor, prismaRepository, configService);
 export const openaiController = new OpenaiController(openaiService, prismaRepository, waMonitor);

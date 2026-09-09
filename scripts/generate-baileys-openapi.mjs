@@ -22,7 +22,8 @@ const groupLabels = {
 };
 
 const methodDescriptions = {
-  communityMetadata: 'Get a parent community name, description, participants, and settings. Use Group Metadata for regular groups.',
+  communityMetadata:
+    'Get a parent community name, description, participants, and settings. Use Group Metadata for regular groups.',
   communityCreate: 'Create a WhatsApp community with a subject and description.',
   communityCreateGroup: 'Create a group inside an existing community and add participants.',
   groupMetadata: 'Get the subject, description, owner, participants, and settings of a group.',
@@ -61,9 +62,12 @@ function describeMethod(method) {
   const readable = readableName(method).toLowerCase();
   if (/^(fetch|get)/.test(method)) return `Retrieve ${readable.replace(/^(fetch|get) /, '')} from WhatsApp.`;
   if (/^(create|add)/.test(method)) return `Create or add ${readable.replace(/^(create|add) /, '')} in WhatsApp.`;
-  if (/^(update|set|modify)/.test(method)) return `Change ${readable.replace(/^(update|set|modify) /, '')} for the connected WhatsApp account.`;
-  if (/^(remove|delete|clean)/.test(method)) return `Remove ${readable.replace(/^(remove|delete|clean) /, '')} from WhatsApp.`;
-  if (/^(send|relay|issue)/.test(method)) return `Send ${readable.replace(/^(send|relay|issue) /, '')} through the connected WhatsApp account.`;
+  if (/^(update|set|modify)/.test(method))
+    return `Change ${readable.replace(/^(update|set|modify) /, '')} for the connected WhatsApp account.`;
+  if (/^(remove|delete|clean)/.test(method))
+    return `Remove ${readable.replace(/^(remove|delete|clean) /, '')} from WhatsApp.`;
+  if (/^(send|relay|issue)/.test(method))
+    return `Send ${readable.replace(/^(send|relay|issue) /, '')} through the connected WhatsApp account.`;
   return `Run ${readableName(method)} and return the WhatsApp result.`;
 }
 
@@ -86,7 +90,12 @@ function describeParameter(method, parameter) {
 
 function guidedQuerySchema(schema) {
   if (schema?.enum || ['string', 'number', 'integer', 'boolean'].includes(schema?.type)) return schema;
-  if (schema?.type === 'array' && schema.items && ['string', 'number', 'integer', 'boolean'].includes(schema.items.type)) return schema;
+  if (
+    schema?.type === 'array' &&
+    schema.items &&
+    ['string', 'number', 'integer', 'boolean'].includes(schema.items.type)
+  )
+    return schema;
   return {
     type: 'string',
     description: `${schema?.description ?? 'Structured value'}. Enter valid JSON.`,
@@ -117,7 +126,8 @@ function readUnsupportedMethods() {
 const groups = readGroups();
 const methods = Object.values(groups).flat();
 const duplicateMethods = methods.filter((method, index) => methods.indexOf(method) !== index);
-if (duplicateMethods.length) throw new Error(`Methods assigned to multiple groups: ${[...new Set(duplicateMethods)].join(', ')}`);
+if (duplicateMethods.length)
+  throw new Error(`Methods assigned to multiple groups: ${[...new Set(duplicateMethods)].join(', ')}`);
 const unsupportedMethods = new Set(readUnsupportedMethods());
 const exposedUnsupportedMethods = methods.filter((method) => unsupportedMethods.has(method));
 if (exposedUnsupportedMethods.length) {
@@ -301,6 +311,35 @@ const paths = {
   },
 };
 
+const localFirstMethods = new Set([
+  'communityMetadata',
+  'communityFetchLinkedGroups',
+  'communityRequestParticipantsList',
+  'communityInviteCode',
+  'communityGetInviteInfo',
+  'communityFetchAllParticipating',
+  'getOrderDetails',
+  'getCatalog',
+  'getCollections',
+  'fetchPrivacySettings',
+  'newsletterSubscribers',
+  'newsletterMetadata',
+  'newsletterFetchMessages',
+  'newsletterAdminCount',
+  'groupMetadata',
+  'groupRequestParticipantsList',
+  'groupInviteCode',
+  'groupGetInviteInfo',
+  'groupFetchAllParticipating',
+  'getBotListV2',
+  'fetchBlocklist',
+  'fetchStatus',
+  'fetchDisappearingDuration',
+  'getBusinessProfile',
+  'fetchAccountReachoutTimelock',
+  'fetchNewChatMessageCap',
+]);
+
 const webhookEndpointSchema = {
   type: 'object',
   required: ['enabled', 'url'],
@@ -313,21 +352,63 @@ const webhookEndpointSchema = {
       items: {
         type: 'string',
         enum: [
-          'APPLICATION_STARTUP', 'QRCODE_UPDATED', 'MESSAGES_SET', 'MESSAGES_UPSERT', 'MESSAGES_EDITED',
-          'MESSAGES_UPDATE', 'MESSAGES_DELETE', 'MESSAGES_MEDIA_UPDATE', 'MESSAGES_REACTION',
-          'MESSAGE_RECEIPT_UPDATE', 'SEND_MESSAGE', 'SEND_MESSAGE_UPDATE', 'CONTACTS_SET', 'CONTACTS_UPSERT',
-          'CONTACTS_UPDATE', 'PRESENCE_UPDATE', 'CHATS_SET', 'CHATS_UPSERT', 'CHATS_UPDATE', 'CHATS_DELETE',
-          'CHATS_LOCK', 'GROUPS_UPSERT', 'GROUPS_UPDATE', 'GROUP_PARTICIPANTS_UPDATE', 'GROUP_JOIN_REQUEST',
-          'GROUP_MEMBER_TAG_UPDATE', 'CONNECTION_UPDATE', 'CREDS_UPDATE', 'MESSAGING_HISTORY_SET',
-          'MESSAGING_HISTORY_STATUS', 'LID_MAPPING_UPDATE', 'BLOCKLIST_SET', 'BLOCKLIST_UPDATE',
-          'NEWSLETTER_REACTION', 'NEWSLETTER_VIEW', 'NEWSLETTER_PARTICIPANTS_UPDATE',
-          'NEWSLETTER_SETTINGS_UPDATE', 'MESSAGE_CAPPING_UPDATE', 'SETTINGS_UPDATE', 'LABELS_EDIT',
-          'LABELS_ASSOCIATION', 'CALL', 'TYPEBOT_START', 'TYPEBOT_CHANGE_STATUS', 'REMOVE_INSTANCE',
-          'LOGOUT_INSTANCE', 'INSTANCE_CREATE', 'INSTANCE_DELETE', 'STATUS_INSTANCE',
+          'APPLICATION_STARTUP',
+          'QRCODE_UPDATED',
+          'MESSAGES_SET',
+          'MESSAGES_UPSERT',
+          'MESSAGES_EDITED',
+          'MESSAGES_UPDATE',
+          'MESSAGES_DELETE',
+          'MESSAGES_MEDIA_UPDATE',
+          'MESSAGES_REACTION',
+          'MESSAGE_RECEIPT_UPDATE',
+          'SEND_MESSAGE',
+          'SEND_MESSAGE_UPDATE',
+          'CONTACTS_SET',
+          'CONTACTS_UPSERT',
+          'CONTACTS_UPDATE',
+          'PRESENCE_UPDATE',
+          'CHATS_SET',
+          'CHATS_UPSERT',
+          'CHATS_UPDATE',
+          'CHATS_DELETE',
+          'CHATS_LOCK',
+          'GROUPS_UPSERT',
+          'GROUPS_UPDATE',
+          'GROUP_PARTICIPANTS_UPDATE',
+          'GROUP_JOIN_REQUEST',
+          'GROUP_MEMBER_TAG_UPDATE',
+          'CONNECTION_UPDATE',
+          'CREDS_UPDATE',
+          'MESSAGING_HISTORY_SET',
+          'MESSAGING_HISTORY_STATUS',
+          'LID_MAPPING_UPDATE',
+          'BLOCKLIST_SET',
+          'BLOCKLIST_UPDATE',
+          'NEWSLETTER_REACTION',
+          'NEWSLETTER_VIEW',
+          'NEWSLETTER_PARTICIPANTS_UPDATE',
+          'NEWSLETTER_SETTINGS_UPDATE',
+          'MESSAGE_CAPPING_UPDATE',
+          'SETTINGS_UPDATE',
+          'LABELS_EDIT',
+          'LABELS_ASSOCIATION',
+          'CALL',
+          'TYPEBOT_START',
+          'TYPEBOT_CHANGE_STATUS',
+          'REMOVE_INSTANCE',
+          'LOGOUT_INSTANCE',
+          'INSTANCE_CREATE',
+          'INSTANCE_DELETE',
+          'STATUS_INSTANCE',
         ],
       },
     },
-    headers: { type: 'object', additionalProperties: { type: 'string' }, description: 'Headers sent to this destination.' },
+    headers: {
+      type: 'object',
+      additionalProperties: { type: 'string' },
+      description: 'Headers sent to this destination.',
+    },
     byEvents: { type: 'boolean', description: 'Append the kebab-case event name to the URL.' },
     base64: { type: 'boolean', description: 'Preserve base64 media payloads when supported by the event.' },
   },
@@ -338,14 +419,27 @@ paths['/webhook/set-many/{instanceName}'] = {
   post: {
     tags: ['Webhooks'],
     summary: 'Replace an instance webhook destination list',
-    description: 'Atomically replaces all local webhook destinations for an instance. The legacy /webhook/set route remains available for one destination.',
+    description:
+      'Atomically replaces all local webhook destinations for an instance. The legacy /webhook/set route remains available for one destination.',
     operationId: 'setManyWebhooks',
     parameters: [instanceParameter],
     requestBody: {
       required: true,
-      content: { 'application/json': { schema: { type: 'object', required: ['webhooks'], properties: { webhooks: { type: 'array', minItems: 1, items: webhookEndpointSchema } }, additionalProperties: false } } },
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            required: ['webhooks'],
+            properties: { webhooks: { type: 'array', minItems: 1, items: webhookEndpointSchema } },
+            additionalProperties: false,
+          },
+        },
+      },
     },
-    responses: { 201: { description: 'Saved webhook destinations.' }, 400: { description: 'Invalid destination configuration.' } },
+    responses: {
+      201: { description: 'Saved webhook destinations.' },
+      400: { description: 'Invalid destination configuration.' },
+    },
   },
 };
 
@@ -368,6 +462,17 @@ for (const [method, definition] of Object.entries(metadata)) {
       operationId: `baileys_${method}`,
       parameters: [
         instanceParameter,
+        ...(localFirstMethods.has(method)
+          ? [
+              {
+                name: 'live',
+                in: 'query',
+                required: false,
+                description: 'Bypass the local snapshot and query WhatsApp now.',
+                schema: { type: 'boolean', default: false },
+              },
+            ]
+          : []),
         ...definition.parameters.map((parameter) => ({
           name: parameter.name,
           in: 'query',
@@ -382,37 +487,11 @@ for (const [method, definition] of Object.entries(metadata)) {
   };
 }
 
-paths['/baileys/{method}/{instanceName}'] = {
-  post: {
-    deprecated: true,
-    tags: ['Legacy'],
-    summary: 'Invoke a method with an ordered args array',
-    description: 'Compatibility route. Prefer the grouped method-specific routes with named fields.',
-    operationId: 'invokeBaileysLegacy',
-    parameters: [
-      { name: 'method', in: 'path', required: true, schema: { type: 'string', enum: methods } },
-      instanceParameter,
-    ],
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: {
-            type: 'object',
-            properties: { args: { type: 'array', items: {} } },
-            additionalProperties: false,
-          },
-        },
-      },
-    },
-    responses: { 200: successResponse },
-  },
-};
-
 const document = {
   openapi: '3.1.0',
   info: {
     title: 'Evolution API – Baileys 7',
-    version: '2.3.7-baileys-7.0.0-rc14',
+    version: '3.0.0-baileys-7.0.0-rc14',
     description:
       'Typed, grouped HTTP routes for the Baileys WASocket API. Named request fields are generated from the installed Baileys TypeScript declarations. Before using Try it out, click Authorize and enter the Evolution API global API key; Swagger sends it in the apikey header.',
   },
@@ -422,7 +501,6 @@ const document = {
     { name: 'Registry', description: 'Runtime method discovery.' },
     { name: 'Webhooks', description: 'Instance event delivery configuration, including multiple destinations.' },
     ...Object.values(groupLabels).map(([name, description]) => ({ name, description })),
-    { name: 'Legacy', description: 'Backward-compatible ordered-argument route.' },
   ],
   paths,
   components: {

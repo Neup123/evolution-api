@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Evolution API – Baileys 7
-  version: 2.3.7-baileys-7.0.0-rc14
+  version: 3.0.0-baileys-7.0.0-rc14
   description: Typed, grouped HTTP routes for the Baileys WASocket API. Named request fields are generated from the installed Baileys TypeScript declarations. Before using Try it out, click Authorize and enter the Evolution API global API key; Swagger sends it in the apikey header.
 servers:
   - url: /
@@ -27,8 +27,6 @@ tags:
     description: Account, presence, profile, privacy, contacts, labels, and quick replies.
   - name: Advanced protocol
     description: Low-level protocol, cryptographic, query, and binary operations.
-  - name: Legacy
-    description: Backward-compatible ordered-argument route.
 paths:
   /baileys/methods/{instanceName}:
     get:
@@ -177,6 +175,13 @@ paths:
       operationId: baileys_communityMetadata
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
         - name: jid
           in: query
           required: true
@@ -364,6 +369,13 @@ paths:
       operationId: baileys_communityFetchLinkedGroups
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
         - name: jid
           in: query
           required: true
@@ -384,6 +396,13 @@ paths:
       operationId: baileys_communityRequestParticipantsList
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
         - name: jid
           in: query
           required: true
@@ -518,6 +537,13 @@ paths:
       operationId: baileys_communityInviteCode
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
         - name: jid
           in: query
           required: true
@@ -634,6 +660,13 @@ paths:
       operationId: baileys_communityGetInviteInfo
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
         - name: code
           in: query
           required: true
@@ -773,6 +806,13 @@ paths:
       operationId: baileys_communityFetchAllParticipating
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
       responses:
         "200": *a2
         "400":
@@ -786,6 +826,13 @@ paths:
       operationId: baileys_getOrderDetails
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
         - name: orderId
           in: query
           required: true
@@ -813,6 +860,13 @@ paths:
       operationId: baileys_getCatalog
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
         - name: options
           in: query
           required: true
@@ -834,6 +888,13 @@ paths:
       operationId: baileys_getCollections
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
         - name: jid
           in: query
           required: true
@@ -1363,6 +1424,13 @@ paths:
       operationId: baileys_fetchPrivacySettings
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
         - name: force
           in: query
           required: true
@@ -1544,6 +1612,13 @@ paths:
       operationId: baileys_newsletterSubscribers
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
         - name: jid
           in: query
           required: true
@@ -1564,6 +1639,13 @@ paths:
       operationId: baileys_newsletterMetadata
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
         - name: type
           in: query
           required: true
@@ -1810,6 +1892,13 @@ paths:
       operationId: baileys_newsletterFetchMessages
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
         - name: jid
           in: query
           required: true
@@ -1871,6 +1960,13 @@ paths:
       operationId: baileys_newsletterAdminCount
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
         - name: jid
           in: query
           required: true
@@ -1965,6 +2061,13 @@ paths:
       operationId: baileys_groupMetadata
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
         - name: jid
           in: query
           required: true
@@ -2064,6 +2167,13 @@ paths:
       operationId: baileys_groupRequestParticipantsList
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
         - name: jid
           in: query
           required: true
@@ -2198,6 +2308,13 @@ paths:
       operationId: baileys_groupInviteCode
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
         - name: jid
           in: query
           required: true
@@ -2314,6 +2431,13 @@ paths:
       operationId: baileys_groupGetInviteInfo
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
         - name: code
           in: query
           required: true
@@ -2453,6 +2577,13 @@ paths:
       operationId: baileys_groupFetchAllParticipating
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
       responses:
         "200": *a2
         "400":
@@ -2504,6 +2635,13 @@ paths:
       operationId: baileys_getBotListV2
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
       responses:
         "200": *a2
         "400":
@@ -2570,6 +2708,13 @@ paths:
       operationId: baileys_fetchBlocklist
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
       responses:
         "200": *a2
         "400":
@@ -2583,6 +2728,13 @@ paths:
       operationId: baileys_fetchStatus
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
         - name: jids
           in: query
           required: false
@@ -2608,6 +2760,13 @@ paths:
       operationId: baileys_fetchDisappearingDuration
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
         - name: jids
           in: query
           required: false
@@ -2991,6 +3150,13 @@ paths:
       operationId: baileys_getBusinessProfile
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
         - name: jid
           in: query
           required: true
@@ -3386,6 +3552,13 @@ paths:
       operationId: baileys_fetchAccountReachoutTimelock
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
       responses:
         "200": *a2
         "400":
@@ -3399,6 +3572,13 @@ paths:
       operationId: baileys_fetchNewChatMessageCap
       parameters:
         - *a1
+        - name: live
+          in: query
+          required: false
+          description: Bypass the local snapshot and query WhatsApp now.
+          schema:
+            type: boolean
+            default: false
       responses:
         "200": *a2
         "400":
@@ -3593,169 +3773,6 @@ paths:
         "200": *a2
         "400":
           description: Invalid method parameters.
-  /baileys/{method}/{instanceName}:
-    post:
-      deprecated: true
-      tags:
-        - Legacy
-      summary: Invoke a method with an ordered args array
-      description: Compatibility route. Prefer the grouped method-specific routes with named fields.
-      operationId: invokeBaileysLegacy
-      parameters:
-        - name: method
-          in: path
-          required: true
-          schema:
-            type: string
-            enum:
-              - communityMetadata
-              - communityCreate
-              - communityCreateGroup
-              - communityLeave
-              - communityUpdateSubject
-              - communityLinkGroup
-              - communityUnlinkGroup
-              - communityFetchLinkedGroups
-              - communityRequestParticipantsList
-              - communityRequestParticipantsUpdate
-              - communityParticipantsUpdate
-              - communityUpdateDescription
-              - communityInviteCode
-              - communityRevokeInvite
-              - communityAcceptInvite
-              - communityRevokeInviteV4
-              - communityAcceptInviteV4
-              - communityGetInviteInfo
-              - communityToggleEphemeral
-              - communitySettingUpdate
-              - communityMemberAddMode
-              - communityJoinApprovalMode
-              - communityFetchAllParticipating
-              - getOrderDetails
-              - getCatalog
-              - getCollections
-              - productCreate
-              - productDelete
-              - productUpdate
-              - updateBussinesProfile
-              - updateCoverPhoto
-              - removeCoverPhoto
-              - sendMessageAck
-              - sendRetryRequest
-              - rejectCall
-              - fetchMessageHistory
-              - requestPlaceholderResend
-              - issuePrivacyTokens
-              - relayMessage
-              - sendReceipt
-              - sendReceipts
-              - readMessages
-              - refreshMediaConn
-              - getMediaHost
-              - fetchPrivacySettings
-              - sendPeerDataOperationMessage
-              - updateMemberLabel
-              - updateMediaMessage
-              - sendMessage
-              - newsletterCreate
-              - newsletterUpdate
-              - newsletterSubscribers
-              - newsletterMetadata
-              - newsletterFollow
-              - newsletterUnfollow
-              - newsletterMute
-              - newsletterUnmute
-              - newsletterUpdateName
-              - newsletterUpdateDescription
-              - newsletterUpdatePicture
-              - newsletterRemovePicture
-              - newsletterReactMessage
-              - newsletterFetchMessages
-              - subscribeNewsletterUpdates
-              - newsletterAdminCount
-              - newsletterChangeOwner
-              - newsletterDemote
-              - newsletterDelete
-              - groupMetadata
-              - groupCreate
-              - groupLeave
-              - groupUpdateSubject
-              - groupRequestParticipantsList
-              - groupRequestParticipantsUpdate
-              - groupParticipantsUpdate
-              - groupUpdateDescription
-              - groupInviteCode
-              - groupRevokeInvite
-              - groupAcceptInvite
-              - groupRevokeInviteV4
-              - groupAcceptInviteV4
-              - groupGetInviteInfo
-              - groupToggleEphemeral
-              - groupSettingUpdate
-              - groupMemberAddMode
-              - groupJoinApprovalMode
-              - groupFetchAllParticipating
-              - createCallLink
-              - getBotListV2
-              - sendPresenceUpdate
-              - presenceSubscribe
-              - fetchBlocklist
-              - fetchStatus
-              - fetchDisappearingDuration
-              - updateProfilePicture
-              - removeProfilePicture
-              - updateProfileStatus
-              - updateProfileName
-              - updateBlockStatus
-              - updateDisableLinkPreviewsPrivacy
-              - updateCallPrivacy
-              - updateMessagesPrivacy
-              - updateLastSeenPrivacy
-              - updateOnlinePrivacy
-              - updateProfilePicturePrivacy
-              - updateStatusPrivacy
-              - updateReadReceiptsPrivacy
-              - updateGroupsAddPrivacy
-              - updateDefaultDisappearingMode
-              - getBusinessProfile
-              - resyncAppState
-              - chatModify
-              - cleanDirtyBits
-              - addOrEditContact
-              - removeContact
-              - addLabel
-              - addChatLabel
-              - removeChatLabel
-              - addMessageLabel
-              - removeMessageLabel
-              - star
-              - addOrEditQuickReply
-              - removeQuickReply
-              - fetchAccountReachoutTimelock
-              - fetchNewChatMessageCap
-              - appPatch
-              - query
-              - sendRawMessage
-              - uploadPreKeys
-              - uploadPreKeysToServerIfRequired
-              - digestKeyBundle
-              - rotateSignedPreKey
-              - requestPairingCode
-              - sendUnifiedSession
-              - sendWAMBuffer
-        - *a1
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                args:
-                  type: array
-                  items: {}
-              additionalProperties: false
-      responses:
-        "200": *a2
 components:
   securitySchemes:
     ApiKeyAuth:
