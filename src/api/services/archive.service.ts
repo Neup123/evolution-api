@@ -193,7 +193,7 @@ export class ArchiveService {
       policy.capture?.events !== false &&
       (!policy.directions?.length || policy.directions.includes(direction));
     const serialized = Buffer.from(JSON.stringify(input.data ?? null));
-    const payloadHash = this.hash(serialized);
+    const payloadHash = this.dataFingerprint(serialized);
     const projection = retain ? this.project(input.event, entityType, entityJid, messageId, raw) : {};
     const encrypted = retain ? this.encrypt(serialized) : undefined;
 
@@ -206,7 +206,7 @@ export class ArchiveService {
       });
       const sequence = (last?.sequence || 0n) + 1n;
       const eventId = randomUUID();
-      const recordHash = this.hash(
+      const recordHash = this.chainDigest(
         Buffer.from(
           [
             account.id,
@@ -546,7 +546,7 @@ export class ArchiveService {
       }
     }
     const jobId = randomUUID();
-    const criteriaHash = this.hash(Buffer.from(canonicalJson(criteria)));
+    const criteriaHash = this.chainDigest(Buffer.from(canonicalJson(criteria)));
     return this.prisma.$transaction(async (tx) => {
       const job = await tx.archivePurgeJob.create({
         data: {
@@ -728,7 +728,7 @@ export class ArchiveService {
       eventSequence: string;
     }> = [];
     for (const event of events) {
-      const expected = this.hash(
+      const expected = this.chainDigest(
         Buffer.from(
           [
             account.id,
@@ -978,7 +978,7 @@ export class ArchiveService {
         mediaType,
         mimeType: details.mimetype || null,
         objectKey: objectKey || details.fileName || null,
-        contentHash: details.fileSha256 ? this.hash(Buffer.from(String(details.fileSha256))) : null,
+        contentHash: details.fileSha256 ? this.dataFingerprint(Buffer.from(String(details.fileSha256))) : null,
         sizeBytes: details.fileLength ? BigInt(details.fileLength) : null,
         state: details.fileName || objectKey ? 'stored' : 'metadata_only',
       },
@@ -1042,15 +1042,22 @@ export class ArchiveService {
     );
   }
 
-  private hash(value: Buffer) {
+  private chainDigest(value: Buffer) {
     return createHash('sha256').update(value).digest('hex');
   }
 
   private credentialFingerprint(value: string | undefined) {
-    const auditKey = this.key || Buffer.from(this.config.API_KEY || 'archive-audit-unconfigured');
-    return createHmac('sha256', auditKey)
+    return createHmac('sha256', this.fingerprintKey())
       .update(value || 'missing')
       .digest('hex');
+  }
+
+  private dataFingerprint(value: Buffer) {
+    return createHmac('sha256', this.fingerprintKey()).update(value).digest('hex');
+  }
+
+  private fingerprintKey() {
+    return this.key || Buffer.from(this.config.API_KEY || 'archive-audit-unconfigured');
   }
 
   private objectKeyFromUrl(value?: string): string | null {

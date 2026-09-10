@@ -42,7 +42,7 @@ Generate the master key with `openssl rand -base64 32`. Back it up separately fr
 | `ArchivePurgeTombstone` | HMAC-signed, content-free proof that a defined range was deleted. |
 | `ArchiveAccessLog` | Allowed and denied scoped-key authorization attempts for archive reads/administration. |
 
-`ArchiveEvent.sequence` is a PostgreSQL `BIGINT`; WhatsApp timestamps are stored as `TIMESTAMPTZ(6)`. Raw payloads use AES-256-GCM with a new 96-bit IV per record. Searchable projections contain only common fields such as JID, message ID, direction, text, status, participant, and display name. A policy that captures nothing still stores an excluded non-content receipt containing event type, time, entity classification, and a SHA-256 payload hash.
+`ArchiveEvent.sequence` is a PostgreSQL `BIGINT`; WhatsApp timestamps are stored as `TIMESTAMPTZ(6)`. Raw payloads use AES-256-GCM with a new 96-bit IV per record. Searchable projections contain only common fields such as JID, message ID, direction, text, status, participant, and display name. A policy that captures nothing still stores an excluded non-content receipt containing event type, time, entity classification, and a keyed HMAC-SHA-256 payload fingerprint. The keyed fingerprint prevents captured secret material from becoming an offline password verifier.
 
 ## Policy inheritance
 
@@ -115,7 +115,7 @@ Scope: `archive:read`.
   "eventType": "messages.upsert", "entityType": "message", "entityJid": "1555@s.whatsapp.net",
   "messageId": "ABC", "occurredAt": "2026-09-09T12:00:00.000Z", "capturedAt": "2026-09-09T12:00:00.010Z",
   "projection": {"text":"hello","fromMe":false,"participant":null,"status":null},
-  "payloadHash": "sha256", "previousHash": "sha256", "recordHash": "sha256", "excluded": false,
+  "payloadHash": "hmac-sha256", "previousHash": "sha256", "recordHash": "sha256", "excluded": false,
   "purgeJobId": null
 }]
 ```
@@ -127,7 +127,7 @@ When requested with export scope, `payload` contains the decrypted original webh
 `GET /archive/media/{instanceName}` accepts `entityJid`, `groupJid`, `mediaType`, `state`, and `limit`. Scope: `archive:media`.
 
 ```json
-[{"id":"uuid","accountId":"uuid","eventId":"uuid","messageId":"ABC","entityJid":"120363...@g.us","mediaType":"image","mimeType":"image/jpeg","objectKey":"whatsapp-archive/...","contentHash":"sha256","sizeBytes":"2048","state":"stored","createdAt":"2026-09-09T12:00:00.000Z","purgedAt":null}]
+[{"id":"uuid","accountId":"uuid","eventId":"uuid","messageId":"ABC","entityJid":"120363...@g.us","mediaType":"image","mimeType":"image/jpeg","objectKey":"whatsapp-archive/...","contentHash":"hmac-sha256","sizeBytes":"2048","state":"stored","createdAt":"2026-09-09T12:00:00.000Z","purgedAt":null}]
 ```
 
 ### Normalized history views
