@@ -82,6 +82,26 @@ export function forceLiveRead(...values: unknown[]): boolean {
   return values.some((value) => value === true || value === 'true');
 }
 
+/** Return false when a snapshot cannot satisfy the method's purpose. */
+export function hasRelevantLocalData(method: string, value: unknown): boolean {
+  const result =
+    value && typeof value === 'object' && 'result' in (value as Record<string, unknown>)
+      ? (value as Record<string, unknown>).result
+      : value;
+
+  if (method === 'getCatalog') return Array.isArray((result as any)?.products) && (result as any).products.length > 0;
+  if (method === 'getCollections')
+    return Array.isArray((result as any)?.collections) && (result as any).collections.length > 0;
+  if (method === 'profilePictureUrl' || method === 'chat.fetchProfilePictureUrl') {
+    const url = (result as any)?.profilePictureUrl ?? (result as any)?.url ?? result;
+    return typeof url === 'string' && url.length > 0;
+  }
+  if (result === null || result === undefined || result === '') return false;
+  if (Array.isArray(result)) return result.length > 0;
+  if (typeof result === 'object') return Object.keys(result as Record<string, unknown>).length > 0;
+  return true;
+}
+
 export class LocalReadService {
   constructor(
     private readonly prismaRepository: PrismaRepository,
@@ -105,7 +125,7 @@ export class LocalReadService {
 
     const instance = await this.prismaRepository.instance.findUnique({
       where: { name: options.instanceName },
-      select: { id: true },
+      select: { id: true, Setting: { select: { localReadTtlSeconds: true, localReadTtlOverrides: true } } },
     });
     if (!instance) {
       throw {
@@ -117,7 +137,12 @@ export class LocalReadService {
 
     const argumentsKey = localReadArgumentsKey(args);
     const uniqueKey = `${instance.id}:${options.method}:${argumentsKey}`;
-    const ttlSeconds = database.READ_THROUGH.TTL_OVERRIDES[options.method] ?? database.READ_THROUGH.TTL_SECONDS;
+    const instanceOverrides = (instance.Setting?.localReadTtlOverrides as Record<string, number> | null) ?? {};
+    const ttlSeconds =
+      instanceOverrides[options.method] ??
+      instance.Setting?.localReadTtlSeconds ??
+      database.READ_THROUGH.TTL_OVERRIDES[options.method] ??
+      database.READ_THROUGH.TTL_SECONDS;
 
     if (!options.live) {
       const snapshot = await this.prismaRepository.localReadSnapshot.findUnique({
@@ -125,7 +150,7 @@ export class LocalReadService {
           instanceId_method_argumentsKey: { instanceId: instance.id, method: options.method, argumentsKey },
         },
       });
-      if (snapshot?.complete) {
+      if (snapshot?.complete && hasRelevantLocalData(options.method, snapshot.result)) {
         const ageSeconds = Math.max(0, Math.floor((Date.now() - snapshot.fetchedAt.getTime()) / 1000));
         if (ageSeconds <= ttlSeconds) {
           return { value: snapshot.result as T, source: 'local', ageSeconds };

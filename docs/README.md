@@ -16,7 +16,7 @@ npx @asyncapi/cli generate fromTemplate docs/asyncapi.yaml @asyncapi/html-templa
 2. In Swagger, choose **Authorize** and enter the global API key. Swagger sends it in the `apikey` header.
 3. Use a typed, grouped Baileys route. Swagger shows each method argument as a separate named input. Known enum values are dropdowns, primitive arrays accept repeated values, and structured inputs accept JSON. Positional `args` JSON is not needed.
 
-`GET /baileys/methods/{instanceName}` returns the authoritative method registry for the installed version.
+`GET /baileys/methods/{instanceName}` returns the authoritative method registry for the installed version. The [generated method-contract tree](./baileys/README.md) illustrates the named request fields and response schema for all 135 methods.
 
 ## Baileys routes
 
@@ -55,17 +55,17 @@ Evolution API 3 exposes only the typed grouped routes. The older `POST /baileys/
 
 ## Local-first reads
 
-Eligible reads use a persistent, instance-scoped database snapshot before contacting WhatsApp. A missing or expired snapshot is refreshed from WhatsApp and saved. Add `live=true` as a query parameter or `"live": true` to a JSON body to force a refresh. The response body is unchanged; grouped Baileys routes expose `X-Evolution-Data-Source: local|live` and, for cached responses, `X-Evolution-Data-Age`.
+Eligible reads use a persistent, instance-scoped database snapshot before contacting WhatsApp. A missing, expired, or method-relevant empty snapshot is refreshed from WhatsApp and saved. Add `live=true` as a query parameter or `"live": true` to a JSON body to force a refresh. The response body is unchanged; grouped Baileys routes expose `X-Evolution-Data-Source: local|live` and, for cached responses, `X-Evolution-Data-Age`.
 
-See the [local-first read-through reference](./local-first-reads.md) for the complete method matrix, configuration, identity rules, invalidation behavior, migration sequence, examples, and rollback guidance.
+See the [local-first read-through reference](./local-first-reads.md) and [complete instance-settings reference](./settings.md) for the method matrix, every setting, identity rules, invalidation behavior, migration sequence, examples, and rollback guidance.
 
-Configure the policy with `DATABASE_READ_THROUGH_ENABLED`, `DATABASE_READ_THROUGH_TTL_SECONDS`, and a JSON map in `DATABASE_READ_THROUGH_TTL_OVERRIDES`, for example `{"groupMetadata":300,"fetchPrivacySettings":3600}`. A live refresh failure is returned to the caller; stale data is never substituted silently.
+Configure global defaults with `DATABASE_READ_THROUGH_ENABLED`, `DATABASE_READ_THROUGH_TTL_SECONDS`, and `DATABASE_READ_THROUGH_TTL_OVERRIDES`. Configure each instance's TTL and method overrides under **Manager → Instance → Settings → Local data cache**. A live refresh failure is returned to the caller; stale data is never substituted silently.
 
 The v3 migration recreates `IsOnWhatsapp` as an instance-scoped table and therefore clears the old unscoped number cache. It also creates `LocalReadSnapshot`. Apply the PostgreSQL or MySQL migrations before starting v3.
 
 ## WhatsApp archive
 
-Evolution API v4 adds an optional PostgreSQL-only, encrypted, append-only WhatsApp archive. It is separate from the mutable operational tables, survives operational instance deletion, supports inherited capture/media policies, and exposes preview-confirm purge operations that leave signed tombstones. See the [complete archive API, schema, policy, purge, backup, and recovery reference](./archive.md).
+Evolution API v4 adds an optional PostgreSQL-only, encrypted, append-only WhatsApp archive. It is separate from the mutable operational tables, survives operational instance deletion, supports inherited capture/media policies, and exposes preview-confirm purge operations that leave signed tombstones. Capture types, media mode, retention intent, and purge controls are available under **Manager → Instance → Settings → WhatsApp archive**. The archive administration key remains only in page memory. See the [complete archive API, schema, policy, purge, backup, and recovery reference](./archive.md).
 
 Methods that require process-local streams, callbacks, or socket lifecycle control are intentionally excluded. In particular, use media values accepted by `sendMessage`, product, newsletter, and profile-picture operations instead of calling Baileys's internal `waUploadToServer` function directly.
 

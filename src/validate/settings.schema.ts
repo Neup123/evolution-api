@@ -32,6 +32,11 @@ export const settingsSchema: JSONSchema7 = {
     readStatus: { type: 'boolean' },
     syncFullHistory: { type: 'boolean' },
     wavoipToken: { type: 'string' },
+    localReadTtlSeconds: { type: ['integer', 'null'], minimum: 0, maximum: 2592000 },
+    localReadTtlOverrides: {
+      type: ['object', 'null'],
+      additionalProperties: { type: 'integer', minimum: 0, maximum: 2592000 },
+    },
   },
   required: ['rejectCall', 'groupsIgnore', 'alwaysOnline', 'readMessages', 'readStatus', 'syncFullHistory'],
   ...isNotEmpty('rejectCall', 'groupsIgnore', 'alwaysOnline', 'readMessages', 'readStatus', 'syncFullHistory'),

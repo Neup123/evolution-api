@@ -170,6 +170,8 @@ export class ChannelStartupService {
         readStatus: data.readStatus,
         syncFullHistory: data.syncFullHistory,
         wavoipToken: data.wavoipToken,
+        localReadTtlSeconds: data.localReadTtlSeconds,
+        localReadTtlOverrides: data.localReadTtlOverrides,
       },
       create: {
         rejectCall: data.rejectCall,
@@ -180,6 +182,8 @@ export class ChannelStartupService {
         readStatus: data.readStatus,
         syncFullHistory: data.syncFullHistory,
         wavoipToken: data.wavoipToken,
+        localReadTtlSeconds: data.localReadTtlSeconds,
+        localReadTtlOverrides: data.localReadTtlOverrides,
         instanceId: this.instanceId,
       },
     });
@@ -219,6 +223,8 @@ export class ChannelStartupService {
       readStatus: data.readStatus,
       syncFullHistory: data.syncFullHistory,
       wavoipToken: data.wavoipToken,
+      localReadTtlSeconds: data.localReadTtlSeconds,
+      localReadTtlOverrides: data.localReadTtlOverrides as Record<string, number> | null,
     };
   }
 

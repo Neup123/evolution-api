@@ -1,14 +1,14 @@
 # Local-first read-through API
 
-Evolution API v3 can satisfy eligible WhatsApp reads from persistent, instance-scoped database snapshots. This reduces calls to WhatsApp while preserving the existing JSON response body.
+Evolution API v4.1 can satisfy eligible WhatsApp reads from persistent, instance-scoped database snapshots. This reduces calls to WhatsApp while preserving the existing JSON response body.
 
 ## Request behavior
 
 For an eligible operation, the API follows this order:
 
 1. Build a cache key from the instance, method, and normalized arguments.
-2. Return a complete snapshot while it is within its configured TTL.
-3. On a miss or expiry, make one live WhatsApp request and persist the successful result.
+2. Return a complete, relevant snapshot while it is within its configured TTL.
+3. On a missing, empty, irrelevant, or expired result, make one live WhatsApp request and persist the successful result.
 4. Return live failures to the caller. Expired data is never used as a silent fallback.
 
 Concurrent misses for the same key share one in-process live request. Snapshots remain isolated between Evolution instances.
@@ -61,9 +61,20 @@ DATABASE_READ_THROUGH_TTL_OVERRIDES={"fetchStatus":300,"groupMetadata":1800}
 - `DATABASE_READ_THROUGH_TTL_OVERRIDES` maps exact internal method names to non-negative TTLs in seconds. Invalid JSON or invalid values are ignored.
 - A TTL of `0` permits reuse only during the snapshot's creation second; use `live=true` when a guaranteed bypass is required.
 
+Each instance can override the environment defaults in **Manager → Instance → Settings → Local data cache** or through `POST /settings/set/{instanceName}`:
+
+```json
+{
+  "localReadTtlSeconds": 900,
+  "localReadTtlOverrides": {"groupMetadata": 3600, "fetchStatus": 60}
+}
+```
+
+Precedence is method override for the instance, instance default, environment method override, then environment default. The maximum accepted TTL is 30 days. Empty catalogs, collections, and profile-picture results are stored as observations but do not suppress the next live lookup.
+
 ## Persistence and migration
 
-Run the provider-specific Prisma migration before starting v3. It creates `LocalReadSnapshot` and recreates `IsOnWhatsapp` with an instance foreign key and instance-scoped uniqueness.
+Provider-specific migrations run automatically during the normal container startup. The v4.1 migration adds per-instance TTL fields to `Setting`; the earlier v3 migration creates `LocalReadSnapshot` and recreates `IsOnWhatsapp` with an instance foreign key and instance-scoped uniqueness.
 
 The `IsOnWhatsapp` recreation intentionally clears legacy global number-cache rows. They are rebuilt on demand and can no longer leak identity results between instances. This is one reason the release is a breaking major version.
 
