@@ -8,14 +8,20 @@ if (!baseUrl || !apiKey || !instance) {
 }
 
 async function request(path, body, method = 'POST') {
-  const response = await fetch(`${baseUrl}${path}`, {
-    method,
-    headers: { apikey: apiKey, 'content-type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  const value = await response.json();
-  if (!response.ok) throw new Error(`${path} returned ${response.status}: ${JSON.stringify(value)}`);
-  return { value, source: response.headers.get('x-evolution-data-source') };
+  for (let attempt = 0; ; attempt += 1) {
+    const response = await fetch(`${baseUrl}${path}`, {
+      method,
+      headers: { apikey: apiKey, 'content-type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const value = await response.json();
+    if (response.ok) return { value, source: response.headers.get('x-evolution-data-source') };
+    const throttled = JSON.stringify(value).includes('rate-overlimit');
+    if (!throttled || attempt >= 3) {
+      throw new Error(`${path} returned ${response.status}: ${JSON.stringify(value)}`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 5_000 * 2 ** attempt));
+  }
 }
 
 const privacy = await request(`/baileys/messages/fetchPrivacySettings/${instance}`, {});
