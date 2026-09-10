@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 
-import { forceLiveRead, LocalReadService, localReadArgumentsKey } from '../src/api/services/local-read.service';
+import {
+  forceLiveRead,
+  hasRelevantLocalData,
+  LocalReadService,
+  localReadArgumentsKey,
+} from '../src/api/services/local-read.service';
 
 type Snapshot = {
   instanceId: string;
@@ -17,7 +22,10 @@ const snapshotKey = (instanceId: string, method: string, argumentsKey: string) =
 
 const repository = {
   instance: {
-    findUnique: async ({ where }: any) => (where.name === 'alpha' ? { id: 'instance-alpha' } : null),
+    findUnique: async ({ where }: any) =>
+      where.name === 'alpha'
+        ? { id: 'instance-alpha', Setting: { localReadTtlSeconds: 20, localReadTtlOverrides: { fetchStatus: 10 } } }
+        : null,
   },
   localReadSnapshot: {
     findUnique: async ({ where }: any) => {
@@ -52,6 +60,12 @@ const config = {
 async function run() {
   assert.equal(localReadArgumentsKey([{ b: 2, a: 1 }]), localReadArgumentsKey([{ a: 1, b: 2 }]));
   assert.equal(forceLiveRead(false, 'true'), true);
+  assert.equal(hasRelevantLocalData('getCatalog', { method: 'getCatalog', result: { products: [] } }), false);
+  assert.equal(hasRelevantLocalData('getCatalog', { method: 'getCatalog', result: { products: [{ id: '1' }] } }), true);
+  assert.equal(
+    hasRelevantLocalData('fetchPrivacySettings', { method: 'fetchPrivacySettings', result: { last: 'contacts' } }),
+    true,
+  );
 
   const service = new LocalReadService(repository, config);
   const args = [['123@s.whatsapp.net']];
@@ -90,6 +104,26 @@ async function run() {
   });
   assert.equal(forced.source, 'live');
   assert.equal(liveCalls, 1);
+
+  snapshots.set(snapshotKey('instance-alpha', 'getCatalog', key), {
+    instanceId: 'instance-alpha',
+    method: 'getCatalog',
+    argumentsKey: key,
+    result: { method: 'getCatalog', result: { products: [], nextPageCursor: null } },
+    complete: true,
+    fetchedAt: new Date(),
+  });
+  const emptyFallback = await service.execute({
+    instanceName: 'alpha',
+    method: 'getCatalog',
+    args,
+    callLive: async () => {
+      liveCalls += 1;
+      return { method: 'getCatalog', result: { products: [{ id: 'live' }] } };
+    },
+  });
+  assert.equal(emptyFallback.source, 'live');
+  assert.equal(liveCalls, 2);
 
   const stale = snapshots.get(snapshotKey('instance-alpha', 'fetchStatus', key));
   stale.fetchedAt = new Date(Date.now() - 11_000);

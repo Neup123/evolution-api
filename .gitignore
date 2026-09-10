@@ -1,5 +1,7 @@
 # Repo
 Baileys
+!docs/baileys/
+!docs/baileys/**
 # compiled output
 /dist
 /node_modules

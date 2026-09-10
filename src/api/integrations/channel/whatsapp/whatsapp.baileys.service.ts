@@ -721,7 +721,7 @@ export class BaileysStartupService extends ChannelStartupService {
       this.loadWebhook();
       this.loadProxy();
 
-      // Remontar o messageProcessor para garantir que está funcionando após reconexão
+      // Recreate the message processor so it is active after reconnection.
       this.messageProcessor.mount({
         onMessageReceive: this.messageHandle['messages.upsert'].bind(this),
       });
@@ -1380,7 +1380,7 @@ export class BaileysStartupService extends ChannelStartupService {
 
                   const message: any = received;
 
-                  // Verificação adicional para garantir que há conteúdo de mídia real
+                  // Confirm that the message contains actual media content.
                   const hasRealMedia = this.hasValidMediaContent(message);
 
                   if (!hasRealMedia) {
@@ -1724,7 +1724,7 @@ export class BaileysStartupService extends ChannelStartupService {
         groupMetadata.map((group) =>
           localReadService.store(this.instanceId, 'groupMetadata', [group.id], {
             method: 'groupMetadata',
-            result: group,
+            result: this.clarifyGroupParticipantIdentifiers(group),
           }),
         ),
       );
@@ -1773,15 +1773,15 @@ export class BaileysStartupService extends ChannelStartupService {
       };
 
       try {
-        // Usa o mesmo método que o endpoint /group/participants
+        // Use the same lookup as the /group/participants endpoint.
         const groupParticipants = await this.findParticipants({ groupJid: participantsUpdate.id });
 
-        // Validação para garantir que temos dados válidos
+        // Validate that the participant lookup returned usable data.
         if (!groupParticipants?.participants || !Array.isArray(groupParticipants.participants)) {
           throw new Error('Invalid participant data received from findParticipants');
         }
 
-        // Filtra apenas os participantes que estão no evento
+        // Resolve only the participants included in this event.
         const resolvedParticipants = participantsUpdate.participants.map((participantId) => {
           const participantData = groupParticipants.participants.find((p) => p.id === participantId);
 
@@ -1804,7 +1804,7 @@ export class BaileysStartupService extends ChannelStartupService {
         const enhancedParticipantsUpdate = {
           ...participantsUpdate,
           participants: participantsUpdate.participants, // Mantém array original de strings
-          // Adiciona dados resolvidos em campo separado
+          // Add resolved identities in a separate backward-compatible field.
           participantsData: resolvedParticipants,
         };
 
@@ -1813,7 +1813,7 @@ export class BaileysStartupService extends ChannelStartupService {
         this.logger.error(
           `Failed to resolve participant data for GROUP_PARTICIPANTS_UPDATE webhook: ${error.message} | Group: ${participantsUpdate.id} | Participants: ${participantsUpdate.participants.length}`,
         );
-        // Fallback - envia sem conversão
+        // Fall back to the original event when identity resolution fails.
         this.sendDataWebhook(Events.GROUP_PARTICIPANTS_UPDATE, participantsUpdate);
       }
 
@@ -2581,7 +2581,7 @@ export class BaileysStartupService extends ChannelStartupService {
 
             const message: any = messageRaw;
 
-            // Verificação adicional para garantir que há conteúdo de mídia real
+            // Confirm that the message contains actual media content.
             const hasRealMedia = this.hasValidMediaContent(message);
 
             if (!hasRealMedia) {
@@ -4530,7 +4530,7 @@ export class BaileysStartupService extends ChannelStartupService {
         return null;
       }
 
-      const picture = await this.profilePicture(group.id);
+      const picture = await this.profilePicture(group.id).catch(() => ({ profilePictureUrl: null }));
 
       return {
         id: group.id,
@@ -4563,14 +4563,14 @@ export class BaileysStartupService extends ChannelStartupService {
 
     let groups = [];
     for (const group of fetch) {
-      const picture = await this.profilePicture(group.id);
-
       const result = {
         id: group.id,
         subject: group.subject,
         subjectOwner: group.subjectOwner,
         subjectTime: group.subjectTime,
-        pictureUrl: picture?.profilePictureUrl,
+        // Group metadata has no picture URL. Avoid one extra WhatsApp request
+        // per group; clients can request a picture explicitly when needed.
+        pictureUrl: null,
         size: group.participants.length,
         creation: group.creation,
         owner: group.owner,
@@ -4583,7 +4583,7 @@ export class BaileysStartupService extends ChannelStartupService {
         linkedParent: group.linkedParent,
       };
 
-      if (getParticipants.getParticipants == 'true') {
+      if (String(getParticipants.getParticipants) === 'true') {
         result['participants'] = group.participants;
       }
 
@@ -5060,6 +5060,45 @@ export class BaileysStartupService extends ChannelStartupService {
     return value;
   }
 
+  private clarifyGroupParticipantIdentifiers(value: unknown): unknown {
+    const clarifyParticipant = (participant: any) => {
+      const id = typeof participant?.id === 'string' ? participant.id : null;
+      const phoneJid =
+        typeof participant?.phoneNumber === 'string' && participant.phoneNumber.endsWith('@s.whatsapp.net')
+          ? participant.phoneNumber
+          : id?.endsWith('@s.whatsapp.net')
+            ? id
+            : null;
+      const lidJid =
+        typeof participant?.lid === 'string' && participant.lid.endsWith('@lid')
+          ? participant.lid
+          : id?.endsWith('@lid')
+            ? id
+            : null;
+      return {
+        ...participant,
+        lid: lidJid,
+        phoneNumber: phoneJid,
+        phoneNumberDigits: phoneJid?.split('@')[0] ?? null,
+        canonicalJid: phoneJid ?? lidJid ?? id,
+        identifierType: id?.endsWith('@lid') ? 'lid' : id?.endsWith('@s.whatsapp.net') ? 'phone-number' : 'unknown',
+      };
+    };
+    const clarifyMetadata = (metadata: any) =>
+      metadata && Array.isArray(metadata.participants)
+        ? { ...metadata, participants: metadata.participants.map(clarifyParticipant) }
+        : metadata;
+
+    if (Array.isArray(value)) return value.map(clarifyMetadata);
+    if (value && typeof value === 'object' && Array.isArray((value as any).participants)) return clarifyMetadata(value);
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(
+        Object.entries(value as Record<string, unknown>).map(([key, item]) => [key, clarifyMetadata(item)]),
+      );
+    }
+    return value;
+  }
+
   public async baileysInvoke(method: BaileysApiMethod, args: unknown[] = []) {
     if (!isBaileysApiMethod(method)) {
       throw new BadRequestException(`Unsupported Baileys API method: ${method}`);
@@ -5107,14 +5146,81 @@ export class BaileysStartupService extends ChannelStartupService {
           );
         }
         result = await this.client.groupUpdateDescription(jid, description as string | undefined);
+      } else if (method === 'groupFetchAllParticipating') {
+        const includeParticipants = normalizedArgs[0] !== false;
+        const groups = await this.client.groupFetchAllParticipating();
+        result = includeParticipants
+          ? groups
+          : Object.fromEntries(
+              Object.entries(groups).map(([groupJid, metadata]) => {
+                const compact = { ...metadata } as Record<string, unknown>;
+                delete compact.participants;
+                return [groupJid, compact];
+              }),
+            );
+      } else if (method === 'communityFetchLinkedGroups') {
+        const linked = await this.client.communityFetchLinkedGroups(normalizedArgs[0] as string);
+        result = {
+          ...linked,
+          linkedGroups: await Promise.all(
+            linked.linkedGroups.map(async (partial) => {
+              if (!partial.id || (partial.creation !== undefined && partial.owner !== undefined)) return partial;
+              try {
+                const metadata = await this.client.groupMetadata(partial.id);
+                const details = { ...metadata } as Record<string, unknown>;
+                delete details.participants;
+                return { ...partial, ...details, metadataComplete: true };
+              } catch {
+                return { ...partial, metadataComplete: false };
+              }
+            }),
+          ),
+        };
       } else {
         result = await socketMethod.apply(this.client, normalizedArgs);
       }
 
-      return {
+      if (
+        method === 'groupMetadata' ||
+        method === 'communityMetadata' ||
+        method === 'groupFetchAllParticipating' ||
+        method === 'communityFetchAllParticipating'
+      ) {
+        result = this.clarifyGroupParticipantIdentifiers(result);
+      }
+
+      const response: Record<string, unknown> = {
         method,
         result: this.serializeBaileysApiValue(result),
       };
+      if (
+        (method === 'getCatalog' &&
+          Array.isArray((result as any)?.products) &&
+          (result as any).products.length === 0) ||
+        (method === 'getCollections' &&
+          Array.isArray((result as any)?.collections) &&
+          (result as any).collections.length === 0)
+      ) {
+        const suppliedJid =
+          method === 'getCatalog' ? (normalizedArgs[0] as Record<string, unknown> | undefined)?.jid : normalizedArgs[0];
+        response.diagnostics = {
+          empty: true,
+          queriedJidType:
+            typeof suppliedJid !== 'string'
+              ? 'connected-account'
+              : suppliedJid.endsWith('@lid')
+                ? 'lid'
+                : suppliedJid.endsWith('@s.whatsapp.net')
+                  ? 'phone-number'
+                  : suppliedJid.endsWith('@g.us')
+                    ? 'group'
+                    : 'unknown',
+          explanation:
+            'WhatsApp returned no commerce records. Catalog methods require the business profile owner JID; group JIDs are not catalog owners. Baileys also has a known upstream empty-after-timeout catalog issue.',
+          upstreamIssue: 'https://github.com/WhiskeySockets/Baileys/issues/2717',
+        };
+      }
+      return response;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       throw new BadRequestException(
@@ -5125,7 +5231,7 @@ export class BaileysStartupService extends ChannelStartupService {
     }
   }
 
-  //Business Controller
+  // Business controller compatibility methods.
   public async fetchCatalog(instanceName: string, data: getCollectionsDto) {
     const jid = data.number ? createJid(data.number) : this.client?.user?.id;
     const limit = data.limit || 10;
@@ -5198,7 +5304,8 @@ export class BaileysStartupService extends ChannelStartupService {
 
   public async fetchCollections(instanceName: string, data: getCollectionsDto) {
     const jid = data.number ? createJid(data.number) : this.client?.user?.id;
-    const limit = data.limit <= 20 ? data.limit : 20; //(tem esse limite, não sei porque)
+    // WhatsApp caps collection queries at 20 items in this compatibility route.
+    const limit = data.limit <= 20 ? data.limit : 20;
 
     const onWhatsapp = (await this.whatsappNumber({ numbers: [jid] }))?.shift();
 

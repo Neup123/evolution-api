@@ -152,7 +152,7 @@ TypeScript signatures. For example, `communityParticipantsUpdate` accepts:
 }
 ```
 
-The legacy `POST /baileys/<method>/:instanceName` route with `{ "args": [...] }` remains available. Binary
+The legacy `POST /baileys/<method>/:instanceName` positional-argument route was removed in v3. Binary
 arguments and results use `{ "$base64": "..." }`. The live method registry is available at
 `GET /baileys/methods/:instanceName`, and Swagger UI is served at `/docs` unless
 `SERVER_DISABLE_DOCS=true`. The source specification is in [`docs/openapi.yaml`](docs/openapi.yaml), and the fork-specific
@@ -199,7 +199,10 @@ Local storage or S3/MinIO. Automatic media download from WhatsApp. Optional audi
 | Website | [evolutionfoundation.com.br](https://evolutionfoundation.com.br) |
 | Swagger UI | [`/docs`](./docs/openapi.yaml) |
 | Fork documentation | [`docs/README.md`](./docs/README.md) |
+| Every Baileys method and response | [`docs/baileys/README.md`](./docs/baileys/README.md) |
+| WhatsApp archive | [`docs/archive.md`](./docs/archive.md) |
 | Local-first reads | [`docs/local-first-reads.md`](./docs/local-first-reads.md) |
+| Every instance setting | [`docs/settings.md`](./docs/settings.md) |
 | Community | [evolutionfoundation.com.br/community](https://evolutionfoundation.com.br/community) |
 | Docker Hub | [evoapicloud/evolution-api](https://hub.docker.com/r/evoapicloud/evolution-api) |
 | Changelog | [CHANGELOG.md](./CHANGELOG.md) |

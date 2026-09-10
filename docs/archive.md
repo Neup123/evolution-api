@@ -55,6 +55,8 @@ Policies are merged from least to most specific:
 
 The most-specific matching value wins. New or changed policies apply prospectively. They never silently rewrite or delete older records; use the purge preview/confirm flow when a stricter policy should apply retroactively.
 
+The manager exposes the account policy under **Instance → Settings → WhatsApp archive**. It covers every capture category, incoming/outgoing direction, media mode and explicit media types, and retention intent. More-specific group/contact overrides can keep all media, images only, metadata only, or no media and can disable message capture for that JID. The same page includes purge-by-time, purge-by-group (including its media), purge-by-entity, event-type filtering, and media-only purge. Because archive administration has stronger privileges than ordinary instance management, it requires a global-admin manager session plus the separate `ARCHIVE_API_KEY`; the archive key is kept only in page memory.
+
 Policy document fields:
 
 ```json

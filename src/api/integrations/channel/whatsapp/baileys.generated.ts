@@ -2,6 +2,9 @@
 export const BAILEYS_METHOD_METADATA = {
   communityMetadata: {
     group: 'communities',
+    displayName: 'Metadata',
+    description:
+      'Get a parent community name, description, participants, and settings. Use Group Metadata for regular groups.',
     parameters: [
       {
         name: 'jid',
@@ -9,13 +12,160 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description:
+            'Parent community JID ending in @g.us. A regular group or subgroup JID is not accepted unless the operation explicitly says otherwise.',
         },
       },
     ],
+    response: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          description: 'Stable identifier in the namespace implied by its surrounding object.',
+        },
+        notify: {
+          type: 'string',
+          description: 'string',
+        },
+        addressingMode: {
+          type: 'string',
+          enum: ['pn', 'lid'],
+          description: 'Identifier namespace WhatsApp expects for group addressing: pn or lid.',
+        },
+        owner: {
+          type: 'string',
+          description: 'Primary owner identifier returned by WhatsApp; it may be a LID.',
+        },
+        ownerPn: {
+          type: 'string',
+          description: 'Owner phone-number JID when WhatsApp exposes the LID-to-PN mapping.',
+        },
+        ownerUsername: {
+          type: 'string',
+          description: 'Owner username identifier when WhatsApp exposes one.',
+        },
+        owner_country_code: {
+          type: 'string',
+          description: 'string',
+        },
+        subject: {
+          type: 'string',
+          description: 'Human-visible group, community, newsletter, or item title.',
+        },
+        subjectOwner: {
+          type: 'string',
+          description: 'Identifier of the account that last changed the subject.',
+        },
+        subjectOwnerPn: {
+          type: 'string',
+          description: 'string',
+        },
+        subjectOwnerUsername: {
+          type: 'string',
+          description: 'string',
+        },
+        subjectTime: {
+          type: 'number',
+          description: 'Unix timestamp in seconds when the subject was last changed.',
+        },
+        creation: {
+          type: 'number',
+          description: 'Unix timestamp in seconds when the entity was created.',
+        },
+        desc: {
+          type: 'string',
+          description: 'Human-visible description text.',
+        },
+        descOwner: {
+          type: 'string',
+          description: 'string',
+        },
+        descOwnerPn: {
+          type: 'string',
+          description: 'string',
+        },
+        descOwnerUsername: {
+          type: 'string',
+          description: 'string',
+        },
+        descId: {
+          type: 'string',
+          description: 'WhatsApp identifier of the current description revision.',
+        },
+        descTime: {
+          type: 'number',
+          description: 'number',
+        },
+        linkedParent: {
+          type: 'string',
+          description: 'Parent community JID when this group is a community subgroup.',
+        },
+        restrict: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        announce: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        memberAddMode: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        joinApprovalMode: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        isCommunity: {
+          type: 'boolean',
+          description: 'Whether the metadata represents a parent community.',
+        },
+        isCommunityAnnounce: {
+          type: 'boolean',
+          description: 'Whether this is the default announcements group of a community.',
+        },
+        size: {
+          type: 'number',
+          description: 'Number of participants or returned items reported by WhatsApp.',
+        },
+        participants: {
+          type: 'array',
+          items: {
+            description: 'GroupParticipant',
+          },
+          description: 'Participant records. Identifier namespaces are explained in docs/baileys/identifiers.md.',
+        },
+        ephemeralDuration: {
+          type: 'number',
+          description: 'number',
+        },
+        inviteCode: {
+          type: 'string',
+          description: 'string',
+        },
+        author: {
+          type: 'string',
+          description: 'string',
+        },
+        authorPn: {
+          type: 'string',
+          description: 'string',
+        },
+        authorUsername: {
+          type: 'string',
+          description: 'string',
+        },
+      },
+      required: ['id', 'owner', 'subject', 'participants'],
+      additionalProperties: false,
+      description: 'GroupMetadata',
+    },
   },
   communityCreate: {
     group: 'communities',
+    displayName: 'Create',
+    description: 'Create a WhatsApp community with a subject and description.',
     parameters: [
       {
         name: 'subject',
@@ -36,9 +186,155 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          description: 'Stable identifier in the namespace implied by its surrounding object.',
+        },
+        notify: {
+          type: 'string',
+          description: 'string',
+        },
+        addressingMode: {
+          type: 'string',
+          enum: ['pn', 'lid'],
+          description: 'Identifier namespace WhatsApp expects for group addressing: pn or lid.',
+        },
+        owner: {
+          type: 'string',
+          description: 'Primary owner identifier returned by WhatsApp; it may be a LID.',
+        },
+        ownerPn: {
+          type: 'string',
+          description: 'Owner phone-number JID when WhatsApp exposes the LID-to-PN mapping.',
+        },
+        ownerUsername: {
+          type: 'string',
+          description: 'Owner username identifier when WhatsApp exposes one.',
+        },
+        owner_country_code: {
+          type: 'string',
+          description: 'string',
+        },
+        subject: {
+          type: 'string',
+          description: 'Human-visible group, community, newsletter, or item title.',
+        },
+        subjectOwner: {
+          type: 'string',
+          description: 'Identifier of the account that last changed the subject.',
+        },
+        subjectOwnerPn: {
+          type: 'string',
+          description: 'string',
+        },
+        subjectOwnerUsername: {
+          type: 'string',
+          description: 'string',
+        },
+        subjectTime: {
+          type: 'number',
+          description: 'Unix timestamp in seconds when the subject was last changed.',
+        },
+        creation: {
+          type: 'number',
+          description: 'Unix timestamp in seconds when the entity was created.',
+        },
+        desc: {
+          type: 'string',
+          description: 'Human-visible description text.',
+        },
+        descOwner: {
+          type: 'string',
+          description: 'string',
+        },
+        descOwnerPn: {
+          type: 'string',
+          description: 'string',
+        },
+        descOwnerUsername: {
+          type: 'string',
+          description: 'string',
+        },
+        descId: {
+          type: 'string',
+          description: 'WhatsApp identifier of the current description revision.',
+        },
+        descTime: {
+          type: 'number',
+          description: 'number',
+        },
+        linkedParent: {
+          type: 'string',
+          description: 'Parent community JID when this group is a community subgroup.',
+        },
+        restrict: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        announce: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        memberAddMode: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        joinApprovalMode: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        isCommunity: {
+          type: 'boolean',
+          description: 'Whether the metadata represents a parent community.',
+        },
+        isCommunityAnnounce: {
+          type: 'boolean',
+          description: 'Whether this is the default announcements group of a community.',
+        },
+        size: {
+          type: 'number',
+          description: 'Number of participants or returned items reported by WhatsApp.',
+        },
+        participants: {
+          type: 'array',
+          items: {
+            description: 'GroupParticipant',
+          },
+          description: 'Participant records. Identifier namespaces are explained in docs/baileys/identifiers.md.',
+        },
+        ephemeralDuration: {
+          type: 'number',
+          description: 'number',
+        },
+        inviteCode: {
+          type: 'string',
+          description: 'string',
+        },
+        author: {
+          type: 'string',
+          description: 'string',
+        },
+        authorPn: {
+          type: 'string',
+          description: 'string',
+        },
+        authorUsername: {
+          type: 'string',
+          description: 'string',
+        },
+      },
+      required: ['id', 'owner', 'subject', 'participants'],
+      additionalProperties: false,
+      description: 'GroupMetadata',
+    },
   },
   communityCreateGroup: {
     group: 'communities',
+    displayName: 'Create Group',
+    description: 'Create a group inside an existing community and add participants.',
     parameters: [
       {
         name: 'subject',
@@ -59,7 +355,7 @@ export const BAILEYS_METHOD_METADATA = {
             type: 'string',
             description: 'string',
           },
-          description: 'string[]',
+          description: 'Participant WhatsApp JIDs, each including the @s.whatsapp.net suffix.',
         },
       },
       {
@@ -68,13 +364,160 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description:
+            'Parent community JID ending in @g.us. A regular group or subgroup JID is not accepted unless the operation explicitly says otherwise.',
         },
       },
     ],
+    response: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          description: 'Stable identifier in the namespace implied by its surrounding object.',
+        },
+        notify: {
+          type: 'string',
+          description: 'string',
+        },
+        addressingMode: {
+          type: 'string',
+          enum: ['pn', 'lid'],
+          description: 'Identifier namespace WhatsApp expects for group addressing: pn or lid.',
+        },
+        owner: {
+          type: 'string',
+          description: 'Primary owner identifier returned by WhatsApp; it may be a LID.',
+        },
+        ownerPn: {
+          type: 'string',
+          description: 'Owner phone-number JID when WhatsApp exposes the LID-to-PN mapping.',
+        },
+        ownerUsername: {
+          type: 'string',
+          description: 'Owner username identifier when WhatsApp exposes one.',
+        },
+        owner_country_code: {
+          type: 'string',
+          description: 'string',
+        },
+        subject: {
+          type: 'string',
+          description: 'Human-visible group, community, newsletter, or item title.',
+        },
+        subjectOwner: {
+          type: 'string',
+          description: 'Identifier of the account that last changed the subject.',
+        },
+        subjectOwnerPn: {
+          type: 'string',
+          description: 'string',
+        },
+        subjectOwnerUsername: {
+          type: 'string',
+          description: 'string',
+        },
+        subjectTime: {
+          type: 'number',
+          description: 'Unix timestamp in seconds when the subject was last changed.',
+        },
+        creation: {
+          type: 'number',
+          description: 'Unix timestamp in seconds when the entity was created.',
+        },
+        desc: {
+          type: 'string',
+          description: 'Human-visible description text.',
+        },
+        descOwner: {
+          type: 'string',
+          description: 'string',
+        },
+        descOwnerPn: {
+          type: 'string',
+          description: 'string',
+        },
+        descOwnerUsername: {
+          type: 'string',
+          description: 'string',
+        },
+        descId: {
+          type: 'string',
+          description: 'WhatsApp identifier of the current description revision.',
+        },
+        descTime: {
+          type: 'number',
+          description: 'number',
+        },
+        linkedParent: {
+          type: 'string',
+          description: 'Parent community JID when this group is a community subgroup.',
+        },
+        restrict: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        announce: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        memberAddMode: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        joinApprovalMode: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        isCommunity: {
+          type: 'boolean',
+          description: 'Whether the metadata represents a parent community.',
+        },
+        isCommunityAnnounce: {
+          type: 'boolean',
+          description: 'Whether this is the default announcements group of a community.',
+        },
+        size: {
+          type: 'number',
+          description: 'Number of participants or returned items reported by WhatsApp.',
+        },
+        participants: {
+          type: 'array',
+          items: {
+            description: 'GroupParticipant',
+          },
+          description: 'Participant records. Identifier namespaces are explained in docs/baileys/identifiers.md.',
+        },
+        ephemeralDuration: {
+          type: 'number',
+          description: 'number',
+        },
+        inviteCode: {
+          type: 'string',
+          description: 'string',
+        },
+        author: {
+          type: 'string',
+          description: 'string',
+        },
+        authorPn: {
+          type: 'string',
+          description: 'string',
+        },
+        authorUsername: {
+          type: 'string',
+          description: 'string',
+        },
+      },
+      required: ['id', 'owner', 'subject', 'participants'],
+      additionalProperties: false,
+      description: 'GroupMetadata',
+    },
   },
   communityLeave: {
     group: 'communities',
+    displayName: 'Leave',
+    description: 'Execute the leave WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'id',
@@ -86,9 +529,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   communityUpdateSubject: {
     group: 'communities',
+    displayName: 'Update Subject',
+    description: 'Execute the update subject WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -96,7 +544,8 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description:
+            'Parent community JID ending in @g.us. A regular group or subgroup JID is not accepted unless the operation explicitly says otherwise.',
         },
       },
       {
@@ -109,9 +558,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   communityLinkGroup: {
     group: 'communities',
+    displayName: 'Link Group',
+    description: 'Execute the link group WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'groupJid',
@@ -128,13 +582,19 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description:
+            'Parent community JID ending in @g.us. A regular group or subgroup JID is not accepted unless the operation explicitly says otherwise.',
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   communityUnlinkGroup: {
     group: 'communities',
+    displayName: 'Unlink Group',
+    description: 'Execute the unlink group WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'groupJid',
@@ -151,13 +611,19 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description:
+            'Parent community JID ending in @g.us. A regular group or subgroup JID is not accepted unless the operation explicitly says otherwise.',
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   communityFetchLinkedGroups: {
     group: 'communities',
+    displayName: 'Fetch Linked Groups',
+    description: 'List groups linked to a community and enrich partial WhatsApp rows with cached full group metadata.',
     parameters: [
       {
         name: 'jid',
@@ -165,13 +631,71 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description:
+            'Parent community JID ending in @g.us. A regular group or subgroup JID is not accepted unless the operation explicitly says otherwise.',
         },
       },
     ],
+    response: {
+      type: 'object',
+      properties: {
+        communityJid: {
+          type: 'string',
+          description: 'string',
+        },
+        isCommunity: {
+          type: 'boolean',
+          description: 'Whether the metadata represents a parent community.',
+        },
+        linkedGroups: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: {
+                type: 'string',
+                description: 'Stable identifier in the namespace implied by its surrounding object.',
+              },
+              subject: {
+                type: 'string',
+                description: 'Human-visible group, community, newsletter, or item title.',
+              },
+              creation: {
+                type: 'number',
+                description: 'Unix timestamp in seconds when the entity was created.',
+              },
+              owner: {
+                type: 'string',
+                description: 'Primary owner identifier returned by WhatsApp; it may be a LID.',
+              },
+              size: {
+                type: 'number',
+                description: 'Number of participants or returned items reported by WhatsApp.',
+              },
+              metadataComplete: {
+                type: 'boolean',
+                description:
+                  'Whether Evolution successfully enriched the partial linked-group row with group metadata.',
+              },
+            },
+            required: ['id', 'subject', 'creation', 'owner', 'size'],
+            additionalProperties: false,
+            description: '{ id: string; subject: string; creation: number; owner: string; size: number; }',
+          },
+          description: '{ id: string; subject: string; creation: number; owner: string; size: number; }[]',
+        },
+      },
+      required: ['communityJid', 'isCommunity', 'linkedGroups'],
+      additionalProperties: false,
+      description:
+        '{ communityJid: string; isCommunity: boolean; linkedGroups: { id: string; subject: string; creation: number; owner: string; size: number; }[]; }',
+    },
   },
   communityRequestParticipantsList: {
     group: 'communities',
+    displayName: 'Request Participants List',
+    description:
+      'List membership approval requests reported for a community. Group and subgroup join queues use the Group operation.',
     parameters: [
       {
         name: 'jid',
@@ -179,13 +703,25 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description:
+            'Parent community JID ending in @g.us. A regular group or subgroup JID is not accepted unless the operation explicitly says otherwise.',
         },
       },
     ],
+    response: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: true,
+        description: '{ [key: string]: string; }',
+      },
+      description: '{ [key: string]: string; }[]',
+    },
   },
   communityRequestParticipantsUpdate: {
     group: 'communities',
+    displayName: 'Request Participants Update',
+    description: 'Execute the request participants update WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -193,7 +729,8 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description:
+            'Parent community JID ending in @g.us. A regular group or subgroup JID is not accepted unless the operation explicitly says otherwise.',
         },
       },
       {
@@ -206,7 +743,7 @@ export const BAILEYS_METHOD_METADATA = {
             type: 'string',
             description: 'string',
           },
-          description: 'string[]',
+          description: 'Participant WhatsApp JIDs, each including the @s.whatsapp.net suffix.',
         },
       },
       {
@@ -216,13 +753,35 @@ export const BAILEYS_METHOD_METADATA = {
         schema: {
           type: 'string',
           enum: ['approve', 'reject'],
-          description: '"approve" | "reject"',
+          description: 'Action performed by Community Request Participants Update.',
         },
       },
     ],
+    response: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          status: {
+            type: 'string',
+            description: 'WhatsApp operation, delivery, membership, catalog, or account state for this record.',
+          },
+          jid: {
+            type: 'string',
+            description: 'Full WhatsApp address including its @s.whatsapp.net, @lid, @g.us, or @newsletter suffix.',
+          },
+        },
+        required: ['status', 'jid'],
+        additionalProperties: false,
+        description: '{ status: string; jid: string; }',
+      },
+      description: '{ status: string; jid: string; }[]',
+    },
   },
   communityParticipantsUpdate: {
     group: 'communities',
+    displayName: 'Participants Update',
+    description: 'Execute the participants update WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -230,7 +789,8 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description:
+            'Parent community JID ending in @g.us. A regular group or subgroup JID is not accepted unless the operation explicitly says otherwise.',
         },
       },
       {
@@ -243,7 +803,7 @@ export const BAILEYS_METHOD_METADATA = {
             type: 'string',
             description: 'string',
           },
-          description: 'string[]',
+          description: 'Participant WhatsApp JIDs, each including the @s.whatsapp.net suffix.',
         },
       },
       {
@@ -253,13 +813,71 @@ export const BAILEYS_METHOD_METADATA = {
         schema: {
           type: 'string',
           enum: ['add', 'remove', 'promote', 'demote', 'modify'],
-          description: 'ParticipantAction',
+          description: 'Action performed by Community Participants Update.',
         },
       },
     ],
+    response: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          status: {
+            type: 'string',
+            description: 'WhatsApp operation, delivery, membership, catalog, or account state for this record.',
+          },
+          jid: {
+            type: 'string',
+            description: 'Full WhatsApp address including its @s.whatsapp.net, @lid, @g.us, or @newsletter suffix.',
+          },
+          content: {
+            type: 'object',
+            properties: {
+              tag: {
+                type: 'string',
+                description: 'string',
+              },
+              attrs: {
+                type: 'object',
+                additionalProperties: true,
+                description: '{ [key: string]: string; }',
+              },
+              content: {
+                oneOf: [
+                  {
+                    type: 'string',
+                  },
+                  {
+                    type: 'object',
+                    properties: {
+                      $base64: {
+                        type: 'string',
+                        format: 'byte',
+                      },
+                    },
+                    required: ['$base64'],
+                    additionalProperties: false,
+                  },
+                ],
+                description: 'string | BinaryNode[] | Uint8Array<ArrayBufferLike>',
+              },
+            },
+            required: ['tag', 'attrs'],
+            additionalProperties: false,
+            description: 'BinaryNode',
+          },
+        },
+        required: ['status', 'jid', 'content'],
+        additionalProperties: false,
+        description: '{ status: string; jid: string; content: BinaryNode; }',
+      },
+      description: '{ status: string; jid: string; content: BinaryNode; }[]',
+    },
   },
   communityUpdateDescription: {
     group: 'communities',
+    displayName: 'Update Description',
+    description: 'Execute the update description WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -267,12 +885,13 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description:
+            'Parent community JID ending in @g.us. A regular group or subgroup JID is not accepted unless the operation explicitly says otherwise.',
         },
       },
       {
         name: 'description',
-        required: true,
+        required: false,
         rest: false,
         schema: {
           type: 'string',
@@ -280,9 +899,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   communityInviteCode: {
     group: 'communities',
+    displayName: 'Invite Code',
+    description: 'Execute the invite code WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -290,13 +914,20 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description:
+            'Parent community JID ending in @g.us. A regular group or subgroup JID is not accepted unless the operation explicitly says otherwise.',
         },
       },
     ],
+    response: {
+      type: 'string',
+      description: 'string',
+    },
   },
   communityRevokeInvite: {
     group: 'communities',
+    displayName: 'Revoke Invite',
+    description: 'Execute the revoke invite WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -304,13 +935,20 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description:
+            'Parent community JID ending in @g.us. A regular group or subgroup JID is not accepted unless the operation explicitly says otherwise.',
         },
       },
     ],
+    response: {
+      type: 'string',
+      description: 'string',
+    },
   },
   communityAcceptInvite: {
     group: 'communities',
+    displayName: 'Accept Invite',
+    description: 'Execute the accept invite WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'code',
@@ -318,13 +956,19 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Invite code only, without the chat.whatsapp.com URL prefix.',
         },
       },
     ],
+    response: {
+      type: 'string',
+      description: 'string',
+    },
   },
   communityRevokeInviteV4: {
     group: 'communities',
+    displayName: 'Revoke Invite V4',
+    description: 'Execute the revoke invite v4 WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'communityJid',
@@ -332,7 +976,8 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description:
+            'Parent community JID ending in @g.us. A regular group or subgroup JID is not accepted unless the operation explicitly says otherwise.',
         },
       },
       {
@@ -345,9 +990,15 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      type: 'boolean',
+      description: 'boolean',
+    },
   },
   communityAcceptInviteV4: {
     group: 'communities',
+    displayName: 'Accept Invite V4',
+    description: 'Execute the accept invite v4 WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'key',
@@ -424,7 +1075,695 @@ export const BAILEYS_METHOD_METADATA = {
             },
             contextInfo: {
               type: 'object',
-              additionalProperties: true,
+              properties: {
+                stanzaId: {
+                  type: 'string',
+                  description: 'string',
+                },
+                participant: {
+                  type: 'string',
+                  description: 'string',
+                },
+                quotedMessage: {
+                  type: 'object',
+                  additionalProperties: true,
+                  description: 'IMessage',
+                },
+                remoteJid: {
+                  type: 'string',
+                  description: 'string',
+                },
+                mentionedJid: {
+                  type: 'array',
+                  items: {
+                    type: 'string',
+                    description: 'string',
+                  },
+                  description: 'string[]',
+                },
+                conversionSource: {
+                  type: 'string',
+                  description: 'string',
+                },
+                conversionData: {
+                  oneOf: [
+                    {
+                      type: 'string',
+                    },
+                    {
+                      type: 'object',
+                      properties: {
+                        $base64: {
+                          type: 'string',
+                          format: 'byte',
+                        },
+                      },
+                      required: ['$base64'],
+                      additionalProperties: false,
+                    },
+                  ],
+                  description: 'Uint8Array<ArrayBufferLike>',
+                },
+                conversionDelaySeconds: {
+                  type: 'number',
+                  description: 'number',
+                },
+                forwardingScore: {
+                  type: 'number',
+                  description: 'number',
+                },
+                isForwarded: {
+                  type: 'boolean',
+                  description: 'boolean',
+                },
+                quotedAd: {
+                  type: 'object',
+                  properties: {
+                    advertiserName: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    mediaType: {
+                      type: 'number',
+                      enum: [0, 1, 2],
+                      description: 'MediaType',
+                    },
+                    jpegThumbnail: {
+                      oneOf: [
+                        {
+                          type: 'string',
+                        },
+                        {
+                          type: 'object',
+                          properties: {
+                            $base64: {
+                              type: 'string',
+                              format: 'byte',
+                            },
+                          },
+                          required: ['$base64'],
+                          additionalProperties: false,
+                        },
+                      ],
+                      description: 'Uint8Array<ArrayBufferLike>',
+                    },
+                    caption: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IAdReplyInfo',
+                },
+                placeholderKey: {
+                  type: 'object',
+                  properties: {
+                    remoteJid: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    fromMe: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    id: {
+                      type: 'string',
+                      description: 'Stable identifier in the namespace implied by its surrounding object.',
+                    },
+                    participant: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IMessageKey',
+                },
+                expiration: {
+                  type: 'number',
+                  description: 'number',
+                },
+                ephemeralSettingTimestamp: {
+                  anyOf: [
+                    {
+                      type: 'number',
+                      description: 'number',
+                    },
+                    {
+                      type: 'object',
+                      additionalProperties: true,
+                      description: 'Long',
+                    },
+                  ],
+                  description: 'number | Long',
+                },
+                ephemeralSharedSecret: {
+                  oneOf: [
+                    {
+                      type: 'string',
+                    },
+                    {
+                      type: 'object',
+                      properties: {
+                        $base64: {
+                          type: 'string',
+                          format: 'byte',
+                        },
+                      },
+                      required: ['$base64'],
+                      additionalProperties: false,
+                    },
+                  ],
+                  description: 'Uint8Array<ArrayBufferLike>',
+                },
+                externalAdReply: {
+                  type: 'object',
+                  properties: {
+                    title: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    body: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    mediaType: {
+                      type: 'number',
+                      enum: [0, 1, 2],
+                      description: 'MediaType',
+                    },
+                    thumbnailUrl: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    mediaUrl: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    thumbnail: {
+                      oneOf: [
+                        {
+                          type: 'string',
+                        },
+                        {
+                          type: 'object',
+                          properties: {
+                            $base64: {
+                              type: 'string',
+                              format: 'byte',
+                            },
+                          },
+                          required: ['$base64'],
+                          additionalProperties: false,
+                        },
+                      ],
+                      description: 'Uint8Array<ArrayBufferLike>',
+                    },
+                    sourceType: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    sourceId: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    sourceUrl: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    containsAutoReply: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    renderLargerThumbnail: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    showAdAttribution: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    ctwaClid: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    ref: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    clickToWhatsappCall: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    adContextPreviewDismissed: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    sourceApp: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    automatedGreetingMessageShown: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    greetingMessageBody: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    ctaPayload: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    disableNudge: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    originalImageUrl: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    automatedGreetingMessageCtaType: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    wtwaAdFormat: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    adType: {
+                      type: 'number',
+                      enum: [0, 1],
+                      description: 'AdType',
+                    },
+                    wtwaWebsiteUrl: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    adPreviewUrl: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IExternalAdReplyInfo',
+                },
+                entryPointConversionSource: {
+                  type: 'string',
+                  description: 'string',
+                },
+                entryPointConversionApp: {
+                  type: 'string',
+                  description: 'string',
+                },
+                entryPointConversionDelaySeconds: {
+                  type: 'number',
+                  description: 'number',
+                },
+                disappearingMode: {
+                  type: 'object',
+                  properties: {
+                    initiator: {
+                      type: 'number',
+                      enum: [0, 1, 2, 3],
+                      description: 'Initiator',
+                    },
+                    trigger: {
+                      type: 'number',
+                      enum: [0, 1, 2, 3, 4, 5],
+                      description: 'Trigger',
+                    },
+                    initiatorDeviceJid: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    initiatedByMe: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IDisappearingMode',
+                },
+                actionLink: {
+                  type: 'object',
+                  properties: {
+                    url: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    buttonTitle: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IActionLink',
+                },
+                groupSubject: {
+                  type: 'string',
+                  description: 'string',
+                },
+                parentGroupJid: {
+                  type: 'string',
+                  description: 'string',
+                },
+                trustBannerType: {
+                  type: 'string',
+                  description: 'string',
+                },
+                trustBannerAction: {
+                  type: 'number',
+                  description: 'number',
+                },
+                isSampled: {
+                  type: 'boolean',
+                  description: 'boolean',
+                },
+                groupMentions: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    additionalProperties: true,
+                    description: 'IGroupMention',
+                  },
+                  description: 'IGroupMention[]',
+                },
+                utm: {
+                  type: 'object',
+                  properties: {
+                    utmSource: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    utmCampaign: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IUTMInfo',
+                },
+                forwardedNewsletterMessageInfo: {
+                  type: 'object',
+                  properties: {
+                    newsletterJid: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    serverMessageId: {
+                      type: 'number',
+                      description: 'number',
+                    },
+                    newsletterName: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    contentType: {
+                      type: 'number',
+                      enum: [1, 2, 3],
+                      description: 'ContentType',
+                    },
+                    accessibilityText: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IForwardedNewsletterMessageInfo',
+                },
+                businessMessageForwardInfo: {
+                  type: 'object',
+                  properties: {
+                    businessOwnerJid: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IBusinessMessageForwardInfo',
+                },
+                smbClientCampaignId: {
+                  type: 'string',
+                  description: 'string',
+                },
+                smbServerCampaignId: {
+                  type: 'string',
+                  description: 'string',
+                },
+                dataSharingContext: {
+                  type: 'object',
+                  properties: {
+                    showMmDisclosure: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    encryptedSignalTokenConsented: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    parameters: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        additionalProperties: true,
+                        description: 'IParameters',
+                      },
+                      description: 'IParameters[]',
+                    },
+                    dataSharingFlags: {
+                      type: 'number',
+                      description: 'number',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IDataSharingContext',
+                },
+                alwaysShowAdAttribution: {
+                  type: 'boolean',
+                  description: 'boolean',
+                },
+                featureEligibilities: {
+                  type: 'object',
+                  properties: {
+                    cannotBeReactedTo: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    cannotBeRanked: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    canRequestFeedback: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    canBeReshared: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    canReceiveMultiReact: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IFeatureEligibilities',
+                },
+                entryPointConversionExternalSource: {
+                  type: 'string',
+                  description: 'string',
+                },
+                entryPointConversionExternalMedium: {
+                  type: 'string',
+                  description: 'string',
+                },
+                ctwaSignals: {
+                  type: 'string',
+                  description: 'string',
+                },
+                ctwaPayload: {
+                  oneOf: [
+                    {
+                      type: 'string',
+                    },
+                    {
+                      type: 'object',
+                      properties: {
+                        $base64: {
+                          type: 'string',
+                          format: 'byte',
+                        },
+                      },
+                      required: ['$base64'],
+                      additionalProperties: false,
+                    },
+                  ],
+                  description: 'Uint8Array<ArrayBufferLike>',
+                },
+                forwardedAiBotMessageInfo: {
+                  type: 'object',
+                  properties: {
+                    botName: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    botJid: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    creatorName: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IForwardedAIBotMessageInfo',
+                },
+                statusAttributionType: {
+                  type: 'number',
+                  enum: [0, 1, 2, 3, 4],
+                  description: 'StatusAttributionType',
+                },
+                urlTrackingMap: {
+                  type: 'object',
+                  properties: {
+                    urlTrackingMapElements: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        additionalProperties: true,
+                        description: 'IUrlTrackingMapElement',
+                      },
+                      description: 'IUrlTrackingMapElement[]',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IUrlTrackingMap',
+                },
+                pairedMediaType: {
+                  type: 'number',
+                  enum: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+                  description: 'PairedMediaType',
+                },
+                rankingVersion: {
+                  type: 'number',
+                  description: 'number',
+                },
+                memberLabel: {
+                  type: 'object',
+                  properties: {
+                    label: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    labelTimestamp: {
+                      anyOf: [
+                        {
+                          type: 'number',
+                          description: 'number',
+                        },
+                        {
+                          type: 'object',
+                          additionalProperties: true,
+                          description: 'Long',
+                        },
+                      ],
+                      description: 'number | Long',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IMemberLabel',
+                },
+                isQuestion: {
+                  type: 'boolean',
+                  description: 'boolean',
+                },
+                statusSourceType: {
+                  type: 'number',
+                  enum: [0, 1, 2, 3, 4, 5],
+                  description: 'StatusSourceType',
+                },
+                statusAttributions: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    additionalProperties: true,
+                    description: 'IStatusAttribution',
+                  },
+                  description: 'IStatusAttribution[]',
+                },
+                isGroupStatus: {
+                  type: 'boolean',
+                  description: 'boolean',
+                },
+                forwardOrigin: {
+                  type: 'number',
+                  enum: [0, 1, 2, 3, 4, 5],
+                  description: 'ForwardOrigin',
+                },
+                questionReplyQuotedMessage: {
+                  type: 'object',
+                  properties: {
+                    serverQuestionId: {
+                      type: 'number',
+                      description: 'number',
+                    },
+                    quotedQuestion: {
+                      type: 'object',
+                      additionalProperties: true,
+                      description: 'IMessage',
+                    },
+                    quotedResponse: {
+                      type: 'object',
+                      additionalProperties: true,
+                      description: 'IMessage',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IQuestionReplyQuotedMessage',
+                },
+                statusAudienceMetadata: {
+                  type: 'object',
+                  properties: {
+                    audienceType: {
+                      type: 'number',
+                      enum: [0, 1],
+                      description: 'AudienceType',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IStatusAudienceMetadata',
+                },
+                nonJidMentions: {
+                  type: 'number',
+                  description: 'number',
+                },
+                quotedType: {
+                  type: 'number',
+                  enum: [0, 1],
+                  description: 'QuotedType',
+                },
+                botMessageSharingInfo: {
+                  type: 'object',
+                  properties: {
+                    botEntryPointOrigin: {
+                      type: 'number',
+                      enum: [
+                        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+                        26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,
+                      ],
+                      description: 'BotMetricsEntryPoint',
+                    },
+                    forwardScore: {
+                      type: 'number',
+                      description: 'number',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IBotMessageSharingInfo',
+                },
+              },
+              additionalProperties: false,
               description: 'IContextInfo',
             },
             groupType: {
@@ -438,9 +1777,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'any',
+    },
   },
   communityGetInviteInfo: {
     group: 'communities',
+    displayName: 'Get Invite Info',
+    description: 'Execute the get invite info WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'code',
@@ -448,13 +1792,159 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Invite code only, without the chat.whatsapp.com URL prefix.',
         },
       },
     ],
+    response: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          description: 'Stable identifier in the namespace implied by its surrounding object.',
+        },
+        notify: {
+          type: 'string',
+          description: 'string',
+        },
+        addressingMode: {
+          type: 'string',
+          enum: ['pn', 'lid'],
+          description: 'Identifier namespace WhatsApp expects for group addressing: pn or lid.',
+        },
+        owner: {
+          type: 'string',
+          description: 'Primary owner identifier returned by WhatsApp; it may be a LID.',
+        },
+        ownerPn: {
+          type: 'string',
+          description: 'Owner phone-number JID when WhatsApp exposes the LID-to-PN mapping.',
+        },
+        ownerUsername: {
+          type: 'string',
+          description: 'Owner username identifier when WhatsApp exposes one.',
+        },
+        owner_country_code: {
+          type: 'string',
+          description: 'string',
+        },
+        subject: {
+          type: 'string',
+          description: 'Human-visible group, community, newsletter, or item title.',
+        },
+        subjectOwner: {
+          type: 'string',
+          description: 'Identifier of the account that last changed the subject.',
+        },
+        subjectOwnerPn: {
+          type: 'string',
+          description: 'string',
+        },
+        subjectOwnerUsername: {
+          type: 'string',
+          description: 'string',
+        },
+        subjectTime: {
+          type: 'number',
+          description: 'Unix timestamp in seconds when the subject was last changed.',
+        },
+        creation: {
+          type: 'number',
+          description: 'Unix timestamp in seconds when the entity was created.',
+        },
+        desc: {
+          type: 'string',
+          description: 'Human-visible description text.',
+        },
+        descOwner: {
+          type: 'string',
+          description: 'string',
+        },
+        descOwnerPn: {
+          type: 'string',
+          description: 'string',
+        },
+        descOwnerUsername: {
+          type: 'string',
+          description: 'string',
+        },
+        descId: {
+          type: 'string',
+          description: 'WhatsApp identifier of the current description revision.',
+        },
+        descTime: {
+          type: 'number',
+          description: 'number',
+        },
+        linkedParent: {
+          type: 'string',
+          description: 'Parent community JID when this group is a community subgroup.',
+        },
+        restrict: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        announce: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        memberAddMode: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        joinApprovalMode: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        isCommunity: {
+          type: 'boolean',
+          description: 'Whether the metadata represents a parent community.',
+        },
+        isCommunityAnnounce: {
+          type: 'boolean',
+          description: 'Whether this is the default announcements group of a community.',
+        },
+        size: {
+          type: 'number',
+          description: 'Number of participants or returned items reported by WhatsApp.',
+        },
+        participants: {
+          type: 'array',
+          items: {
+            description: 'GroupParticipant',
+          },
+          description: 'Participant records. Identifier namespaces are explained in docs/baileys/identifiers.md.',
+        },
+        ephemeralDuration: {
+          type: 'number',
+          description: 'number',
+        },
+        inviteCode: {
+          type: 'string',
+          description: 'string',
+        },
+        author: {
+          type: 'string',
+          description: 'string',
+        },
+        authorPn: {
+          type: 'string',
+          description: 'string',
+        },
+        authorUsername: {
+          type: 'string',
+          description: 'string',
+        },
+      },
+      required: ['id', 'owner', 'subject', 'participants'],
+      additionalProperties: false,
+      description: 'GroupMetadata',
+    },
   },
   communityToggleEphemeral: {
     group: 'communities',
+    displayName: 'Toggle Ephemeral',
+    description: 'Execute the toggle ephemeral WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -462,7 +1952,8 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description:
+            'Parent community JID ending in @g.us. A regular group or subgroup JID is not accepted unless the operation explicitly says otherwise.',
         },
       },
       {
@@ -475,9 +1966,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   communitySettingUpdate: {
     group: 'communities',
+    displayName: 'Setting Update',
+    description: 'Execute the setting update WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -485,7 +1981,8 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description:
+            'Parent community JID ending in @g.us. A regular group or subgroup JID is not accepted unless the operation explicitly says otherwise.',
         },
       },
       {
@@ -499,9 +1996,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   communityMemberAddMode: {
     group: 'communities',
+    displayName: 'Member Add Mode',
+    description: 'Execute the member add mode WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -509,7 +2011,8 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description:
+            'Parent community JID ending in @g.us. A regular group or subgroup JID is not accepted unless the operation explicitly says otherwise.',
         },
       },
       {
@@ -523,9 +2026,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   communityJoinApprovalMode: {
     group: 'communities',
+    displayName: 'Join Approval Mode',
+    description: 'Execute the join approval mode WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -533,7 +2041,8 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description:
+            'Parent community JID ending in @g.us. A regular group or subgroup JID is not accepted unless the operation explicitly says otherwise.',
         },
       },
       {
@@ -547,13 +2056,25 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   communityFetchAllParticipating: {
     group: 'communities',
+    displayName: 'Fetch All Participating',
+    description: 'Execute the fetch all participating WhatsApp capability and return its typed result.',
     parameters: [],
+    response: {
+      type: 'object',
+      additionalProperties: true,
+      description: '{ [_: string]: GroupMetadata; }',
+    },
   },
   getOrderDetails: {
     group: 'business',
+    displayName: 'Get Order Details',
+    description: 'Retrieve order details using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'orderId',
@@ -574,9 +2095,72 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      type: 'object',
+      properties: {
+        price: {
+          type: 'object',
+          properties: {
+            currency: {
+              type: 'string',
+              description: 'Currency code supplied by the catalog.',
+            },
+            total: {
+              type: 'number',
+              description: 'number',
+            },
+          },
+          required: ['currency', 'total'],
+          additionalProperties: false,
+          description: 'Product or order price in the smallest unit defined by the currency contract.',
+        },
+        products: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: {
+                type: 'string',
+                description: 'Stable identifier in the namespace implied by its surrounding object.',
+              },
+              imageUrl: {
+                type: 'string',
+                description: 'string',
+              },
+              name: {
+                type: 'string',
+                description: 'Human-visible name returned by WhatsApp.',
+              },
+              quantity: {
+                type: 'number',
+                description: 'number',
+              },
+              currency: {
+                type: 'string',
+                description: 'Currency code supplied by the catalog.',
+              },
+              price: {
+                type: 'number',
+                description: 'Product or order price in the smallest unit defined by the currency contract.',
+              },
+            },
+            required: ['id', 'imageUrl', 'name', 'quantity', 'currency', 'price'],
+            additionalProperties: false,
+            description: 'OrderProduct',
+          },
+          description: 'Catalog product records returned for this page.',
+        },
+      },
+      required: ['price', 'products'],
+      additionalProperties: false,
+      description: 'OrderDetails',
+    },
   },
   getCatalog: {
     group: 'business',
+    displayName: 'Get Catalog',
+    description:
+      'Get products from a WhatsApp Business catalog owner. Omit the owner JID for the connected account; group JIDs are invalid.',
     parameters: [
       {
         name: 'options',
@@ -595,40 +2179,106 @@ export const BAILEYS_METHOD_METADATA = {
             },
             jid: {
               type: 'string',
-              description: 'string',
+              description: 'Full WhatsApp address including its @s.whatsapp.net, @lid, @g.us, or @newsletter suffix.',
             },
           },
           additionalProperties: false,
-          description: 'GetCatalogOptions',
+          description:
+            'Catalog query: optional business owner PN JID, page size limit, and opaque next-page cursor. Omit jid for the connected account.',
         },
       },
     ],
+    response: {
+      type: 'object',
+      properties: {
+        products: {
+          type: 'array',
+          items: {
+            description: 'Product',
+          },
+          description: 'Catalog product records returned for this page.',
+        },
+        nextPageCursor: {
+          type: 'string',
+          description: 'Opaque cursor for requesting the next catalog page; null means no next page.',
+        },
+      },
+      required: ['products', 'nextPageCursor'],
+      additionalProperties: false,
+      description: '{ products: Product[]; nextPageCursor: string; }',
+    },
   },
   getCollections: {
     group: 'business',
+    displayName: 'Get Collections',
+    description:
+      'Get the named product collections of a WhatsApp Business catalog owner. These are catalog collections, not chat groups.',
     parameters: [
       {
         name: 'jid',
-        required: true,
+        required: false,
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description:
+            'Optional WhatsApp Business catalog owner PN JID ending in @s.whatsapp.net. Omit it for the connected account.',
         },
       },
       {
         name: 'limit',
-        required: true,
+        required: false,
         rest: false,
         schema: {
           type: 'number',
-          description: 'number',
+          description: 'Maximum items WhatsApp should return for this request.',
         },
       },
     ],
+    response: {
+      type: 'object',
+      properties: {
+        collections: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: {
+                type: 'string',
+                description: 'Stable identifier in the namespace implied by its surrounding object.',
+              },
+              name: {
+                type: 'string',
+                description: 'Human-visible name returned by WhatsApp.',
+              },
+              products: {
+                type: 'array',
+                items: {
+                  description: 'Product',
+                },
+                description: 'Catalog product records returned for this page.',
+              },
+              status: {
+                type: 'object',
+                additionalProperties: true,
+                description: 'WhatsApp operation, delivery, membership, catalog, or account state for this record.',
+              },
+            },
+            required: ['id', 'name', 'products', 'status'],
+            additionalProperties: false,
+            description: 'CatalogCollection',
+          },
+          description: 'Named WhatsApp Business catalog collections.',
+        },
+      },
+      required: ['collections'],
+      additionalProperties: false,
+      description: '{ collections: CatalogCollection[]; }',
+    },
   },
   productCreate: {
     group: 'business',
+    displayName: 'Product Create',
+    description: 'Execute the product create WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'create',
@@ -639,9 +2289,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'Product',
+    },
   },
   productDelete: {
     group: 'business',
+    displayName: 'Product Delete',
+    description: 'Execute the product delete WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'productIds',
@@ -657,9 +2312,23 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      type: 'object',
+      properties: {
+        deleted: {
+          type: 'number',
+          description: 'number',
+        },
+      },
+      required: ['deleted'],
+      additionalProperties: false,
+      description: '{ deleted: number; }',
+    },
   },
   productUpdate: {
     group: 'business',
+    displayName: 'Product Update',
+    description: 'Execute the product update WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'productId',
@@ -679,7 +2348,7 @@ export const BAILEYS_METHOD_METADATA = {
           properties: {
             name: {
               type: 'string',
-              description: 'string',
+              description: 'Human-visible name returned by WhatsApp.',
             },
             retailerId: {
               type: 'string',
@@ -695,23 +2364,14 @@ export const BAILEYS_METHOD_METADATA = {
             },
             price: {
               type: 'number',
-              description: 'number',
+              description: 'Product or order price in the smallest unit defined by the currency contract.',
             },
             currency: {
               type: 'string',
-              description: 'string',
+              description: 'Currency code supplied by the catalog.',
             },
             isHidden: {
-              anyOf: [
-                {
-                  type: 'boolean',
-                  description: 'false',
-                },
-                {
-                  type: 'boolean',
-                  description: 'true',
-                },
-              ],
+              type: 'boolean',
               description: 'boolean',
             },
             images: {
@@ -744,9 +2404,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'Product',
+    },
   },
   updateBussinesProfile: {
     group: 'business',
+    displayName: 'Update Bussines Profile',
+    description: 'Update bussines profile using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'args',
@@ -785,19 +2450,7 @@ export const BAILEYS_METHOD_METADATA = {
                 days: {
                   type: 'array',
                   items: {
-                    anyOf: [
-                      {
-                        type: 'object',
-                        additionalProperties: true,
-                        description:
-                          '{ day: DayOfWeekBussines; mode: "specific_hours"; openTimeInMinutes: string; closeTimeInMinutes: string; }',
-                      },
-                      {
-                        type: 'object',
-                        additionalProperties: true,
-                        description: '{ day: DayOfWeekBussines; mode: "open_24h" | "appointment_only"; }',
-                      },
-                    ],
+                    type: 'object',
                     description: 'HoursDay',
                   },
                   description: 'HoursDay[]',
@@ -813,9 +2466,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'any',
+    },
   },
   updateCoverPhoto: {
     group: 'business',
+    displayName: 'Update Cover Photo',
+    description: 'Update cover photo using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'photo',
@@ -846,9 +2504,15 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      type: 'number',
+      description: 'number',
+    },
   },
   removeCoverPhoto: {
     group: 'business',
+    displayName: 'Remove Cover Photo',
+    description: 'Remove or revoke cover photo using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'id',
@@ -860,9 +2524,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'any',
+    },
   },
   sendMessageAck: {
     group: 'messages',
+    displayName: 'Send Message Ack',
+    description: 'Send or apply message ack using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'node',
@@ -897,7 +2566,7 @@ export const BAILEYS_METHOD_METADATA = {
                   additionalProperties: false,
                 },
               ],
-              description: 'string | Uint8Array<ArrayBufferLike> | BinaryNode[]',
+              description: 'string | BinaryNode[] | Uint8Array<ArrayBufferLike>',
             },
           },
           required: ['tag', 'attrs'],
@@ -907,7 +2576,7 @@ export const BAILEYS_METHOD_METADATA = {
       },
       {
         name: 'errorCode',
-        required: true,
+        required: false,
         rest: false,
         schema: {
           type: 'number',
@@ -915,9 +2584,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   sendRetryRequest: {
     group: 'messages',
+    displayName: 'Send Retry Request',
+    description: 'Send or apply retry request using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'node',
@@ -952,7 +2626,7 @@ export const BAILEYS_METHOD_METADATA = {
                   additionalProperties: false,
                 },
               ],
-              description: 'string | Uint8Array<ArrayBufferLike> | BinaryNode[]',
+              description: 'string | BinaryNode[] | Uint8Array<ArrayBufferLike>',
             },
           },
           required: ['tag', 'attrs'],
@@ -962,26 +2636,22 @@ export const BAILEYS_METHOD_METADATA = {
       },
       {
         name: 'forceIncludeKeys',
-        required: true,
+        required: false,
         rest: false,
         schema: {
-          anyOf: [
-            {
-              type: 'boolean',
-              description: 'false',
-            },
-            {
-              type: 'boolean',
-              description: 'true',
-            },
-          ],
+          type: 'boolean',
           description: 'boolean',
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   rejectCall: {
     group: 'messages',
+    displayName: 'Reject Call',
+    description: 'Remove or revoke reject call using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'callId',
@@ -1002,9 +2672,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   fetchMessageHistory: {
     group: 'messages',
+    displayName: 'Fetch Message History',
+    description: 'Request older messages for a chat from linked WhatsApp devices.',
     parameters: [
       {
         name: 'count',
@@ -1032,9 +2707,16 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      type: 'string',
+      description: 'string',
+    },
   },
   requestPlaceholderResend: {
     group: 'messages',
+    displayName: 'Request Placeholder Resend',
+    description:
+      'Create or request request placeholder resend using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'messageKey',
@@ -1046,7 +2728,7 @@ export const BAILEYS_METHOD_METADATA = {
       },
       {
         name: 'msgData',
-        required: true,
+        required: false,
         rest: false,
         schema: {
           type: 'object',
@@ -1055,9 +2737,15 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      type: 'string',
+      description: 'string',
+    },
   },
   issuePrivacyTokens: {
     group: 'messages',
+    displayName: 'Issue Privacy Tokens',
+    description: 'Send or apply privacy tokens using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'jids',
@@ -1074,7 +2762,7 @@ export const BAILEYS_METHOD_METADATA = {
       },
       {
         name: 'timestamp',
-        required: true,
+        required: false,
         rest: false,
         schema: {
           type: 'number',
@@ -1082,9 +2770,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'any',
+    },
   },
   relayMessage: {
     group: 'messages',
+    displayName: 'Relay Message',
+    description: 'Relay an already constructed protocol message to a WhatsApp JID.',
     parameters: [
       {
         name: 'jid',
@@ -1092,7 +2785,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
       {
@@ -1114,9 +2807,15 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      type: 'string',
+      description: 'string',
+    },
   },
   sendReceipt: {
     group: 'messages',
+    displayName: 'Send Receipt',
+    description: 'Send a delivery, read, played, or other receipt for a message.',
     parameters: [
       {
         name: 'jid',
@@ -1124,7 +2823,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
       {
@@ -1133,7 +2832,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Participant WhatsApp JIDs, each including the @s.whatsapp.net suffix.',
         },
       },
       {
@@ -1160,9 +2859,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   sendReceipts: {
     group: 'messages',
+    displayName: 'Send Receipts',
+    description: 'Send the same receipt for multiple messages.',
     parameters: [
       {
         name: 'keys',
@@ -1187,9 +2891,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   readMessages: {
     group: 'messages',
+    displayName: 'Read Messages',
+    description: 'Mark one or more WhatsApp messages as read.',
     parameters: [
       {
         name: 'keys',
@@ -1204,59 +2913,375 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   refreshMediaConn: {
     group: 'messages',
+    displayName: 'Refresh Media Conn',
+    description: 'Execute the refresh media conn WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'forceGet',
-        required: true,
+        required: false,
         rest: false,
         schema: {
-          anyOf: [
-            {
-              type: 'boolean',
-              description: 'false',
-            },
-            {
-              type: 'boolean',
-              description: 'true',
-            },
-          ],
+          type: 'boolean',
           description: 'boolean',
         },
       },
     ],
+    response: {
+      type: 'object',
+      properties: {
+        auth: {
+          type: 'string',
+          description: 'string',
+        },
+        ttl: {
+          type: 'number',
+          description: 'number',
+        },
+        hosts: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              hostname: {
+                type: 'string',
+                description: 'string',
+              },
+              maxContentLengthBytes: {
+                type: 'number',
+                description: 'number',
+              },
+            },
+            required: ['hostname', 'maxContentLengthBytes'],
+            additionalProperties: false,
+            description: '{ hostname: string; maxContentLengthBytes: number; }',
+          },
+          description: '{ hostname: string; maxContentLengthBytes: number; }[]',
+        },
+        fetchDate: {
+          type: 'object',
+          properties: {
+            toString: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => string',
+            },
+            toDateString: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => string',
+            },
+            toTimeString: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => string',
+            },
+            toLocaleString: {
+              type: 'object',
+              additionalProperties: true,
+              description:
+                '{ (): string; (locales?: string | string[], options?: DateTimeFormatOptions): string; (locales?: LocalesArgument, options?: DateTimeFormatOptions): string; }',
+            },
+            toLocaleDateString: {
+              type: 'object',
+              additionalProperties: true,
+              description:
+                '{ (): string; (locales?: string | string[], options?: DateTimeFormatOptions): string; (locales?: LocalesArgument, options?: DateTimeFormatOptions): string; }',
+            },
+            toLocaleTimeString: {
+              type: 'object',
+              additionalProperties: true,
+              description:
+                '{ (): string; (locales?: string | string[], options?: DateTimeFormatOptions): string; (locales?: LocalesArgument, options?: DateTimeFormatOptions): string; }',
+            },
+            valueOf: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getTime: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getFullYear: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getUTCFullYear: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getMonth: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getUTCMonth: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getDate: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getUTCDate: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getDay: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getUTCDay: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getHours: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getUTCHours: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getMinutes: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getUTCMinutes: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getSeconds: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getUTCSeconds: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getMilliseconds: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getUTCMilliseconds: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getTimezoneOffset: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            setTime: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(time: number) => number',
+            },
+            setMilliseconds: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(ms: number) => number',
+            },
+            setUTCMilliseconds: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(ms: number) => number',
+            },
+            setSeconds: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(sec: number, ms?: number) => number',
+            },
+            setUTCSeconds: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(sec: number, ms?: number) => number',
+            },
+            setMinutes: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(min: number, sec?: number, ms?: number) => number',
+            },
+            setUTCMinutes: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(min: number, sec?: number, ms?: number) => number',
+            },
+            setHours: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(hours: number, min?: number, sec?: number, ms?: number) => number',
+            },
+            setUTCHours: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(hours: number, min?: number, sec?: number, ms?: number) => number',
+            },
+            setDate: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(date: number) => number',
+            },
+            setUTCDate: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(date: number) => number',
+            },
+            setMonth: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(month: number, date?: number) => number',
+            },
+            setUTCMonth: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(month: number, date?: number) => number',
+            },
+            setFullYear: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(year: number, month?: number, date?: number) => number',
+            },
+            setUTCFullYear: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(year: number, month?: number, date?: number) => number',
+            },
+            toUTCString: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => string',
+            },
+            toISOString: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => string',
+            },
+            toJSON: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(key?: any) => string',
+            },
+            getVarDate: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => VarDate',
+            },
+          },
+          required: [
+            'toString',
+            'toDateString',
+            'toTimeString',
+            'toLocaleString',
+            'toLocaleDateString',
+            'toLocaleTimeString',
+            'valueOf',
+            'getTime',
+            'getFullYear',
+            'getUTCFullYear',
+            'getMonth',
+            'getUTCMonth',
+            'getDate',
+            'getUTCDate',
+            'getDay',
+            'getUTCDay',
+            'getHours',
+            'getUTCHours',
+            'getMinutes',
+            'getUTCMinutes',
+            'getSeconds',
+            'getUTCSeconds',
+            'getMilliseconds',
+            'getUTCMilliseconds',
+            'getTimezoneOffset',
+            'setTime',
+            'setMilliseconds',
+            'setUTCMilliseconds',
+            'setSeconds',
+            'setUTCSeconds',
+            'setMinutes',
+            'setUTCMinutes',
+            'setHours',
+            'setUTCHours',
+            'setDate',
+            'setUTCDate',
+            'setMonth',
+            'setUTCMonth',
+            'setFullYear',
+            'setUTCFullYear',
+            'toUTCString',
+            'toISOString',
+            'toJSON',
+            'getVarDate',
+          ],
+          additionalProperties: false,
+          description: 'Date',
+        },
+      },
+      required: ['auth', 'ttl', 'hosts', 'fetchDate'],
+      additionalProperties: false,
+      description: 'MediaConnInfo',
+    },
   },
   getMediaHost: {
     group: 'messages',
+    displayName: 'Get Media Host',
+    description: 'Retrieve media host using the connected WhatsApp account and return the server result.',
     parameters: [],
+    response: {
+      type: 'string',
+      description: 'string',
+    },
   },
   fetchPrivacySettings: {
     group: 'messages',
+    displayName: 'Fetch Privacy Settings',
+    description: 'Get the connected account privacy settings.',
     parameters: [
       {
         name: 'force',
-        required: true,
+        required: false,
         rest: false,
         schema: {
-          anyOf: [
-            {
-              type: 'boolean',
-              description: 'false',
-            },
-            {
-              type: 'boolean',
-              description: 'true',
-            },
-          ],
-          description: 'boolean',
+          type: 'boolean',
+          description:
+            'Bypass Baileys in-memory privacy state when true. Omit or false for its normal cached query behavior.',
         },
       },
     ],
+    response: {
+      type: 'object',
+      additionalProperties: true,
+      description: '{ [_: string]: string; }',
+    },
   },
   sendPeerDataOperationMessage: {
     group: 'messages',
+    displayName: 'Send Peer Data Operation Message',
+    description:
+      'Send or apply peer data operation message using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'pdoMessage',
@@ -1274,7 +3299,13 @@ export const BAILEYS_METHOD_METADATA = {
               type: 'array',
               items: {
                 type: 'object',
-                additionalProperties: true,
+                properties: {
+                  fileSha256: {
+                    type: 'string',
+                    description: 'string',
+                  },
+                },
+                additionalProperties: false,
                 description: 'IRequestStickerReupload',
               },
               description: 'IRequestStickerReupload[]',
@@ -1283,7 +3314,17 @@ export const BAILEYS_METHOD_METADATA = {
               type: 'array',
               items: {
                 type: 'object',
-                additionalProperties: true,
+                properties: {
+                  url: {
+                    type: 'string',
+                    description: 'string',
+                  },
+                  includeHqThumbnail: {
+                    type: 'boolean',
+                    description: 'boolean',
+                  },
+                },
+                additionalProperties: false,
                 description: 'IRequestUrlPreview',
               },
               description: 'IRequestUrlPreview[]',
@@ -1300,16 +3341,7 @@ export const BAILEYS_METHOD_METADATA = {
                   description: 'string',
                 },
                 oldestMsgFromMe: {
-                  anyOf: [
-                    {
-                      type: 'boolean',
-                      description: 'false',
-                    },
-                    {
-                      type: 'boolean',
-                      description: 'true',
-                    },
-                  ],
+                  type: 'boolean',
                   description: 'boolean',
                 },
                 onDemandMsgCount: {
@@ -1342,7 +3374,14 @@ export const BAILEYS_METHOD_METADATA = {
               type: 'array',
               items: {
                 type: 'object',
-                additionalProperties: true,
+                properties: {
+                  messageKey: {
+                    type: 'object',
+                    additionalProperties: true,
+                    description: 'IMessageKey',
+                  },
+                },
+                additionalProperties: false,
                 description: 'IPlaceholderMessageResendRequest',
               },
               description: 'IPlaceholderMessageResendRequest[]',
@@ -1352,12 +3391,96 @@ export const BAILEYS_METHOD_METADATA = {
               properties: {
                 requestMetadata: {
                   type: 'object',
-                  additionalProperties: true,
+                  properties: {
+                    requestId: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                  },
+                  additionalProperties: false,
                   description: 'IFullHistorySyncOnDemandRequestMetadata',
                 },
                 historySyncConfig: {
                   type: 'object',
-                  additionalProperties: true,
+                  properties: {
+                    fullSyncDaysLimit: {
+                      type: 'number',
+                      description: 'number',
+                    },
+                    fullSyncSizeMbLimit: {
+                      type: 'number',
+                      description: 'number',
+                    },
+                    storageQuotaMb: {
+                      type: 'number',
+                      description: 'number',
+                    },
+                    inlineInitialPayloadInE2EeMsg: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    recentSyncDaysLimit: {
+                      type: 'number',
+                      description: 'number',
+                    },
+                    supportCallLogHistory: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    supportBotUserAgentChatHistory: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    supportCagReactionsAndPolls: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    supportBizHostedMsg: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    supportRecentSyncChunkMessageCountTuning: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    supportHostedGroupMsg: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    supportFbidBotChatHistory: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    supportAddOnHistorySyncMigration: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    supportMessageAssociation: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    supportGroupHistory: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    onDemandReady: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    supportGuestChat: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    completeOnDemandReady: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    thumbnailSyncDaysLimit: {
+                      type: 'number',
+                      description: 'number',
+                    },
+                  },
+                  additionalProperties: false,
                   description: 'IHistorySyncConfig',
                 },
               },
@@ -1406,16 +3529,7 @@ export const BAILEYS_METHOD_METADATA = {
                   description: 'string',
                 },
                 regenerateChunk: {
-                  anyOf: [
-                    {
-                      type: 'boolean',
-                      description: 'false',
-                    },
-                    {
-                      type: 'boolean',
-                      description: 'true',
-                    },
-                  ],
+                  type: 'boolean',
                   description: 'boolean',
                 },
               },
@@ -1447,9 +3561,15 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      type: 'string',
+      description: 'string',
+    },
   },
   updateMemberLabel: {
     group: 'messages',
+    displayName: 'Update Member Label',
+    description: 'Update member label using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'jid',
@@ -1457,7 +3577,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
       {
@@ -1470,9 +3590,15 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      type: 'string',
+      description: 'string',
+    },
   },
   updateMediaMessage: {
     group: 'messages',
+    displayName: 'Update Media Message',
+    description: 'Re-upload or refresh media data for a message whose media is unavailable.',
     parameters: [
       {
         name: 'message',
@@ -1483,9 +3609,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'WAMessage',
+    },
   },
   sendMessage: {
     group: 'messages',
+    displayName: 'Send Message',
+    description: 'Send a Baileys message payload directly to a chat or group.',
     parameters: [
       {
         name: 'jid',
@@ -1493,7 +3624,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
       {
@@ -1673,16 +3804,7 @@ export const BAILEYS_METHOD_METADATA = {
                   description: 'WAMessage',
                 },
                 force: {
-                  anyOf: [
-                    {
-                      type: 'boolean',
-                      description: 'false',
-                    },
-                    {
-                      type: 'boolean',
-                      description: 'true',
-                    },
-                  ],
+                  type: 'boolean',
                   description: 'boolean',
                 },
               },
@@ -1730,16 +3852,7 @@ export const BAILEYS_METHOD_METADATA = {
               type: 'object',
               properties: {
                 limitSharing: {
-                  anyOf: [
-                    {
-                      type: 'boolean',
-                      description: 'false',
-                    },
-                    {
-                      type: 'boolean',
-                      description: 'true',
-                    },
-                  ],
+                  type: 'boolean',
                   description: 'boolean',
                 },
               },
@@ -1753,16 +3866,21 @@ export const BAILEYS_METHOD_METADATA = {
       },
       {
         name: 'options',
-        required: true,
+        required: false,
         rest: false,
         schema: {
           description: 'MiscMessageGenerationOptions',
         },
       },
     ],
+    response: {
+      description: 'WAMessage',
+    },
   },
   newsletterCreate: {
     group: 'newsletters',
+    displayName: 'Create',
+    description: 'Create a WhatsApp newsletter (channel).',
     parameters: [
       {
         name: 'name',
@@ -1775,7 +3893,7 @@ export const BAILEYS_METHOD_METADATA = {
       },
       {
         name: 'description',
-        required: true,
+        required: false,
         rest: false,
         schema: {
           type: 'string',
@@ -1783,9 +3901,119 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          description: 'Stable identifier in the namespace implied by its surrounding object.',
+        },
+        owner: {
+          type: 'string',
+          description: 'Primary owner identifier returned by WhatsApp; it may be a LID.',
+        },
+        name: {
+          type: 'string',
+          description: 'Human-visible name returned by WhatsApp.',
+        },
+        description: {
+          type: 'string',
+          description: 'string',
+        },
+        invite: {
+          type: 'string',
+          description: 'string',
+        },
+        creation_time: {
+          type: 'number',
+          description: 'number',
+        },
+        subscribers: {
+          type: 'number',
+          description: 'number',
+        },
+        picture: {
+          type: 'object',
+          properties: {
+            url: {
+              type: 'string',
+              description: 'string',
+            },
+            directPath: {
+              type: 'string',
+              description: 'string',
+            },
+            mediaKey: {
+              type: 'string',
+              description: 'string',
+            },
+            id: {
+              type: 'string',
+              description: 'Stable identifier in the namespace implied by its surrounding object.',
+            },
+          },
+          additionalProperties: false,
+          description: '{ url?: string; directPath?: string; mediaKey?: string; id?: string; }',
+        },
+        verification: {
+          type: 'string',
+          enum: ['VERIFIED', 'UNVERIFIED'],
+          description: '"VERIFIED" | "UNVERIFIED"',
+        },
+        reaction_codes: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              code: {
+                type: 'string',
+                description: 'string',
+              },
+              count: {
+                type: 'number',
+                description: 'number',
+              },
+            },
+            required: ['code', 'count'],
+            additionalProperties: false,
+            description: '{ code: string; count: number; }',
+          },
+          description: '{ code: string; count: number; }[]',
+        },
+        mute_state: {
+          type: 'string',
+          enum: ['ON', 'OFF'],
+          description: '"ON" | "OFF"',
+        },
+        thread_metadata: {
+          type: 'object',
+          properties: {
+            creation_time: {
+              type: 'number',
+              description: 'number',
+            },
+            name: {
+              type: 'string',
+              description: 'Human-visible name returned by WhatsApp.',
+            },
+            description: {
+              type: 'string',
+              description: 'string',
+            },
+          },
+          additionalProperties: false,
+          description: '{ creation_time?: number; name?: string; description?: string; }',
+        },
+      },
+      required: ['id', 'name'],
+      additionalProperties: false,
+      description: 'NewsletterMetadata',
+    },
   },
   newsletterUpdate: {
     group: 'newsletters',
+    displayName: 'Update',
+    description: 'Execute the update WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -1793,7 +4021,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
       {
@@ -1805,7 +4033,7 @@ export const BAILEYS_METHOD_METADATA = {
           properties: {
             name: {
               type: 'string',
-              description: 'string',
+              description: 'Human-visible name returned by WhatsApp.',
             },
             description: {
               type: 'string',
@@ -1821,9 +4049,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'unknown',
+    },
   },
   newsletterSubscribers: {
     group: 'newsletters',
+    displayName: 'Subscribers',
+    description: 'Execute the subscribers WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -1831,13 +4064,27 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
     ],
+    response: {
+      type: 'object',
+      properties: {
+        subscribers: {
+          type: 'number',
+          description: 'number',
+        },
+      },
+      required: ['subscribers'],
+      additionalProperties: false,
+      description: '{ subscribers: number; }',
+    },
   },
   newsletterMetadata: {
     group: 'newsletters',
+    displayName: 'Metadata',
+    description: 'Get newsletter details using its JID or invite code.',
     parameters: [
       {
         name: 'type',
@@ -1859,9 +4106,119 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          description: 'Stable identifier in the namespace implied by its surrounding object.',
+        },
+        owner: {
+          type: 'string',
+          description: 'Primary owner identifier returned by WhatsApp; it may be a LID.',
+        },
+        name: {
+          type: 'string',
+          description: 'Human-visible name returned by WhatsApp.',
+        },
+        description: {
+          type: 'string',
+          description: 'string',
+        },
+        invite: {
+          type: 'string',
+          description: 'string',
+        },
+        creation_time: {
+          type: 'number',
+          description: 'number',
+        },
+        subscribers: {
+          type: 'number',
+          description: 'number',
+        },
+        picture: {
+          type: 'object',
+          properties: {
+            url: {
+              type: 'string',
+              description: 'string',
+            },
+            directPath: {
+              type: 'string',
+              description: 'string',
+            },
+            mediaKey: {
+              type: 'string',
+              description: 'string',
+            },
+            id: {
+              type: 'string',
+              description: 'Stable identifier in the namespace implied by its surrounding object.',
+            },
+          },
+          additionalProperties: false,
+          description: '{ url?: string; directPath?: string; mediaKey?: string; id?: string; }',
+        },
+        verification: {
+          type: 'string',
+          enum: ['VERIFIED', 'UNVERIFIED'],
+          description: '"VERIFIED" | "UNVERIFIED"',
+        },
+        reaction_codes: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              code: {
+                type: 'string',
+                description: 'string',
+              },
+              count: {
+                type: 'number',
+                description: 'number',
+              },
+            },
+            required: ['code', 'count'],
+            additionalProperties: false,
+            description: '{ code: string; count: number; }',
+          },
+          description: '{ code: string; count: number; }[]',
+        },
+        mute_state: {
+          type: 'string',
+          enum: ['ON', 'OFF'],
+          description: '"ON" | "OFF"',
+        },
+        thread_metadata: {
+          type: 'object',
+          properties: {
+            creation_time: {
+              type: 'number',
+              description: 'number',
+            },
+            name: {
+              type: 'string',
+              description: 'Human-visible name returned by WhatsApp.',
+            },
+            description: {
+              type: 'string',
+              description: 'string',
+            },
+          },
+          additionalProperties: false,
+          description: '{ creation_time?: number; name?: string; description?: string; }',
+        },
+      },
+      required: ['id', 'name'],
+      additionalProperties: false,
+      description: 'NewsletterMetadata',
+    },
   },
   newsletterFollow: {
     group: 'newsletters',
+    displayName: 'Follow',
+    description: 'Execute the follow WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -1869,13 +4226,18 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
     ],
+    response: {
+      description: 'unknown',
+    },
   },
   newsletterUnfollow: {
     group: 'newsletters',
+    displayName: 'Unfollow',
+    description: 'Execute the unfollow WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -1883,13 +4245,18 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
     ],
+    response: {
+      description: 'unknown',
+    },
   },
   newsletterMute: {
     group: 'newsletters',
+    displayName: 'Mute',
+    description: 'Execute the mute WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -1897,13 +4264,18 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
     ],
+    response: {
+      description: 'unknown',
+    },
   },
   newsletterUnmute: {
     group: 'newsletters',
+    displayName: 'Unmute',
+    description: 'Execute the unmute WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -1911,13 +4283,18 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
     ],
+    response: {
+      description: 'unknown',
+    },
   },
   newsletterUpdateName: {
     group: 'newsletters',
+    displayName: 'Update Name',
+    description: 'Execute the update name WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -1925,7 +4302,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
       {
@@ -1938,9 +4315,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'unknown',
+    },
   },
   newsletterUpdateDescription: {
     group: 'newsletters',
+    displayName: 'Update Description',
+    description: 'Execute the update description WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -1948,7 +4330,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
       {
@@ -1961,9 +4343,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'unknown',
+    },
   },
   newsletterUpdatePicture: {
     group: 'newsletters',
+    displayName: 'Update Picture',
+    description: 'Execute the update picture WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -1971,7 +4358,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
       {
@@ -2003,9 +4390,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'unknown',
+    },
   },
   newsletterRemovePicture: {
     group: 'newsletters',
+    displayName: 'Remove Picture',
+    description: 'Execute the remove picture WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -2013,13 +4405,18 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
     ],
+    response: {
+      description: 'unknown',
+    },
   },
   newsletterReactMessage: {
     group: 'newsletters',
+    displayName: 'React Message',
+    description: 'Add or remove an emoji reaction on a newsletter message.',
     parameters: [
       {
         name: 'jid',
@@ -2027,7 +4424,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
       {
@@ -2041,7 +4438,7 @@ export const BAILEYS_METHOD_METADATA = {
       },
       {
         name: 'reaction',
-        required: true,
+        required: false,
         rest: false,
         schema: {
           type: 'string',
@@ -2049,9 +4446,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   newsletterFetchMessages: {
     group: 'newsletters',
+    displayName: 'Fetch Messages',
+    description: 'Load messages published by a newsletter.',
     parameters: [
       {
         name: 'jid',
@@ -2059,7 +4461,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
       {
@@ -2090,9 +4492,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'any',
+    },
   },
   subscribeNewsletterUpdates: {
     group: 'newsletters',
+    displayName: 'Subscribe Newsletter Updates',
+    description: 'Execute the subscribe newsletter updates WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -2100,13 +4507,27 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
     ],
+    response: {
+      type: 'object',
+      properties: {
+        duration: {
+          type: 'string',
+          description: 'string',
+        },
+      },
+      required: ['duration'],
+      additionalProperties: false,
+      description: '{ duration: string; }',
+    },
   },
   newsletterAdminCount: {
     group: 'newsletters',
+    displayName: 'Admin Count',
+    description: 'Execute the admin count WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -2114,13 +4535,19 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
     ],
+    response: {
+      type: 'number',
+      description: 'number',
+    },
   },
   newsletterChangeOwner: {
     group: 'newsletters',
+    displayName: 'Change Owner',
+    description: 'Execute the change owner WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -2128,7 +4555,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
       {
@@ -2141,9 +4568,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   newsletterDemote: {
     group: 'newsletters',
+    displayName: 'Demote',
+    description: 'Execute the demote WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -2151,7 +4583,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
       {
@@ -2164,9 +4596,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   newsletterDelete: {
     group: 'newsletters',
+    displayName: 'Delete',
+    description: 'Execute the delete WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -2174,13 +4611,18 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   groupMetadata: {
     group: 'groups',
+    displayName: 'Metadata',
+    description: 'Get the subject, description, owner, participants, and settings of a group.',
     parameters: [
       {
         name: 'jid',
@@ -2188,13 +4630,159 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'WhatsApp group JID ending in @g.us.',
         },
       },
     ],
+    response: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          description: 'Stable identifier in the namespace implied by its surrounding object.',
+        },
+        notify: {
+          type: 'string',
+          description: 'string',
+        },
+        addressingMode: {
+          type: 'string',
+          enum: ['pn', 'lid'],
+          description: 'Identifier namespace WhatsApp expects for group addressing: pn or lid.',
+        },
+        owner: {
+          type: 'string',
+          description: 'Primary owner identifier returned by WhatsApp; it may be a LID.',
+        },
+        ownerPn: {
+          type: 'string',
+          description: 'Owner phone-number JID when WhatsApp exposes the LID-to-PN mapping.',
+        },
+        ownerUsername: {
+          type: 'string',
+          description: 'Owner username identifier when WhatsApp exposes one.',
+        },
+        owner_country_code: {
+          type: 'string',
+          description: 'string',
+        },
+        subject: {
+          type: 'string',
+          description: 'Human-visible group, community, newsletter, or item title.',
+        },
+        subjectOwner: {
+          type: 'string',
+          description: 'Identifier of the account that last changed the subject.',
+        },
+        subjectOwnerPn: {
+          type: 'string',
+          description: 'string',
+        },
+        subjectOwnerUsername: {
+          type: 'string',
+          description: 'string',
+        },
+        subjectTime: {
+          type: 'number',
+          description: 'Unix timestamp in seconds when the subject was last changed.',
+        },
+        creation: {
+          type: 'number',
+          description: 'Unix timestamp in seconds when the entity was created.',
+        },
+        desc: {
+          type: 'string',
+          description: 'Human-visible description text.',
+        },
+        descOwner: {
+          type: 'string',
+          description: 'string',
+        },
+        descOwnerPn: {
+          type: 'string',
+          description: 'string',
+        },
+        descOwnerUsername: {
+          type: 'string',
+          description: 'string',
+        },
+        descId: {
+          type: 'string',
+          description: 'WhatsApp identifier of the current description revision.',
+        },
+        descTime: {
+          type: 'number',
+          description: 'number',
+        },
+        linkedParent: {
+          type: 'string',
+          description: 'Parent community JID when this group is a community subgroup.',
+        },
+        restrict: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        announce: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        memberAddMode: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        joinApprovalMode: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        isCommunity: {
+          type: 'boolean',
+          description: 'Whether the metadata represents a parent community.',
+        },
+        isCommunityAnnounce: {
+          type: 'boolean',
+          description: 'Whether this is the default announcements group of a community.',
+        },
+        size: {
+          type: 'number',
+          description: 'Number of participants or returned items reported by WhatsApp.',
+        },
+        participants: {
+          type: 'array',
+          items: {
+            description: 'GroupParticipant',
+          },
+          description: 'Participant records. Identifier namespaces are explained in docs/baileys/identifiers.md.',
+        },
+        ephemeralDuration: {
+          type: 'number',
+          description: 'number',
+        },
+        inviteCode: {
+          type: 'string',
+          description: 'string',
+        },
+        author: {
+          type: 'string',
+          description: 'string',
+        },
+        authorPn: {
+          type: 'string',
+          description: 'string',
+        },
+        authorUsername: {
+          type: 'string',
+          description: 'string',
+        },
+      },
+      required: ['id', 'owner', 'subject', 'participants'],
+      additionalProperties: false,
+      description: 'GroupMetadata',
+    },
   },
   groupCreate: {
     group: 'groups',
+    displayName: 'Create',
+    description: 'Create a WhatsApp group and add the supplied participants.',
     parameters: [
       {
         name: 'subject',
@@ -2215,13 +4803,159 @@ export const BAILEYS_METHOD_METADATA = {
             type: 'string',
             description: 'string',
           },
-          description: 'string[]',
+          description: 'Participant WhatsApp JIDs, each including the @s.whatsapp.net suffix.',
         },
       },
     ],
+    response: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          description: 'Stable identifier in the namespace implied by its surrounding object.',
+        },
+        notify: {
+          type: 'string',
+          description: 'string',
+        },
+        addressingMode: {
+          type: 'string',
+          enum: ['pn', 'lid'],
+          description: 'Identifier namespace WhatsApp expects for group addressing: pn or lid.',
+        },
+        owner: {
+          type: 'string',
+          description: 'Primary owner identifier returned by WhatsApp; it may be a LID.',
+        },
+        ownerPn: {
+          type: 'string',
+          description: 'Owner phone-number JID when WhatsApp exposes the LID-to-PN mapping.',
+        },
+        ownerUsername: {
+          type: 'string',
+          description: 'Owner username identifier when WhatsApp exposes one.',
+        },
+        owner_country_code: {
+          type: 'string',
+          description: 'string',
+        },
+        subject: {
+          type: 'string',
+          description: 'Human-visible group, community, newsletter, or item title.',
+        },
+        subjectOwner: {
+          type: 'string',
+          description: 'Identifier of the account that last changed the subject.',
+        },
+        subjectOwnerPn: {
+          type: 'string',
+          description: 'string',
+        },
+        subjectOwnerUsername: {
+          type: 'string',
+          description: 'string',
+        },
+        subjectTime: {
+          type: 'number',
+          description: 'Unix timestamp in seconds when the subject was last changed.',
+        },
+        creation: {
+          type: 'number',
+          description: 'Unix timestamp in seconds when the entity was created.',
+        },
+        desc: {
+          type: 'string',
+          description: 'Human-visible description text.',
+        },
+        descOwner: {
+          type: 'string',
+          description: 'string',
+        },
+        descOwnerPn: {
+          type: 'string',
+          description: 'string',
+        },
+        descOwnerUsername: {
+          type: 'string',
+          description: 'string',
+        },
+        descId: {
+          type: 'string',
+          description: 'WhatsApp identifier of the current description revision.',
+        },
+        descTime: {
+          type: 'number',
+          description: 'number',
+        },
+        linkedParent: {
+          type: 'string',
+          description: 'Parent community JID when this group is a community subgroup.',
+        },
+        restrict: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        announce: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        memberAddMode: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        joinApprovalMode: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        isCommunity: {
+          type: 'boolean',
+          description: 'Whether the metadata represents a parent community.',
+        },
+        isCommunityAnnounce: {
+          type: 'boolean',
+          description: 'Whether this is the default announcements group of a community.',
+        },
+        size: {
+          type: 'number',
+          description: 'Number of participants or returned items reported by WhatsApp.',
+        },
+        participants: {
+          type: 'array',
+          items: {
+            description: 'GroupParticipant',
+          },
+          description: 'Participant records. Identifier namespaces are explained in docs/baileys/identifiers.md.',
+        },
+        ephemeralDuration: {
+          type: 'number',
+          description: 'number',
+        },
+        inviteCode: {
+          type: 'string',
+          description: 'string',
+        },
+        author: {
+          type: 'string',
+          description: 'string',
+        },
+        authorPn: {
+          type: 'string',
+          description: 'string',
+        },
+        authorUsername: {
+          type: 'string',
+          description: 'string',
+        },
+      },
+      required: ['id', 'owner', 'subject', 'participants'],
+      additionalProperties: false,
+      description: 'GroupMetadata',
+    },
   },
   groupLeave: {
     group: 'groups',
+    displayName: 'Leave',
+    description: 'Execute the leave WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'id',
@@ -2229,13 +4963,18 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'WhatsApp group JID ending in @g.us.',
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   groupUpdateSubject: {
     group: 'groups',
+    displayName: 'Update Subject',
+    description: 'Execute the update subject WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -2243,7 +4982,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'WhatsApp group JID ending in @g.us.',
         },
       },
       {
@@ -2256,9 +4995,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   groupRequestParticipantsList: {
     group: 'groups',
+    displayName: 'Request Participants List',
+    description: 'List pending requests from people who want to join a group.',
     parameters: [
       {
         name: 'jid',
@@ -2266,13 +5010,24 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'WhatsApp group JID ending in @g.us.',
         },
       },
     ],
+    response: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: true,
+        description: '{ [key: string]: string; }',
+      },
+      description: '{ [key: string]: string; }[]',
+    },
   },
   groupRequestParticipantsUpdate: {
     group: 'groups',
+    displayName: 'Request Participants Update',
+    description: 'Approve or reject pending group join requests.',
     parameters: [
       {
         name: 'jid',
@@ -2280,7 +5035,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'WhatsApp group JID ending in @g.us.',
         },
       },
       {
@@ -2293,7 +5048,7 @@ export const BAILEYS_METHOD_METADATA = {
             type: 'string',
             description: 'string',
           },
-          description: 'string[]',
+          description: 'Participant WhatsApp JIDs, each including the @s.whatsapp.net suffix.',
         },
       },
       {
@@ -2303,13 +5058,35 @@ export const BAILEYS_METHOD_METADATA = {
         schema: {
           type: 'string',
           enum: ['approve', 'reject'],
-          description: '"approve" | "reject"',
+          description: 'Action performed by Group Request Participants Update.',
         },
       },
     ],
+    response: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          status: {
+            type: 'string',
+            description: 'WhatsApp operation, delivery, membership, catalog, or account state for this record.',
+          },
+          jid: {
+            type: 'string',
+            description: 'Full WhatsApp address including its @s.whatsapp.net, @lid, @g.us, or @newsletter suffix.',
+          },
+        },
+        required: ['status', 'jid'],
+        additionalProperties: false,
+        description: '{ status: string; jid: string; }',
+      },
+      description: '{ status: string; jid: string; }[]',
+    },
   },
   groupParticipantsUpdate: {
     group: 'groups',
+    displayName: 'Participants Update',
+    description: 'Add, remove, promote, or demote participants in a group.',
     parameters: [
       {
         name: 'jid',
@@ -2317,7 +5094,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'WhatsApp group JID ending in @g.us.',
         },
       },
       {
@@ -2330,7 +5107,7 @@ export const BAILEYS_METHOD_METADATA = {
             type: 'string',
             description: 'string',
           },
-          description: 'string[]',
+          description: 'Participant WhatsApp JIDs, each including the @s.whatsapp.net suffix.',
         },
       },
       {
@@ -2340,13 +5117,71 @@ export const BAILEYS_METHOD_METADATA = {
         schema: {
           type: 'string',
           enum: ['add', 'remove', 'promote', 'demote', 'modify'],
-          description: 'ParticipantAction',
+          description: 'Action performed by Group Participants Update.',
         },
       },
     ],
+    response: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          status: {
+            type: 'string',
+            description: 'WhatsApp operation, delivery, membership, catalog, or account state for this record.',
+          },
+          jid: {
+            type: 'string',
+            description: 'Full WhatsApp address including its @s.whatsapp.net, @lid, @g.us, or @newsletter suffix.',
+          },
+          content: {
+            type: 'object',
+            properties: {
+              tag: {
+                type: 'string',
+                description: 'string',
+              },
+              attrs: {
+                type: 'object',
+                additionalProperties: true,
+                description: '{ [key: string]: string; }',
+              },
+              content: {
+                oneOf: [
+                  {
+                    type: 'string',
+                  },
+                  {
+                    type: 'object',
+                    properties: {
+                      $base64: {
+                        type: 'string',
+                        format: 'byte',
+                      },
+                    },
+                    required: ['$base64'],
+                    additionalProperties: false,
+                  },
+                ],
+                description: 'string | BinaryNode[] | Uint8Array<ArrayBufferLike>',
+              },
+            },
+            required: ['tag', 'attrs'],
+            additionalProperties: false,
+            description: 'BinaryNode',
+          },
+        },
+        required: ['status', 'jid', 'content'],
+        additionalProperties: false,
+        description: '{ status: string; jid: string; content: BinaryNode; }',
+      },
+      description: '{ status: string; jid: string; content: BinaryNode; }[]',
+    },
   },
   groupUpdateDescription: {
     group: 'groups',
+    displayName: 'Update Description',
+    description: 'Execute the update description WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -2354,12 +5189,12 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'WhatsApp group JID ending in @g.us.',
         },
       },
       {
         name: 'description',
-        required: true,
+        required: false,
         rest: false,
         schema: {
           type: 'string',
@@ -2367,9 +5202,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   groupInviteCode: {
     group: 'groups',
+    displayName: 'Invite Code',
+    description: 'Execute the invite code WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -2377,13 +5217,19 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'WhatsApp group JID ending in @g.us.',
         },
       },
     ],
+    response: {
+      type: 'string',
+      description: 'string',
+    },
   },
   groupRevokeInvite: {
     group: 'groups',
+    displayName: 'Revoke Invite',
+    description: 'Execute the revoke invite WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -2391,13 +5237,19 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'WhatsApp group JID ending in @g.us.',
         },
       },
     ],
+    response: {
+      type: 'string',
+      description: 'string',
+    },
   },
   groupAcceptInvite: {
     group: 'groups',
+    displayName: 'Accept Invite',
+    description: 'Execute the accept invite WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'code',
@@ -2405,13 +5257,19 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Invite code only, without the chat.whatsapp.com URL prefix.',
         },
       },
     ],
+    response: {
+      type: 'string',
+      description: 'string',
+    },
   },
   groupRevokeInviteV4: {
     group: 'groups',
+    displayName: 'Revoke Invite V4',
+    description: 'Execute the revoke invite v4 WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'groupJid',
@@ -2419,7 +5277,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'WhatsApp group JID ending in @g.us.',
         },
       },
       {
@@ -2432,9 +5290,15 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      type: 'boolean',
+      description: 'boolean',
+    },
   },
   groupAcceptInviteV4: {
     group: 'groups',
+    displayName: 'Accept Invite V4',
+    description: 'Execute the accept invite v4 WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'key',
@@ -2511,7 +5375,695 @@ export const BAILEYS_METHOD_METADATA = {
             },
             contextInfo: {
               type: 'object',
-              additionalProperties: true,
+              properties: {
+                stanzaId: {
+                  type: 'string',
+                  description: 'string',
+                },
+                participant: {
+                  type: 'string',
+                  description: 'string',
+                },
+                quotedMessage: {
+                  type: 'object',
+                  additionalProperties: true,
+                  description: 'IMessage',
+                },
+                remoteJid: {
+                  type: 'string',
+                  description: 'string',
+                },
+                mentionedJid: {
+                  type: 'array',
+                  items: {
+                    type: 'string',
+                    description: 'string',
+                  },
+                  description: 'string[]',
+                },
+                conversionSource: {
+                  type: 'string',
+                  description: 'string',
+                },
+                conversionData: {
+                  oneOf: [
+                    {
+                      type: 'string',
+                    },
+                    {
+                      type: 'object',
+                      properties: {
+                        $base64: {
+                          type: 'string',
+                          format: 'byte',
+                        },
+                      },
+                      required: ['$base64'],
+                      additionalProperties: false,
+                    },
+                  ],
+                  description: 'Uint8Array<ArrayBufferLike>',
+                },
+                conversionDelaySeconds: {
+                  type: 'number',
+                  description: 'number',
+                },
+                forwardingScore: {
+                  type: 'number',
+                  description: 'number',
+                },
+                isForwarded: {
+                  type: 'boolean',
+                  description: 'boolean',
+                },
+                quotedAd: {
+                  type: 'object',
+                  properties: {
+                    advertiserName: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    mediaType: {
+                      type: 'number',
+                      enum: [0, 1, 2],
+                      description: 'MediaType',
+                    },
+                    jpegThumbnail: {
+                      oneOf: [
+                        {
+                          type: 'string',
+                        },
+                        {
+                          type: 'object',
+                          properties: {
+                            $base64: {
+                              type: 'string',
+                              format: 'byte',
+                            },
+                          },
+                          required: ['$base64'],
+                          additionalProperties: false,
+                        },
+                      ],
+                      description: 'Uint8Array<ArrayBufferLike>',
+                    },
+                    caption: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IAdReplyInfo',
+                },
+                placeholderKey: {
+                  type: 'object',
+                  properties: {
+                    remoteJid: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    fromMe: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    id: {
+                      type: 'string',
+                      description: 'Stable identifier in the namespace implied by its surrounding object.',
+                    },
+                    participant: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IMessageKey',
+                },
+                expiration: {
+                  type: 'number',
+                  description: 'number',
+                },
+                ephemeralSettingTimestamp: {
+                  anyOf: [
+                    {
+                      type: 'number',
+                      description: 'number',
+                    },
+                    {
+                      type: 'object',
+                      additionalProperties: true,
+                      description: 'Long',
+                    },
+                  ],
+                  description: 'number | Long',
+                },
+                ephemeralSharedSecret: {
+                  oneOf: [
+                    {
+                      type: 'string',
+                    },
+                    {
+                      type: 'object',
+                      properties: {
+                        $base64: {
+                          type: 'string',
+                          format: 'byte',
+                        },
+                      },
+                      required: ['$base64'],
+                      additionalProperties: false,
+                    },
+                  ],
+                  description: 'Uint8Array<ArrayBufferLike>',
+                },
+                externalAdReply: {
+                  type: 'object',
+                  properties: {
+                    title: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    body: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    mediaType: {
+                      type: 'number',
+                      enum: [0, 1, 2],
+                      description: 'MediaType',
+                    },
+                    thumbnailUrl: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    mediaUrl: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    thumbnail: {
+                      oneOf: [
+                        {
+                          type: 'string',
+                        },
+                        {
+                          type: 'object',
+                          properties: {
+                            $base64: {
+                              type: 'string',
+                              format: 'byte',
+                            },
+                          },
+                          required: ['$base64'],
+                          additionalProperties: false,
+                        },
+                      ],
+                      description: 'Uint8Array<ArrayBufferLike>',
+                    },
+                    sourceType: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    sourceId: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    sourceUrl: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    containsAutoReply: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    renderLargerThumbnail: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    showAdAttribution: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    ctwaClid: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    ref: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    clickToWhatsappCall: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    adContextPreviewDismissed: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    sourceApp: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    automatedGreetingMessageShown: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    greetingMessageBody: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    ctaPayload: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    disableNudge: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    originalImageUrl: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    automatedGreetingMessageCtaType: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    wtwaAdFormat: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    adType: {
+                      type: 'number',
+                      enum: [0, 1],
+                      description: 'AdType',
+                    },
+                    wtwaWebsiteUrl: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    adPreviewUrl: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IExternalAdReplyInfo',
+                },
+                entryPointConversionSource: {
+                  type: 'string',
+                  description: 'string',
+                },
+                entryPointConversionApp: {
+                  type: 'string',
+                  description: 'string',
+                },
+                entryPointConversionDelaySeconds: {
+                  type: 'number',
+                  description: 'number',
+                },
+                disappearingMode: {
+                  type: 'object',
+                  properties: {
+                    initiator: {
+                      type: 'number',
+                      enum: [0, 1, 2, 3],
+                      description: 'Initiator',
+                    },
+                    trigger: {
+                      type: 'number',
+                      enum: [0, 1, 2, 3, 4, 5],
+                      description: 'Trigger',
+                    },
+                    initiatorDeviceJid: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    initiatedByMe: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IDisappearingMode',
+                },
+                actionLink: {
+                  type: 'object',
+                  properties: {
+                    url: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    buttonTitle: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IActionLink',
+                },
+                groupSubject: {
+                  type: 'string',
+                  description: 'string',
+                },
+                parentGroupJid: {
+                  type: 'string',
+                  description: 'string',
+                },
+                trustBannerType: {
+                  type: 'string',
+                  description: 'string',
+                },
+                trustBannerAction: {
+                  type: 'number',
+                  description: 'number',
+                },
+                isSampled: {
+                  type: 'boolean',
+                  description: 'boolean',
+                },
+                groupMentions: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    additionalProperties: true,
+                    description: 'IGroupMention',
+                  },
+                  description: 'IGroupMention[]',
+                },
+                utm: {
+                  type: 'object',
+                  properties: {
+                    utmSource: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    utmCampaign: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IUTMInfo',
+                },
+                forwardedNewsletterMessageInfo: {
+                  type: 'object',
+                  properties: {
+                    newsletterJid: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    serverMessageId: {
+                      type: 'number',
+                      description: 'number',
+                    },
+                    newsletterName: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    contentType: {
+                      type: 'number',
+                      enum: [1, 2, 3],
+                      description: 'ContentType',
+                    },
+                    accessibilityText: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IForwardedNewsletterMessageInfo',
+                },
+                businessMessageForwardInfo: {
+                  type: 'object',
+                  properties: {
+                    businessOwnerJid: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IBusinessMessageForwardInfo',
+                },
+                smbClientCampaignId: {
+                  type: 'string',
+                  description: 'string',
+                },
+                smbServerCampaignId: {
+                  type: 'string',
+                  description: 'string',
+                },
+                dataSharingContext: {
+                  type: 'object',
+                  properties: {
+                    showMmDisclosure: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    encryptedSignalTokenConsented: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    parameters: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        additionalProperties: true,
+                        description: 'IParameters',
+                      },
+                      description: 'IParameters[]',
+                    },
+                    dataSharingFlags: {
+                      type: 'number',
+                      description: 'number',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IDataSharingContext',
+                },
+                alwaysShowAdAttribution: {
+                  type: 'boolean',
+                  description: 'boolean',
+                },
+                featureEligibilities: {
+                  type: 'object',
+                  properties: {
+                    cannotBeReactedTo: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    cannotBeRanked: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    canRequestFeedback: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    canBeReshared: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                    canReceiveMultiReact: {
+                      type: 'boolean',
+                      description: 'boolean',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IFeatureEligibilities',
+                },
+                entryPointConversionExternalSource: {
+                  type: 'string',
+                  description: 'string',
+                },
+                entryPointConversionExternalMedium: {
+                  type: 'string',
+                  description: 'string',
+                },
+                ctwaSignals: {
+                  type: 'string',
+                  description: 'string',
+                },
+                ctwaPayload: {
+                  oneOf: [
+                    {
+                      type: 'string',
+                    },
+                    {
+                      type: 'object',
+                      properties: {
+                        $base64: {
+                          type: 'string',
+                          format: 'byte',
+                        },
+                      },
+                      required: ['$base64'],
+                      additionalProperties: false,
+                    },
+                  ],
+                  description: 'Uint8Array<ArrayBufferLike>',
+                },
+                forwardedAiBotMessageInfo: {
+                  type: 'object',
+                  properties: {
+                    botName: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    botJid: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    creatorName: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IForwardedAIBotMessageInfo',
+                },
+                statusAttributionType: {
+                  type: 'number',
+                  enum: [0, 1, 2, 3, 4],
+                  description: 'StatusAttributionType',
+                },
+                urlTrackingMap: {
+                  type: 'object',
+                  properties: {
+                    urlTrackingMapElements: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        additionalProperties: true,
+                        description: 'IUrlTrackingMapElement',
+                      },
+                      description: 'IUrlTrackingMapElement[]',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IUrlTrackingMap',
+                },
+                pairedMediaType: {
+                  type: 'number',
+                  enum: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+                  description: 'PairedMediaType',
+                },
+                rankingVersion: {
+                  type: 'number',
+                  description: 'number',
+                },
+                memberLabel: {
+                  type: 'object',
+                  properties: {
+                    label: {
+                      type: 'string',
+                      description: 'string',
+                    },
+                    labelTimestamp: {
+                      anyOf: [
+                        {
+                          type: 'number',
+                          description: 'number',
+                        },
+                        {
+                          type: 'object',
+                          additionalProperties: true,
+                          description: 'Long',
+                        },
+                      ],
+                      description: 'number | Long',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IMemberLabel',
+                },
+                isQuestion: {
+                  type: 'boolean',
+                  description: 'boolean',
+                },
+                statusSourceType: {
+                  type: 'number',
+                  enum: [0, 1, 2, 3, 4, 5],
+                  description: 'StatusSourceType',
+                },
+                statusAttributions: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    additionalProperties: true,
+                    description: 'IStatusAttribution',
+                  },
+                  description: 'IStatusAttribution[]',
+                },
+                isGroupStatus: {
+                  type: 'boolean',
+                  description: 'boolean',
+                },
+                forwardOrigin: {
+                  type: 'number',
+                  enum: [0, 1, 2, 3, 4, 5],
+                  description: 'ForwardOrigin',
+                },
+                questionReplyQuotedMessage: {
+                  type: 'object',
+                  properties: {
+                    serverQuestionId: {
+                      type: 'number',
+                      description: 'number',
+                    },
+                    quotedQuestion: {
+                      type: 'object',
+                      additionalProperties: true,
+                      description: 'IMessage',
+                    },
+                    quotedResponse: {
+                      type: 'object',
+                      additionalProperties: true,
+                      description: 'IMessage',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IQuestionReplyQuotedMessage',
+                },
+                statusAudienceMetadata: {
+                  type: 'object',
+                  properties: {
+                    audienceType: {
+                      type: 'number',
+                      enum: [0, 1],
+                      description: 'AudienceType',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IStatusAudienceMetadata',
+                },
+                nonJidMentions: {
+                  type: 'number',
+                  description: 'number',
+                },
+                quotedType: {
+                  type: 'number',
+                  enum: [0, 1],
+                  description: 'QuotedType',
+                },
+                botMessageSharingInfo: {
+                  type: 'object',
+                  properties: {
+                    botEntryPointOrigin: {
+                      type: 'number',
+                      enum: [
+                        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+                        26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,
+                      ],
+                      description: 'BotMetricsEntryPoint',
+                    },
+                    forwardScore: {
+                      type: 'number',
+                      description: 'number',
+                    },
+                  },
+                  additionalProperties: false,
+                  description: 'IBotMessageSharingInfo',
+                },
+              },
+              additionalProperties: false,
               description: 'IContextInfo',
             },
             groupType: {
@@ -2525,9 +6077,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'any',
+    },
   },
   groupGetInviteInfo: {
     group: 'groups',
+    displayName: 'Get Invite Info',
+    description: 'Execute the get invite info WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'code',
@@ -2535,13 +6092,159 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Invite code only, without the chat.whatsapp.com URL prefix.',
         },
       },
     ],
+    response: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          description: 'Stable identifier in the namespace implied by its surrounding object.',
+        },
+        notify: {
+          type: 'string',
+          description: 'string',
+        },
+        addressingMode: {
+          type: 'string',
+          enum: ['pn', 'lid'],
+          description: 'Identifier namespace WhatsApp expects for group addressing: pn or lid.',
+        },
+        owner: {
+          type: 'string',
+          description: 'Primary owner identifier returned by WhatsApp; it may be a LID.',
+        },
+        ownerPn: {
+          type: 'string',
+          description: 'Owner phone-number JID when WhatsApp exposes the LID-to-PN mapping.',
+        },
+        ownerUsername: {
+          type: 'string',
+          description: 'Owner username identifier when WhatsApp exposes one.',
+        },
+        owner_country_code: {
+          type: 'string',
+          description: 'string',
+        },
+        subject: {
+          type: 'string',
+          description: 'Human-visible group, community, newsletter, or item title.',
+        },
+        subjectOwner: {
+          type: 'string',
+          description: 'Identifier of the account that last changed the subject.',
+        },
+        subjectOwnerPn: {
+          type: 'string',
+          description: 'string',
+        },
+        subjectOwnerUsername: {
+          type: 'string',
+          description: 'string',
+        },
+        subjectTime: {
+          type: 'number',
+          description: 'Unix timestamp in seconds when the subject was last changed.',
+        },
+        creation: {
+          type: 'number',
+          description: 'Unix timestamp in seconds when the entity was created.',
+        },
+        desc: {
+          type: 'string',
+          description: 'Human-visible description text.',
+        },
+        descOwner: {
+          type: 'string',
+          description: 'string',
+        },
+        descOwnerPn: {
+          type: 'string',
+          description: 'string',
+        },
+        descOwnerUsername: {
+          type: 'string',
+          description: 'string',
+        },
+        descId: {
+          type: 'string',
+          description: 'WhatsApp identifier of the current description revision.',
+        },
+        descTime: {
+          type: 'number',
+          description: 'number',
+        },
+        linkedParent: {
+          type: 'string',
+          description: 'Parent community JID when this group is a community subgroup.',
+        },
+        restrict: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        announce: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        memberAddMode: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        joinApprovalMode: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        isCommunity: {
+          type: 'boolean',
+          description: 'Whether the metadata represents a parent community.',
+        },
+        isCommunityAnnounce: {
+          type: 'boolean',
+          description: 'Whether this is the default announcements group of a community.',
+        },
+        size: {
+          type: 'number',
+          description: 'Number of participants or returned items reported by WhatsApp.',
+        },
+        participants: {
+          type: 'array',
+          items: {
+            description: 'GroupParticipant',
+          },
+          description: 'Participant records. Identifier namespaces are explained in docs/baileys/identifiers.md.',
+        },
+        ephemeralDuration: {
+          type: 'number',
+          description: 'number',
+        },
+        inviteCode: {
+          type: 'string',
+          description: 'string',
+        },
+        author: {
+          type: 'string',
+          description: 'string',
+        },
+        authorPn: {
+          type: 'string',
+          description: 'string',
+        },
+        authorUsername: {
+          type: 'string',
+          description: 'string',
+        },
+      },
+      required: ['id', 'owner', 'subject', 'participants'],
+      additionalProperties: false,
+      description: 'GroupMetadata',
+    },
   },
   groupToggleEphemeral: {
     group: 'groups',
+    displayName: 'Toggle Ephemeral',
+    description: 'Execute the toggle ephemeral WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -2549,7 +6252,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'WhatsApp group JID ending in @g.us.',
         },
       },
       {
@@ -2562,9 +6265,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   groupSettingUpdate: {
     group: 'groups',
+    displayName: 'Setting Update',
+    description: 'Execute the setting update WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -2572,7 +6280,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'WhatsApp group JID ending in @g.us.',
         },
       },
       {
@@ -2586,9 +6294,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   groupMemberAddMode: {
     group: 'groups',
+    displayName: 'Member Add Mode',
+    description: 'Execute the member add mode WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -2596,7 +6309,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'WhatsApp group JID ending in @g.us.',
         },
       },
       {
@@ -2610,9 +6323,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   groupJoinApprovalMode: {
     group: 'groups',
+    displayName: 'Join Approval Mode',
+    description: 'Execute the join approval mode WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'jid',
@@ -2620,7 +6338,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'WhatsApp group JID ending in @g.us.',
         },
       },
       {
@@ -2634,13 +6352,38 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   groupFetchAllParticipating: {
     group: 'groups',
-    parameters: [],
+    displayName: 'Fetch All Participating',
+    description:
+      'List every group and community in which the connected account participates, optionally omitting participant arrays.',
+    parameters: [
+      {
+        name: 'includeParticipants',
+        required: false,
+        rest: false,
+        schema: {
+          type: 'boolean',
+          default: true,
+          description:
+            'Include each group participant array. Set false for a compact response and fewer transferred fields.',
+        },
+      },
+    ],
+    response: {
+      type: 'object',
+      additionalProperties: true,
+      description: '{ [_: string]: GroupMetadata; }',
+    },
   },
   createCallLink: {
     group: 'account',
+    displayName: 'Create Call Link',
+    description: 'Create or request call link using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'type',
@@ -2654,7 +6397,7 @@ export const BAILEYS_METHOD_METADATA = {
       },
       {
         name: 'event',
-        required: true,
+        required: false,
         rest: false,
         schema: {
           type: 'object',
@@ -2671,7 +6414,7 @@ export const BAILEYS_METHOD_METADATA = {
       },
       {
         name: 'timeoutMs',
-        required: true,
+        required: false,
         rest: false,
         schema: {
           type: 'number',
@@ -2679,13 +6422,41 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      type: 'string',
+      description: 'string',
+    },
   },
   getBotListV2: {
     group: 'account',
+    displayName: 'Get Bot List V2',
+    description: 'Retrieve bot list v2 using the connected WhatsApp account and return the server result.',
     parameters: [],
+    response: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          jid: {
+            type: 'string',
+            description: 'Full WhatsApp address including its @s.whatsapp.net, @lid, @g.us, or @newsletter suffix.',
+          },
+          personaId: {
+            type: 'string',
+            description: 'string',
+          },
+        },
+        required: ['jid', 'personaId'],
+        additionalProperties: false,
+        description: 'BotListInfo',
+      },
+      description: 'BotListInfo[]',
+    },
   },
   sendPresenceUpdate: {
     group: 'account',
+    displayName: 'Send Presence Update',
+    description: 'Set account presence, such as available, unavailable, composing, or recording.',
     parameters: [
       {
         name: 'type',
@@ -2699,17 +6470,22 @@ export const BAILEYS_METHOD_METADATA = {
       },
       {
         name: 'toJid',
-        required: true,
+        required: false,
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   presenceSubscribe: {
     group: 'account',
+    displayName: 'Presence Subscribe',
+    description: 'Subscribe to live presence updates for a contact.',
     parameters: [
       {
         name: 'toJid',
@@ -2717,17 +6493,32 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   fetchBlocklist: {
     group: 'account',
+    displayName: 'Fetch Blocklist',
+    description: 'Get all WhatsApp accounts blocked by the connected account.',
     parameters: [],
+    response: {
+      type: 'array',
+      items: {
+        type: 'string',
+        description: 'string',
+      },
+      description: 'string[]',
+    },
   },
   fetchStatus: {
     group: 'account',
+    displayName: 'Fetch Status',
+    description: 'Retrieve status using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'jids',
@@ -2743,9 +6534,27 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            description: 'Stable identifier in the namespace implied by its surrounding object.',
+          },
+        },
+        required: ['id'],
+        additionalProperties: false,
+        description: 'USyncQueryResultList',
+      },
+      description: 'USyncQueryResultList[]',
+    },
   },
   fetchDisappearingDuration: {
     group: 'account',
+    displayName: 'Fetch Disappearing Duration',
+    description: 'Retrieve disappearing duration using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'jids',
@@ -2761,9 +6570,27 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            description: 'Stable identifier in the namespace implied by its surrounding object.',
+          },
+        },
+        required: ['id'],
+        additionalProperties: false,
+        description: 'USyncQueryResultList',
+      },
+      description: 'USyncQueryResultList[]',
+    },
   },
   updateProfilePicture: {
     group: 'account',
+    displayName: 'Update Profile Picture',
+    description: 'Update profile picture using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'jid',
@@ -2771,7 +6598,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
       {
@@ -2804,7 +6631,7 @@ export const BAILEYS_METHOD_METADATA = {
       },
       {
         name: 'dimensions',
-        required: true,
+        required: false,
         rest: false,
         schema: {
           type: 'object',
@@ -2824,9 +6651,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   removeProfilePicture: {
     group: 'account',
+    displayName: 'Remove Profile Picture',
+    description: 'Remove or revoke profile picture using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'jid',
@@ -2834,13 +6666,18 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   updateProfileStatus: {
     group: 'account',
+    displayName: 'Update Profile Status',
+    description: 'Update profile status using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'status',
@@ -2852,9 +6689,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   updateProfileName: {
     group: 'account',
+    displayName: 'Update Profile Name',
+    description: 'Update profile name using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'name',
@@ -2866,9 +6708,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   updateBlockStatus: {
     group: 'account',
+    displayName: 'Update Block Status',
+    description: 'Block or unblock a WhatsApp contact.',
     parameters: [
       {
         name: 'jid',
@@ -2876,7 +6723,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
       {
@@ -2886,36 +6733,38 @@ export const BAILEYS_METHOD_METADATA = {
         schema: {
           type: 'string',
           enum: ['block', 'unblock'],
-          description: '"block" | "unblock"',
+          description: 'Action performed by Update Block Status.',
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   updateDisableLinkPreviewsPrivacy: {
     group: 'account',
+    displayName: 'Update Disable Link Previews Privacy',
+    description:
+      'Update disable link previews privacy using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'isPreviewsDisabled',
         required: true,
         rest: false,
         schema: {
-          anyOf: [
-            {
-              type: 'boolean',
-              description: 'false',
-            },
-            {
-              type: 'boolean',
-              description: 'true',
-            },
-          ],
+          type: 'boolean',
           description: 'boolean',
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   updateCallPrivacy: {
     group: 'account',
+    displayName: 'Update Call Privacy',
+    description: 'Update call privacy using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'value',
@@ -2928,9 +6777,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   updateMessagesPrivacy: {
     group: 'account',
+    displayName: 'Update Messages Privacy',
+    description: 'Update messages privacy using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'value',
@@ -2943,9 +6797,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   updateLastSeenPrivacy: {
     group: 'account',
+    displayName: 'Update Last Seen Privacy',
+    description: 'Update last seen privacy using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'value',
@@ -2958,9 +6817,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   updateOnlinePrivacy: {
     group: 'account',
+    displayName: 'Update Online Privacy',
+    description: 'Update online privacy using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'value',
@@ -2973,9 +6837,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   updateProfilePicturePrivacy: {
     group: 'account',
+    displayName: 'Update Profile Picture Privacy',
+    description: 'Update profile picture privacy using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'value',
@@ -2988,9 +6857,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   updateStatusPrivacy: {
     group: 'account',
+    displayName: 'Update Status Privacy',
+    description: 'Update status privacy using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'value',
@@ -3003,9 +6877,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   updateReadReceiptsPrivacy: {
     group: 'account',
+    displayName: 'Update Read Receipts Privacy',
+    description: 'Update read receipts privacy using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'value',
@@ -3018,9 +6897,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   updateGroupsAddPrivacy: {
     group: 'account',
+    displayName: 'Update Groups Add Privacy',
+    description: 'Update groups add privacy using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'value',
@@ -3033,9 +6917,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   updateDefaultDisappearingMode: {
     group: 'account',
+    displayName: 'Update Default Disappearing Mode',
+    description: 'Update default disappearing mode using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'duration',
@@ -3047,9 +6936,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   getBusinessProfile: {
     group: 'account',
+    displayName: 'Get Business Profile',
+    description: 'Retrieve business profile using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'jid',
@@ -3057,13 +6951,89 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
     ],
+    response: {
+      anyOf: [
+        {
+          description: 'void',
+        },
+        {
+          type: 'object',
+          properties: {
+            description: {
+              type: 'string',
+              description: 'string',
+            },
+            email: {
+              type: 'string',
+              description: 'string',
+            },
+            business_hours: {
+              type: 'object',
+              properties: {
+                timezone: {
+                  type: 'string',
+                  description: 'string',
+                },
+                config: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    additionalProperties: true,
+                    description: 'WABusinessHoursConfig',
+                  },
+                  description: 'WABusinessHoursConfig[]',
+                },
+                business_config: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    additionalProperties: true,
+                    description: 'WABusinessHoursConfig',
+                  },
+                  description: 'WABusinessHoursConfig[]',
+                },
+              },
+              additionalProperties: false,
+              description:
+                '{ timezone?: string; config?: WABusinessHoursConfig[]; business_config?: WABusinessHoursConfig[]; }',
+            },
+            website: {
+              type: 'array',
+              items: {
+                type: 'string',
+                description: 'string',
+              },
+              description: 'string[]',
+            },
+            category: {
+              type: 'string',
+              description: 'string',
+            },
+            wid: {
+              type: 'string',
+              description: 'string',
+            },
+            address: {
+              type: 'string',
+              description: 'string',
+            },
+          },
+          required: ['description', 'email', 'business_hours', 'website'],
+          additionalProperties: false,
+          description: 'WABusinessProfile',
+        },
+      ],
+      description: 'void | WABusinessProfile',
+    },
   },
   resyncAppState: {
     group: 'account',
+    displayName: 'Resync App State',
+    description: 'Update resync app state using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'collections',
@@ -3085,677 +7055,26 @@ export const BAILEYS_METHOD_METADATA = {
         required: true,
         rest: false,
         schema: {
-          anyOf: [
-            {
-              type: 'boolean',
-              description: 'false',
-            },
-            {
-              type: 'boolean',
-              description: 'true',
-            },
-          ],
+          type: 'boolean',
           description: 'boolean',
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   chatModify: {
     group: 'account',
+    displayName: 'Chat Modify',
+    description: 'Archive, unarchive, mute, pin, clear, or delete a chat.',
     parameters: [
       {
         name: 'mod',
         required: true,
         rest: false,
         schema: {
-          anyOf: [
-            {
-              type: 'object',
-              properties: {
-                archive: {
-                  anyOf: [
-                    {
-                      type: 'boolean',
-                      description: 'false',
-                    },
-                    {
-                      type: 'boolean',
-                      description: 'true',
-                    },
-                  ],
-                  description: 'boolean',
-                },
-                lastMessages: {
-                  anyOf: [
-                    {
-                      type: 'array',
-                      items: {
-                        type: 'object',
-                        additionalProperties: true,
-                        description: 'MinimalMessage',
-                      },
-                      description: 'MinimalMessage[]',
-                    },
-                    {
-                      type: 'object',
-                      properties: {
-                        lastMessageTimestamp: {
-                          anyOf: [
-                            {
-                              type: 'number',
-                              description: 'number',
-                            },
-                            {
-                              type: 'object',
-                              additionalProperties: true,
-                              description: 'Long',
-                            },
-                          ],
-                          description: 'number | Long',
-                        },
-                        lastSystemMessageTimestamp: {
-                          anyOf: [
-                            {
-                              type: 'number',
-                              description: 'number',
-                            },
-                            {
-                              type: 'object',
-                              additionalProperties: true,
-                              description: 'Long',
-                            },
-                          ],
-                          description: 'number | Long',
-                        },
-                        messages: {
-                          type: 'array',
-                          items: {
-                            type: 'object',
-                            additionalProperties: true,
-                            description: 'ISyncActionMessage',
-                          },
-                          description: 'ISyncActionMessage[]',
-                        },
-                      },
-                      additionalProperties: false,
-                      description: 'ISyncActionMessageRange',
-                    },
-                  ],
-                  description: 'LastMessageList',
-                },
-              },
-              required: ['archive', 'lastMessages'],
-              additionalProperties: false,
-              description: '{ archive: boolean; lastMessages: LastMessageList; }',
-            },
-            {
-              type: 'object',
-              properties: {
-                pushNameSetting: {
-                  type: 'string',
-                  description: 'string',
-                },
-              },
-              required: ['pushNameSetting'],
-              additionalProperties: false,
-              description: '{ pushNameSetting: string; }',
-            },
-            {
-              type: 'object',
-              properties: {
-                pin: {
-                  anyOf: [
-                    {
-                      type: 'boolean',
-                      description: 'false',
-                    },
-                    {
-                      type: 'boolean',
-                      description: 'true',
-                    },
-                  ],
-                  description: 'boolean',
-                },
-              },
-              required: ['pin'],
-              additionalProperties: false,
-              description: '{ pin: boolean; }',
-            },
-            {
-              type: 'object',
-              properties: {
-                mute: {
-                  type: 'number',
-                  description: 'number',
-                },
-              },
-              required: ['mute'],
-              additionalProperties: false,
-              description: '{ mute: number; }',
-            },
-            {
-              type: 'object',
-              properties: {
-                clear: {
-                  anyOf: [
-                    {
-                      type: 'boolean',
-                      description: 'false',
-                    },
-                    {
-                      type: 'boolean',
-                      description: 'true',
-                    },
-                  ],
-                  description: 'boolean',
-                },
-                lastMessages: {
-                  anyOf: [
-                    {
-                      type: 'array',
-                      items: {
-                        type: 'object',
-                        additionalProperties: true,
-                        description: 'MinimalMessage',
-                      },
-                      description: 'MinimalMessage[]',
-                    },
-                    {
-                      type: 'object',
-                      properties: {
-                        lastMessageTimestamp: {
-                          anyOf: [
-                            {
-                              type: 'number',
-                              description: 'number',
-                            },
-                            {
-                              type: 'object',
-                              additionalProperties: true,
-                              description: 'Long',
-                            },
-                          ],
-                          description: 'number | Long',
-                        },
-                        lastSystemMessageTimestamp: {
-                          anyOf: [
-                            {
-                              type: 'number',
-                              description: 'number',
-                            },
-                            {
-                              type: 'object',
-                              additionalProperties: true,
-                              description: 'Long',
-                            },
-                          ],
-                          description: 'number | Long',
-                        },
-                        messages: {
-                          type: 'array',
-                          items: {
-                            type: 'object',
-                            additionalProperties: true,
-                            description: 'ISyncActionMessage',
-                          },
-                          description: 'ISyncActionMessage[]',
-                        },
-                      },
-                      additionalProperties: false,
-                      description: 'ISyncActionMessageRange',
-                    },
-                  ],
-                  description: 'LastMessageList',
-                },
-              },
-              required: ['clear', 'lastMessages'],
-              additionalProperties: false,
-              description: '{ clear: boolean; lastMessages: LastMessageList; }',
-            },
-            {
-              type: 'object',
-              properties: {
-                deleteForMe: {
-                  type: 'object',
-                  properties: {
-                    deleteMedia: {
-                      anyOf: [
-                        {
-                          type: 'boolean',
-                          description: 'false',
-                        },
-                        {
-                          type: 'boolean',
-                          description: 'true',
-                        },
-                      ],
-                      description: 'boolean',
-                    },
-                    key: {
-                      description: 'WAMessageKey',
-                    },
-                    timestamp: {
-                      type: 'number',
-                      description: 'number',
-                    },
-                  },
-                  required: ['deleteMedia', 'key', 'timestamp'],
-                  additionalProperties: false,
-                  description: '{ deleteMedia: boolean; key: WAMessageKey; timestamp: number; }',
-                },
-              },
-              required: ['deleteForMe'],
-              additionalProperties: false,
-              description: '{ deleteForMe: { deleteMedia: boolean; key: WAMessageKey; timestamp: number; }; }',
-            },
-            {
-              type: 'object',
-              properties: {
-                star: {
-                  type: 'object',
-                  properties: {
-                    messages: {
-                      type: 'array',
-                      items: {
-                        type: 'object',
-                        additionalProperties: true,
-                        description: '{ id: string; fromMe?: boolean; }',
-                      },
-                      description: '{ id: string; fromMe?: boolean; }[]',
-                    },
-                    star: {
-                      anyOf: [
-                        {
-                          type: 'boolean',
-                          description: 'false',
-                        },
-                        {
-                          type: 'boolean',
-                          description: 'true',
-                        },
-                      ],
-                      description: 'boolean',
-                    },
-                  },
-                  required: ['messages', 'star'],
-                  additionalProperties: false,
-                  description: '{ messages: { id: string; fromMe?: boolean; }[]; star: boolean; }',
-                },
-              },
-              required: ['star'],
-              additionalProperties: false,
-              description: '{ star: { messages: { id: string; fromMe?: boolean; }[]; star: boolean; }; }',
-            },
-            {
-              type: 'object',
-              properties: {
-                markRead: {
-                  anyOf: [
-                    {
-                      type: 'boolean',
-                      description: 'false',
-                    },
-                    {
-                      type: 'boolean',
-                      description: 'true',
-                    },
-                  ],
-                  description: 'boolean',
-                },
-                lastMessages: {
-                  anyOf: [
-                    {
-                      type: 'array',
-                      items: {
-                        type: 'object',
-                        additionalProperties: true,
-                        description: 'MinimalMessage',
-                      },
-                      description: 'MinimalMessage[]',
-                    },
-                    {
-                      type: 'object',
-                      properties: {
-                        lastMessageTimestamp: {
-                          anyOf: [
-                            {
-                              type: 'number',
-                              description: 'number',
-                            },
-                            {
-                              type: 'object',
-                              additionalProperties: true,
-                              description: 'Long',
-                            },
-                          ],
-                          description: 'number | Long',
-                        },
-                        lastSystemMessageTimestamp: {
-                          anyOf: [
-                            {
-                              type: 'number',
-                              description: 'number',
-                            },
-                            {
-                              type: 'object',
-                              additionalProperties: true,
-                              description: 'Long',
-                            },
-                          ],
-                          description: 'number | Long',
-                        },
-                        messages: {
-                          type: 'array',
-                          items: {
-                            type: 'object',
-                            additionalProperties: true,
-                            description: 'ISyncActionMessage',
-                          },
-                          description: 'ISyncActionMessage[]',
-                        },
-                      },
-                      additionalProperties: false,
-                      description: 'ISyncActionMessageRange',
-                    },
-                  ],
-                  description: 'LastMessageList',
-                },
-              },
-              required: ['markRead', 'lastMessages'],
-              additionalProperties: false,
-              description: '{ markRead: boolean; lastMessages: LastMessageList; }',
-            },
-            {
-              type: 'object',
-              properties: {
-                delete: {
-                  type: 'boolean',
-                  description: 'true',
-                },
-                lastMessages: {
-                  anyOf: [
-                    {
-                      type: 'array',
-                      items: {
-                        type: 'object',
-                        additionalProperties: true,
-                        description: 'MinimalMessage',
-                      },
-                      description: 'MinimalMessage[]',
-                    },
-                    {
-                      type: 'object',
-                      properties: {
-                        lastMessageTimestamp: {
-                          anyOf: [
-                            {
-                              type: 'number',
-                              description: 'number',
-                            },
-                            {
-                              type: 'object',
-                              additionalProperties: true,
-                              description: 'Long',
-                            },
-                          ],
-                          description: 'number | Long',
-                        },
-                        lastSystemMessageTimestamp: {
-                          anyOf: [
-                            {
-                              type: 'number',
-                              description: 'number',
-                            },
-                            {
-                              type: 'object',
-                              additionalProperties: true,
-                              description: 'Long',
-                            },
-                          ],
-                          description: 'number | Long',
-                        },
-                        messages: {
-                          type: 'array',
-                          items: {
-                            type: 'object',
-                            additionalProperties: true,
-                            description: 'ISyncActionMessage',
-                          },
-                          description: 'ISyncActionMessage[]',
-                        },
-                      },
-                      additionalProperties: false,
-                      description: 'ISyncActionMessageRange',
-                    },
-                  ],
-                  description: 'LastMessageList',
-                },
-              },
-              required: ['delete', 'lastMessages'],
-              additionalProperties: false,
-              description: '{ delete: true; lastMessages: LastMessageList; }',
-            },
-            {
-              type: 'object',
-              properties: {
-                contact: {
-                  type: 'object',
-                  properties: {
-                    fullName: {
-                      type: 'string',
-                      description: 'string',
-                    },
-                    firstName: {
-                      type: 'string',
-                      description: 'string',
-                    },
-                    lidJid: {
-                      type: 'string',
-                      description: 'string',
-                    },
-                    saveOnPrimaryAddressbook: {
-                      anyOf: [
-                        {
-                          type: 'boolean',
-                          description: 'false',
-                        },
-                        {
-                          type: 'boolean',
-                          description: 'true',
-                        },
-                      ],
-                      description: 'boolean',
-                    },
-                    pnJid: {
-                      type: 'string',
-                      description: 'string',
-                    },
-                    username: {
-                      type: 'string',
-                      description: 'string',
-                    },
-                  },
-                  additionalProperties: false,
-                  description: 'IContactAction',
-                },
-              },
-              required: ['contact'],
-              additionalProperties: false,
-              description: '{ contact: IContactAction; }',
-            },
-            {
-              type: 'object',
-              properties: {
-                disableLinkPreviews: {
-                  type: 'object',
-                  properties: {
-                    isPreviewsDisabled: {
-                      anyOf: [
-                        {
-                          type: 'boolean',
-                          description: 'false',
-                        },
-                        {
-                          type: 'boolean',
-                          description: 'true',
-                        },
-                      ],
-                      description: 'boolean',
-                    },
-                  },
-                  additionalProperties: false,
-                  description: 'IPrivacySettingDisableLinkPreviewsAction',
-                },
-              },
-              required: ['disableLinkPreviews'],
-              additionalProperties: false,
-              description: '{ disableLinkPreviews: IPrivacySettingDisableLinkPreviewsAction; }',
-            },
-            {
-              type: 'object',
-              properties: {
-                addLabel: {
-                  type: 'object',
-                  properties: {
-                    id: {
-                      type: 'string',
-                      description: 'string',
-                    },
-                    name: {
-                      type: 'string',
-                      description: 'string',
-                    },
-                    color: {
-                      type: 'number',
-                      description: 'number',
-                    },
-                    deleted: {
-                      anyOf: [
-                        {
-                          type: 'boolean',
-                          description: 'false',
-                        },
-                        {
-                          type: 'boolean',
-                          description: 'true',
-                        },
-                      ],
-                      description: 'boolean',
-                    },
-                    predefinedId: {
-                      type: 'number',
-                      description: 'number',
-                    },
-                  },
-                  required: ['id'],
-                  additionalProperties: false,
-                  description: 'LabelActionBody',
-                },
-              },
-              required: ['addLabel'],
-              additionalProperties: false,
-              description: '{ addLabel: LabelActionBody; }',
-            },
-            {
-              type: 'object',
-              properties: {
-                addChatLabel: {
-                  type: 'object',
-                  properties: {
-                    labelId: {
-                      type: 'string',
-                      description: 'string',
-                    },
-                  },
-                  required: ['labelId'],
-                  additionalProperties: false,
-                  description: 'ChatLabelAssociationActionBody',
-                },
-              },
-              required: ['addChatLabel'],
-              additionalProperties: false,
-              description: '{ addChatLabel: ChatLabelAssociationActionBody; }',
-            },
-            {
-              type: 'object',
-              properties: {
-                removeChatLabel: {
-                  type: 'object',
-                  properties: {
-                    labelId: {
-                      type: 'string',
-                      description: 'string',
-                    },
-                  },
-                  required: ['labelId'],
-                  additionalProperties: false,
-                  description: 'ChatLabelAssociationActionBody',
-                },
-              },
-              required: ['removeChatLabel'],
-              additionalProperties: false,
-              description: '{ removeChatLabel: ChatLabelAssociationActionBody; }',
-            },
-            {
-              type: 'object',
-              properties: {
-                addMessageLabel: {
-                  type: 'object',
-                  properties: {
-                    labelId: {
-                      type: 'string',
-                      description: 'string',
-                    },
-                    messageId: {
-                      type: 'string',
-                      description: 'string',
-                    },
-                  },
-                  required: ['labelId', 'messageId'],
-                  additionalProperties: false,
-                  description: 'MessageLabelAssociationActionBody',
-                },
-              },
-              required: ['addMessageLabel'],
-              additionalProperties: false,
-              description: '{ addMessageLabel: MessageLabelAssociationActionBody; }',
-            },
-            {
-              type: 'object',
-              properties: {
-                removeMessageLabel: {
-                  type: 'object',
-                  properties: {
-                    labelId: {
-                      type: 'string',
-                      description: 'string',
-                    },
-                    messageId: {
-                      type: 'string',
-                      description: 'string',
-                    },
-                  },
-                  required: ['labelId', 'messageId'],
-                  additionalProperties: false,
-                  description: 'MessageLabelAssociationActionBody',
-                },
-              },
-              required: ['removeMessageLabel'],
-              additionalProperties: false,
-              description: '{ removeMessageLabel: MessageLabelAssociationActionBody; }',
-            },
-            {
-              type: 'object',
-              properties: {
-                quickReply: {
-                  description: 'QuickReplyAction',
-                },
-              },
-              required: ['quickReply'],
-              additionalProperties: false,
-              description: '{ quickReply: QuickReplyAction; }',
-            },
-          ],
+          type: 'object',
           description: 'ChatModification',
         },
       },
@@ -3765,13 +7084,18 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   cleanDirtyBits: {
     group: 'account',
+    displayName: 'Clean Dirty Bits',
+    description: 'Remove or revoke dirty bits using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'type',
@@ -3785,7 +7109,7 @@ export const BAILEYS_METHOD_METADATA = {
       },
       {
         name: 'fromTimestamp',
-        required: true,
+        required: false,
         rest: false,
         schema: {
           anyOf: [
@@ -3802,9 +7126,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   addOrEditContact: {
     group: 'account',
+    displayName: 'Add Or Edit Contact',
+    description: 'Create or request or edit contact using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'jid',
@@ -3812,7 +7141,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
       {
@@ -3835,16 +7164,7 @@ export const BAILEYS_METHOD_METADATA = {
               description: 'string',
             },
             saveOnPrimaryAddressbook: {
-              anyOf: [
-                {
-                  type: 'boolean',
-                  description: 'false',
-                },
-                {
-                  type: 'boolean',
-                  description: 'true',
-                },
-              ],
+              type: 'boolean',
               description: 'boolean',
             },
             pnJid: {
@@ -3853,7 +7173,7 @@ export const BAILEYS_METHOD_METADATA = {
             },
             username: {
               type: 'string',
-              description: 'string',
+              description: 'Optional WhatsApp username identifier; absent when WhatsApp supplies no username.',
             },
           },
           additionalProperties: false,
@@ -3861,9 +7181,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   removeContact: {
     group: 'account',
+    displayName: 'Remove Contact',
+    description: 'Remove or revoke contact using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'jid',
@@ -3871,13 +7196,18 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   addLabel: {
     group: 'account',
+    displayName: 'Add Label',
+    description: 'Create or request label using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'jid',
@@ -3885,7 +7215,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
       {
@@ -3897,27 +7227,18 @@ export const BAILEYS_METHOD_METADATA = {
           properties: {
             id: {
               type: 'string',
-              description: 'string',
+              description: 'Stable identifier in the namespace implied by its surrounding object.',
             },
             name: {
               type: 'string',
-              description: 'string',
+              description: 'Human-visible name returned by WhatsApp.',
             },
             color: {
               type: 'number',
               description: 'number',
             },
             deleted: {
-              anyOf: [
-                {
-                  type: 'boolean',
-                  description: 'false',
-                },
-                {
-                  type: 'boolean',
-                  description: 'true',
-                },
-              ],
+              type: 'boolean',
               description: 'boolean',
             },
             predefinedId: {
@@ -3931,9 +7252,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   addChatLabel: {
     group: 'account',
+    displayName: 'Add Chat Label',
+    description: 'Create or request chat label using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'jid',
@@ -3941,7 +7267,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
       {
@@ -3954,9 +7280,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   removeChatLabel: {
     group: 'account',
+    displayName: 'Remove Chat Label',
+    description: 'Remove or revoke chat label using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'jid',
@@ -3964,7 +7295,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
       {
@@ -3977,9 +7308,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   addMessageLabel: {
     group: 'account',
+    displayName: 'Add Message Label',
+    description: 'Create or request message label using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'jid',
@@ -3987,7 +7323,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
       {
@@ -4009,9 +7345,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   removeMessageLabel: {
     group: 'account',
+    displayName: 'Remove Message Label',
+    description: 'Remove or revoke message label using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'jid',
@@ -4019,7 +7360,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
       {
@@ -4041,9 +7382,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   star: {
     group: 'account',
+    displayName: 'Star',
+    description: 'Update star using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'jid',
@@ -4051,7 +7397,7 @@ export const BAILEYS_METHOD_METADATA = {
         rest: false,
         schema: {
           type: 'string',
-          description: 'string',
+          description: 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.',
         },
       },
       {
@@ -4065,19 +7411,10 @@ export const BAILEYS_METHOD_METADATA = {
             properties: {
               id: {
                 type: 'string',
-                description: 'string',
+                description: 'Stable identifier in the namespace implied by its surrounding object.',
               },
               fromMe: {
-                anyOf: [
-                  {
-                    type: 'boolean',
-                    description: 'false',
-                  },
-                  {
-                    type: 'boolean',
-                    description: 'true',
-                  },
-                ],
+                type: 'boolean',
                 description: 'boolean',
               },
             },
@@ -4093,23 +7430,20 @@ export const BAILEYS_METHOD_METADATA = {
         required: true,
         rest: false,
         schema: {
-          anyOf: [
-            {
-              type: 'boolean',
-              description: 'false',
-            },
-            {
-              type: 'boolean',
-              description: 'true',
-            },
-          ],
+          type: 'boolean',
           description: 'boolean',
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   addOrEditQuickReply: {
     group: 'account',
+    displayName: 'Add Or Edit Quick Reply',
+    description:
+      'Create or request or edit quick reply using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'quickReply',
@@ -4120,9 +7454,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   removeQuickReply: {
     group: 'account',
+    displayName: 'Remove Quick Reply',
+    description: 'Remove or revoke quick reply using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'timestamp',
@@ -4134,17 +7473,380 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   fetchAccountReachoutTimelock: {
     group: 'account',
+    displayName: 'Fetch Account Reachout Timelock',
+    description:
+      'Retrieve account reachout timelock using the connected WhatsApp account and return the server result.',
     parameters: [],
+    response: {
+      type: 'object',
+      properties: {
+        isActive: {
+          type: 'boolean',
+          description: 'boolean',
+        },
+        timeEnforcementEnds: {
+          type: 'object',
+          properties: {
+            toString: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => string',
+            },
+            toDateString: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => string',
+            },
+            toTimeString: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => string',
+            },
+            toLocaleString: {
+              type: 'object',
+              additionalProperties: true,
+              description:
+                '{ (): string; (locales?: string | string[], options?: DateTimeFormatOptions): string; (locales?: LocalesArgument, options?: DateTimeFormatOptions): string; }',
+            },
+            toLocaleDateString: {
+              type: 'object',
+              additionalProperties: true,
+              description:
+                '{ (): string; (locales?: string | string[], options?: DateTimeFormatOptions): string; (locales?: LocalesArgument, options?: DateTimeFormatOptions): string; }',
+            },
+            toLocaleTimeString: {
+              type: 'object',
+              additionalProperties: true,
+              description:
+                '{ (): string; (locales?: string | string[], options?: DateTimeFormatOptions): string; (locales?: LocalesArgument, options?: DateTimeFormatOptions): string; }',
+            },
+            valueOf: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getTime: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getFullYear: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getUTCFullYear: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getMonth: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getUTCMonth: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getDate: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getUTCDate: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getDay: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getUTCDay: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getHours: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getUTCHours: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getMinutes: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getUTCMinutes: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getSeconds: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getUTCSeconds: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getMilliseconds: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getUTCMilliseconds: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            getTimezoneOffset: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => number',
+            },
+            setTime: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(time: number) => number',
+            },
+            setMilliseconds: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(ms: number) => number',
+            },
+            setUTCMilliseconds: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(ms: number) => number',
+            },
+            setSeconds: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(sec: number, ms?: number) => number',
+            },
+            setUTCSeconds: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(sec: number, ms?: number) => number',
+            },
+            setMinutes: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(min: number, sec?: number, ms?: number) => number',
+            },
+            setUTCMinutes: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(min: number, sec?: number, ms?: number) => number',
+            },
+            setHours: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(hours: number, min?: number, sec?: number, ms?: number) => number',
+            },
+            setUTCHours: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(hours: number, min?: number, sec?: number, ms?: number) => number',
+            },
+            setDate: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(date: number) => number',
+            },
+            setUTCDate: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(date: number) => number',
+            },
+            setMonth: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(month: number, date?: number) => number',
+            },
+            setUTCMonth: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(month: number, date?: number) => number',
+            },
+            setFullYear: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(year: number, month?: number, date?: number) => number',
+            },
+            setUTCFullYear: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(year: number, month?: number, date?: number) => number',
+            },
+            toUTCString: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => string',
+            },
+            toISOString: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => string',
+            },
+            toJSON: {
+              type: 'object',
+              additionalProperties: true,
+              description: '(key?: any) => string',
+            },
+            getVarDate: {
+              type: 'object',
+              additionalProperties: true,
+              description: '() => VarDate',
+            },
+          },
+          required: [
+            'toString',
+            'toDateString',
+            'toTimeString',
+            'toLocaleString',
+            'toLocaleDateString',
+            'toLocaleTimeString',
+            'valueOf',
+            'getTime',
+            'getFullYear',
+            'getUTCFullYear',
+            'getMonth',
+            'getUTCMonth',
+            'getDate',
+            'getUTCDate',
+            'getDay',
+            'getUTCDay',
+            'getHours',
+            'getUTCHours',
+            'getMinutes',
+            'getUTCMinutes',
+            'getSeconds',
+            'getUTCSeconds',
+            'getMilliseconds',
+            'getUTCMilliseconds',
+            'getTimezoneOffset',
+            'setTime',
+            'setMilliseconds',
+            'setUTCMilliseconds',
+            'setSeconds',
+            'setUTCSeconds',
+            'setMinutes',
+            'setUTCMinutes',
+            'setHours',
+            'setUTCHours',
+            'setDate',
+            'setUTCDate',
+            'setMonth',
+            'setUTCMonth',
+            'setFullYear',
+            'setUTCFullYear',
+            'toUTCString',
+            'toISOString',
+            'toJSON',
+            'getVarDate',
+          ],
+          additionalProperties: false,
+          description: 'Date',
+        },
+        enforcementType: {
+          type: 'string',
+          enum: [
+            'BIZ_COMMERCE_VIOLATION_ALCOHOL',
+            'BIZ_COMMERCE_VIOLATION_ADULT',
+            'BIZ_COMMERCE_VIOLATION_ANIMALS',
+            'BIZ_COMMERCE_VIOLATION_BODY_PARTS_FLUIDS',
+            'BIZ_COMMERCE_VIOLATION_DATING',
+            'BIZ_COMMERCE_VIOLATION_DIGITAL_SERVICES_PRODUCTS',
+            'BIZ_COMMERCE_VIOLATION_DRUGS',
+            'BIZ_COMMERCE_VIOLATION_DRUGS_ONLY_OTC',
+            'BIZ_COMMERCE_VIOLATION_GAMBLING',
+            'BIZ_COMMERCE_VIOLATION_HEALTHCARE',
+            'BIZ_COMMERCE_VIOLATION_REAL_FAKE_CURRENCY',
+            'BIZ_COMMERCE_VIOLATION_SUPPLEMENTS',
+            'BIZ_COMMERCE_VIOLATION_TOBACCO',
+            'BIZ_COMMERCE_VIOLATION_VIOLENT_CONTENT',
+            'BIZ_COMMERCE_VIOLATION_WEAPONS',
+            'BIZ_QUALITY',
+            'DEFAULT',
+            'WEB_COMPANION_ONLY',
+          ],
+          description: 'ReachoutTimelockEnforcementType',
+        },
+      },
+      additionalProperties: false,
+      description: 'ReachoutTimelockState',
+    },
   },
   fetchNewChatMessageCap: {
     group: 'account',
+    displayName: 'Fetch New Chat Message Cap',
+    description: 'Retrieve new chat message cap using the connected WhatsApp account and return the server result.',
     parameters: [],
+    response: {
+      type: 'object',
+      properties: {
+        total_quota: {
+          type: 'number',
+          description: 'number',
+        },
+        used_quota: {
+          type: 'number',
+          description: 'number',
+        },
+        cycle_start_timestamp: {
+          type: 'string',
+          description: 'string',
+        },
+        cycle_end_timestamp: {
+          type: 'string',
+          description: 'string',
+        },
+        server_sent_timestamp: {
+          type: 'string',
+          description: 'string',
+        },
+        ote_status: {
+          type: 'string',
+          enum: ['NOT_ELIGIBLE', 'ELIGIBLE', 'ACTIVE_IN_CURRENT_CYCLE', 'EXHAUSTED'],
+          description: 'NewChatMessageCappingOTEStatusType',
+        },
+        mv_status: {
+          type: 'string',
+          enum: ['NOT_ELIGIBLE', 'NOT_ACTIVE', 'ACTIVE', 'ACTIVE_UPGRADE_AVAILABLE'],
+          description: 'NewChatMessageCappingMVStatusType',
+        },
+        capping_status: {
+          type: 'string',
+          enum: ['NONE', 'FIRST_WARNING', 'SECOND_WARNING', 'CAPPED'],
+          description: 'NewChatMessageCappingStatusType',
+        },
+      },
+      additionalProperties: false,
+      description: 'NewChatMessageCapInfo',
+    },
   },
   appPatch: {
     group: 'advanced',
+    displayName: 'App Patch',
+    description: 'Execute the app patch WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'patchCreate',
@@ -4187,9 +7889,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   query: {
     group: 'advanced',
+    displayName: 'Query',
+    description: 'Send a low-level WhatsApp binary query. Intended for advanced protocol integrations.',
     parameters: [
       {
         name: 'node',
@@ -4224,7 +7931,7 @@ export const BAILEYS_METHOD_METADATA = {
                   additionalProperties: false,
                 },
               ],
-              description: 'string | Uint8Array<ArrayBufferLike> | BinaryNode[]',
+              description: 'string | BinaryNode[] | Uint8Array<ArrayBufferLike>',
             },
           },
           required: ['tag', 'attrs'],
@@ -4234,7 +7941,7 @@ export const BAILEYS_METHOD_METADATA = {
       },
       {
         name: 'timeoutMs',
-        required: true,
+        required: false,
         rest: false,
         schema: {
           type: 'number',
@@ -4242,9 +7949,14 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'any',
+    },
   },
   sendRawMessage: {
     group: 'advanced',
+    displayName: 'Send Raw Message',
+    description: 'Send a low-level raw WhatsApp message. Intended for advanced protocol integrations.',
     parameters: [
       {
         name: 'data',
@@ -4271,13 +7983,18 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   uploadPreKeys: {
     group: 'advanced',
+    displayName: 'Upload Pre Keys',
+    description: 'Execute the upload pre keys WhatsApp capability and return its typed result.',
     parameters: [
       {
         name: 'count',
-        required: true,
+        required: false,
         rest: false,
         schema: {
           type: 'number',
@@ -4285,21 +8002,41 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'void',
+    },
   },
   uploadPreKeysToServerIfRequired: {
     group: 'advanced',
+    displayName: 'Upload Pre Keys To Server If Required',
+    description: 'Execute the upload pre keys to server if required WhatsApp capability and return its typed result.',
     parameters: [],
+    response: {
+      description: 'void',
+    },
   },
   digestKeyBundle: {
     group: 'advanced',
+    displayName: 'Digest Key Bundle',
+    description: 'Execute the digest key bundle WhatsApp capability and return its typed result.',
     parameters: [],
+    response: {
+      description: 'void',
+    },
   },
   rotateSignedPreKey: {
     group: 'advanced',
+    displayName: 'Rotate Signed Pre Key',
+    description: 'Update rotate signed pre key using the connected WhatsApp account and return the server result.',
     parameters: [],
+    response: {
+      description: 'void',
+    },
   },
   requestPairingCode: {
     group: 'advanced',
+    displayName: 'Request Pairing Code',
+    description: 'Generate a pairing code for linking without scanning a QR code.',
     parameters: [
       {
         name: 'phoneNumber',
@@ -4312,7 +8049,7 @@ export const BAILEYS_METHOD_METADATA = {
       },
       {
         name: 'customPairingCode',
-        required: true,
+        required: false,
         rest: false,
         schema: {
           type: 'string',
@@ -4320,13 +8057,24 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      type: 'string',
+      description: 'string',
+    },
   },
   sendUnifiedSession: {
     group: 'advanced',
+    displayName: 'Send Unified Session',
+    description: 'Send or apply unified session using the connected WhatsApp account and return the server result.',
     parameters: [],
+    response: {
+      description: 'void',
+    },
   },
   sendWAMBuffer: {
     group: 'advanced',
+    displayName: 'Send WAMBuffer',
+    description: 'Send or apply wambuffer using the connected WhatsApp account and return the server result.',
     parameters: [
       {
         name: 'wamBuffer',
@@ -4353,5 +8101,8 @@ export const BAILEYS_METHOD_METADATA = {
         },
       },
     ],
+    response: {
+      description: 'any',
+    },
   },
 } as const;

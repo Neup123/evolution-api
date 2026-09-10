@@ -27,11 +27,17 @@ const methodDescriptions = {
     'Get a parent community name, description, participants, and settings. Use Group Metadata for regular groups.',
   communityCreate: 'Create a WhatsApp community with a subject and description.',
   communityCreateGroup: 'Create a group inside an existing community and add participants.',
+  communityFetchLinkedGroups:
+    'List groups linked to a community and enrich partial WhatsApp rows with cached full group metadata.',
+  communityRequestParticipantsList:
+    'List membership approval requests reported for a community. Group and subgroup join queues use the Group operation.',
   groupMetadata: 'Get the subject, description, owner, participants, and settings of a group.',
   groupCreate: 'Create a WhatsApp group and add the supplied participants.',
   groupParticipantsUpdate: 'Add, remove, promote, or demote participants in a group.',
   groupRequestParticipantsList: 'List pending requests from people who want to join a group.',
   groupRequestParticipantsUpdate: 'Approve or reject pending group join requests.',
+  groupFetchAllParticipating:
+    'List every group and community in which the connected account participates, optionally omitting participant arrays.',
   newsletterCreate: 'Create a WhatsApp newsletter (channel).',
   newsletterMetadata: 'Get newsletter details using its JID or invite code.',
   newsletterFetchMessages: 'Load messages published by a newsletter.',
@@ -46,6 +52,10 @@ const methodDescriptions = {
   fetchBlocklist: 'Get all WhatsApp accounts blocked by the connected account.',
   updateBlockStatus: 'Block or unblock a WhatsApp contact.',
   fetchPrivacySettings: 'Get the connected account privacy settings.',
+  getCatalog:
+    'Get products from a WhatsApp Business catalog owner. Omit the owner JID for the connected account; group JIDs are invalid.',
+  getCollections:
+    'Get the named product collections of a WhatsApp Business catalog owner. These are catalog collections, not chat groups.',
   chatModify: 'Archive, unarchive, mute, pin, clear, or delete a chat.',
   sendPresenceUpdate: 'Set account presence, such as available, unavailable, composing, or recording.',
   presenceSubscribe: 'Subscribe to live presence updates for a contact.',
@@ -58,22 +68,45 @@ function readableName(value) {
   return value.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/^./, (character) => character.toUpperCase());
 }
 
+function operationName(method, group) {
+  const prefix = { communities: 'community', groups: 'group', newsletters: 'newsletter' }[group];
+  const concise = prefix && method.startsWith(prefix) ? method.slice(prefix.length) : method;
+  return readableName(concise || method);
+}
+
 function describeMethod(method) {
   if (methodDescriptions[method]) return methodDescriptions[method];
-  const readable = readableName(method).toLowerCase();
-  if (/^(fetch|get)/.test(method)) return `Retrieve ${readable.replace(/^(fetch|get) /, '')} from WhatsApp.`;
-  if (/^(create|add)/.test(method)) return `Create or add ${readable.replace(/^(create|add) /, '')} in WhatsApp.`;
-  if (/^(update|set|modify)/.test(method))
-    return `Change ${readable.replace(/^(update|set|modify) /, '')} for the connected WhatsApp account.`;
-  if (/^(remove|delete|clean)/.test(method))
-    return `Remove ${readable.replace(/^(remove|delete|clean) /, '')} from WhatsApp.`;
-  if (/^(send|relay|issue)/.test(method))
-    return `Send ${readable.replace(/^(send|relay|issue) /, '')} through the connected WhatsApp account.`;
-  return `Run ${readableName(method)} and return the WhatsApp result.`;
+  const concise = method.replace(/^(community|group|newsletter)/, '');
+  const readable = readableName(concise).toLowerCase();
+  const actions = [
+    [/^(fetch|get|extract|metadata|subscribers|adminCount)/, 'Retrieve'],
+    [/^(create|add|link|follow|accept|request)/, 'Create or request'],
+    [/^(update|set|modify|toggle|rotate|resync|star|mute|unmute)/, 'Update'],
+    [/^(remove|delete|clean|leave|unlink|unfollow|reject|revoke)/, 'Remove or revoke'],
+    [/^(send|relay|issue|read|presence|assert|generate)/, 'Send or apply'],
+  ];
+  const match = actions.find(([pattern]) => pattern.test(concise));
+  const subject = readable.replace(/^(fetch|get|extract|create|add|update|set|modify|remove|delete|clean|send|relay|issue) /, '');
+  if (match) return `${match[1]} ${subject} using the connected WhatsApp account and return the server result.`;
+  return `Execute the ${readable} WhatsApp capability and return its typed result.`;
 }
 
 function describeParameter(method, parameter) {
   const name = parameter.name;
+  if (method === 'groupFetchAllParticipating' && name === 'includeParticipants') {
+    return 'Include each group participant array. Set false for a compact response and fewer transferred fields.';
+  }
+  if (method === 'getCatalog' && name === 'options') {
+    return 'Catalog query: optional business owner PN JID, page size limit, and opaque next-page cursor. Omit jid for the connected account.';
+  }
+  if (method === 'fetchPrivacySettings' && name === 'force') {
+    return 'Bypass Baileys in-memory privacy state when true. Omit or false for its normal cached query behavior.';
+  }
+  if (name === 'limit') return 'Maximum items WhatsApp should return for this request.';
+  if (name === 'cursor') return 'Opaque cursor returned by the previous page; omit for the first page.';
+  if (['getCatalog', 'getCollections'].includes(method) && ['jid', 'id'].includes(name)) {
+    return 'Optional WhatsApp Business catalog owner PN JID ending in @s.whatsapp.net. Omit it for the connected account.';
+  }
   if (method.startsWith('community') && ['jid', 'communityJid', 'parentCommunityJid'].includes(name)) {
     return 'Parent community JID ending in @g.us. A regular group or subgroup JID is not accepted unless the operation explicitly says otherwise.';
   }
@@ -157,6 +190,37 @@ function primitiveSchema(type) {
   return undefined;
 }
 
+const fieldDescriptions = {
+  id: 'Stable identifier in the namespace implied by its surrounding object.',
+  jid: 'Full WhatsApp address including its @s.whatsapp.net, @lid, @g.us, or @newsletter suffix.',
+  owner: 'Primary owner identifier returned by WhatsApp; it may be a LID.',
+  ownerPn: 'Owner phone-number JID when WhatsApp exposes the LID-to-PN mapping.',
+  ownerUsername: 'Owner username identifier when WhatsApp exposes one.',
+  subject: 'Human-visible group, community, newsletter, or item title.',
+  subjectOwner: 'Identifier of the account that last changed the subject.',
+  subjectTime: 'Unix timestamp in seconds when the subject was last changed.',
+  creation: 'Unix timestamp in seconds when the entity was created.',
+  size: 'Number of participants or returned items reported by WhatsApp.',
+  participants: 'Participant records. Identifier namespaces are explained in docs/baileys/identifiers.md.',
+  phoneNumber: 'Full PN JID ending in @s.whatsapp.net, despite the historical field name.',
+  lid: 'Privacy-preserving WhatsApp linked-identity JID ending in @lid.',
+  username: 'Optional WhatsApp username identifier; absent when WhatsApp supplies no username.',
+  admin: 'Participant role: admin, superadmin, or null for a regular member.',
+  status: 'WhatsApp operation, delivery, membership, catalog, or account state for this record.',
+  desc: 'Human-visible description text.',
+  descId: 'WhatsApp identifier of the current description revision.',
+  linkedParent: 'Parent community JID when this group is a community subgroup.',
+  isCommunity: 'Whether the metadata represents a parent community.',
+  isCommunityAnnounce: 'Whether this is the default announcements group of a community.',
+  addressingMode: 'Identifier namespace WhatsApp expects for group addressing: pn or lid.',
+  products: 'Catalog product records returned for this page.',
+  collections: 'Named WhatsApp Business catalog collections.',
+  nextPageCursor: 'Opaque cursor for requesting the next catalog page; null means no next page.',
+  name: 'Human-visible name returned by WhatsApp.',
+  price: 'Product or order price in the smallest unit defined by the currency contract.',
+  currency: 'Currency code supplied by the catalog.',
+};
+
 function schemaForType(type, depth = 0, seen = new Set()) {
   const typeName = checker.typeToString(type, undefined, ts.TypeFormatFlags.NoTruncation);
   if (/\bWAMediaUpload\b/.test(typeName)) {
@@ -198,6 +262,10 @@ function schemaForType(type, depth = 0, seen = new Set()) {
       return { type: kind, enum: literals, description: typeName };
     }
     const schemas = members.map((member) => schemaForType(member, depth, new Set(seen)));
+    const primitiveTypes = [...new Set(schemas.map((schema) => schema.type).filter(Boolean))];
+    if (primitiveTypes.length === 1 && schemas.every((schema) => schema.type === primitiveTypes[0])) {
+      return { type: primitiveTypes[0], description: typeName };
+    }
     return schemas.length === 1 ? schemas[0] : { anyOf: schemas, description: typeName };
   }
 
@@ -218,10 +286,10 @@ function schemaForType(type, depth = 0, seen = new Set()) {
   }
 
   if (type.flags & ts.TypeFlags.Object) {
-    if (seen.has(type) || depth >= 2) return { type: 'object', additionalProperties: true, description: typeName };
+    if (seen.has(type) || depth >= 3) return { type: 'object', additionalProperties: true, description: typeName };
     seen.add(type);
     const properties = checker.getPropertiesOfType(type).filter((property) => !property.getName().startsWith('__'));
-    if (properties.length === 0 || properties.length > 35) {
+    if (properties.length === 0 || properties.length > 60) {
       return { type: 'object', additionalProperties: true, description: typeName };
     }
 
@@ -230,7 +298,11 @@ function schemaForType(type, depth = 0, seen = new Set()) {
     for (const property of properties) {
       const declaration = property.valueDeclaration ?? property.declarations?.[0] ?? sourceFile;
       const propertyType = checker.getTypeOfSymbolAtLocation(property, declaration);
-      objectProperties[property.getName()] = schemaForType(propertyType, depth + 1, new Set(seen));
+      const propertySchema = schemaForType(propertyType, depth + 1, new Set(seen));
+      const meaning = Object.prototype.hasOwnProperty.call(fieldDescriptions, property.getName())
+        ? fieldDescriptions[property.getName()]
+        : undefined;
+      objectProperties[property.getName()] = meaning ? { ...propertySchema, description: meaning } : propertySchema;
       if (!(property.flags & ts.SymbolFlags.Optional)) required.push(property.getName());
     }
     return {
@@ -258,27 +330,95 @@ function visit(node) {
     const callableType = checker.getTypeAtLocation(node.type);
     const signature = callableType.getCallSignatures()[0];
     if (!signature) throw new Error(`No call signature found for ${method}`);
-    signatures[method] = signature.getParameters().map((symbol, index) => {
+    const parameters = signature.getParameters().map((symbol, index) => {
       const declaration = symbol.valueDeclaration ?? symbol.declarations?.[0] ?? node;
       const type = checker.getTypeOfSymbolAtLocation(symbol, declaration);
       const isRest = Boolean(declaration.dotDotDotToken);
       return {
         name: parameterName(symbol, declaration, index),
-        required: !isRest && !(symbol.flags & ts.SymbolFlags.Optional),
+        required:
+          !isRest &&
+          !(symbol.flags & ts.SymbolFlags.Optional) &&
+          !(ts.isParameter(declaration) && (declaration.questionToken || declaration.initializer)),
         rest: isRest,
         schema: schemaForType(type),
       };
     });
+    const returnType = checker.getReturnTypeOfSignature(signature);
+    const resolvedReturn = checker.getPromisedTypeOfPromise(returnType) ?? returnType;
+    signatures[method] = {
+      parameters,
+      response: schemaForType(resolvedReturn),
+    };
   }
   ts.forEachChild(node, visit);
 }
 visit(sourceFile);
 
+// API-only presentation option handled before invoking the upstream socket.
+signatures.groupFetchAllParticipating.parameters.push({
+  name: 'includeParticipants',
+  required: false,
+  rest: false,
+  schema: {
+    type: 'boolean',
+    default: true,
+    description: 'Include the participant array for every group. Disable it for a compact group list.',
+  },
+});
+
+function addEvolutionResponseFields(schema) {
+  if (!schema || typeof schema !== 'object') return;
+  const participantItems = schema.properties?.participants?.items;
+  if (participantItems?.properties) {
+    Object.assign(participantItems.properties, {
+      phoneNumberDigits: {
+        type: ['string', 'null'],
+        description: 'Digits-only phone number when WhatsApp supplied a PN mapping.',
+      },
+      canonicalJid: {
+        type: ['string', 'null'],
+        description: 'PN JID when known, otherwise the LID or original participant id.',
+      },
+      identifierType: {
+        type: 'string',
+        enum: ['phone-number', 'lid', 'unknown'],
+        description: 'Namespace used by the participant id field.',
+      },
+    });
+  }
+  const linkedItems = schema.properties?.linkedGroups?.items;
+  if (linkedItems?.properties) {
+    linkedItems.properties.metadataComplete = {
+      type: 'boolean',
+      description: 'Whether Evolution successfully enriched the partial linked-group row with group metadata.',
+    };
+  }
+  for (const child of Object.values(schema.properties ?? {})) addEvolutionResponseFields(child);
+  if (schema.items) addEvolutionResponseFields(schema.items);
+  for (const child of schema.anyOf ?? []) addEvolutionResponseFields(child);
+  for (const child of schema.oneOf ?? []) addEvolutionResponseFields(child);
+}
+
+for (const signature of Object.values(signatures)) addEvolutionResponseFields(signature.response);
+
 const missing = methods.filter((method) => !signatures[method]);
 if (missing.length) throw new Error(`Missing signatures: ${missing.join(', ')}`);
 
 const metadata = Object.fromEntries(
-  methods.map((method) => [method, { group: groupByMethod[method], parameters: signatures[method] }]),
+  methods.map((method) => [
+    method,
+    {
+      group: groupByMethod[method],
+      displayName: operationName(method, groupByMethod[method]),
+      description: describeMethod(method),
+      parameters: signatures[method].parameters.map((parameter) => ({
+        ...parameter,
+        schema: { ...parameter.schema, description: describeParameter(method, parameter) },
+      })),
+      response: signatures[method].response,
+    },
+  ]),
 );
 const generated =
   `// Generated by scripts/generate-baileys-openapi.mjs. Do not edit manually.\n` +
@@ -298,7 +438,7 @@ const instanceParameter = {
 };
 const successResponse = {
   description: 'Baileys method result. Binary values use the $base64 envelope.',
-  content: { 'application/json': { schema: {} } },
+  content: { 'application/json': { schema: { type: 'object', additionalProperties: true } } },
 };
 const paths = {
   '/baileys/methods/{instanceName}': {
@@ -454,11 +594,58 @@ paths['/webhook/find-all/{instanceName}'] = {
   },
 };
 
+const instanceSettingsSchema = {
+  type: 'object',
+  required: ['rejectCall', 'groupsIgnore', 'alwaysOnline', 'readMessages', 'readStatus', 'syncFullHistory'],
+  properties: {
+    rejectCall: { type: 'boolean', description: 'Reject incoming WhatsApp calls.' },
+    msgCall: { type: 'string', description: 'Optional message sent when an incoming call is rejected.' },
+    groupsIgnore: { type: 'boolean', description: 'Ignore incoming messages from groups.' },
+    alwaysOnline: { type: 'boolean', description: 'Keep the connected account presence online.' },
+    readMessages: { type: 'boolean', description: 'Automatically mark incoming messages as read.' },
+    readStatus: { type: 'boolean', description: 'Automatically mark viewed status posts as read.' },
+    syncFullHistory: { type: 'boolean', description: 'Ask WhatsApp for the available full history during pairing.' },
+    wavoipToken: { type: 'string', description: 'Optional WA VoIP integration token.' },
+    localReadTtlSeconds: {
+      type: ['integer', 'null'],
+      minimum: 0,
+      maximum: 2592000,
+      description: 'Instance default lifetime of local read-through snapshots in seconds; null uses environment defaults.',
+    },
+    localReadTtlOverrides: {
+      type: ['object', 'null'],
+      description: 'Per-method snapshot lifetimes in seconds. Exact method names override the instance default.',
+      additionalProperties: { type: 'integer', minimum: 0, maximum: 2592000 },
+    },
+  },
+  additionalProperties: false,
+};
+
+paths['/settings/find/{instanceName}'] = {
+  get: {
+    tags: ['Instance settings'],
+    summary: 'Get instance behavior and local-read TTL settings',
+    operationId: 'findInstanceSettings',
+    parameters: [instanceParameter],
+    responses: { 200: { description: 'Persisted instance settings.', content: { 'application/json': { schema: instanceSettingsSchema } } } },
+  },
+};
+paths['/settings/set/{instanceName}'] = {
+  post: {
+    tags: ['Instance settings'],
+    summary: 'Set instance behavior and local-read TTL settings',
+    operationId: 'setInstanceSettings',
+    parameters: [instanceParameter],
+    requestBody: { required: true, content: { 'application/json': { schema: instanceSettingsSchema } } },
+    responses: { 201: { description: 'Settings persisted for the instance.' } },
+  },
+};
+
 for (const [method, definition] of Object.entries(metadata)) {
   paths[`/baileys/${definition.group}/${method}/{instanceName}`] = {
     post: {
       tags: [groupLabels[definition.group][0]],
-      summary: readableName(method),
+      summary: definition.displayName,
       description: `${describeMethod(method)} Complete the named fields below. Structured fields accept JSON. JSON request bodies remain supported for API clients.`,
       operationId: `baileys_${method}`,
       parameters: [
@@ -483,7 +670,40 @@ for (const [method, definition] of Object.entries(metadata)) {
           ...(parameter.schema.type === 'array' ? { style: 'form', explode: true } : {}),
         })),
       ],
-      responses: { 200: successResponse, 400: { description: 'Invalid method parameters.' } },
+      responses: {
+        200: {
+          description: `${definition.displayName} result.`,
+          headers: {
+            'X-Evolution-Data-Source': {
+              description: 'local when served from PostgreSQL, live when WhatsApp was queried.',
+              schema: { type: 'string', enum: ['local', 'live'] },
+            },
+            'X-Evolution-Data-Age': {
+              description: 'Age of the local snapshot in seconds. Present only for local responses.',
+              schema: { type: 'integer' },
+            },
+          },
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['method', 'result'],
+                properties: {
+                  method: { type: 'string', const: method, description: 'Baileys socket method that ran.' },
+                  result: definition.response,
+                  diagnostics: {
+                    type: 'object',
+                    description: 'Non-fatal explanation attached when an otherwise successful result is ambiguous.',
+                    additionalProperties: true,
+                  },
+                },
+                additionalProperties: false,
+              },
+            },
+          },
+        },
+        400: { description: 'Invalid method parameters or a rejected WhatsApp operation.' },
+      },
     },
   };
 }
@@ -494,7 +714,7 @@ const document = {
   openapi: '3.1.0',
   info: {
     title: 'Evolution API – Baileys 7',
-    version: '4.0.0-baileys-7.0.0-rc14',
+    version: '4.1.0-baileys-7.0.0-rc14',
     description:
       'Typed, grouped HTTP routes for the Baileys WASocket API. Named request fields are generated from the installed Baileys TypeScript declarations. Before using Try it out, click Authorize and enter the Evolution API global API key; Swagger sends it in the apikey header.',
   },
@@ -502,6 +722,7 @@ const document = {
   security: [{ ApiKeyAuth: [] }],
   tags: [
     { name: 'Registry', description: 'Runtime method discovery.' },
+    { name: 'Instance settings', description: 'Per-instance WhatsApp behavior and local database snapshot TTL.' },
     { name: 'Webhooks', description: 'Instance event delivery configuration, including multiple destinations.' },
     ...archiveContract.tags,
     ...Object.values(groupLabels).map(([name, description]) => ({ name, description })),
@@ -534,4 +755,39 @@ const document = {
 };
 
 fs.writeFileSync(openApiPath, YAML.stringify(document, { lineWidth: 0 }));
+
+const docsDirectory = path.join(root, 'docs/baileys');
+fs.mkdirSync(docsDirectory, { recursive: true });
+const mdEscape = (value) => String(value ?? '').replaceAll('|', '\\|').replaceAll('\n', ' ');
+const renderSchema = (schema) => `\`\`\`json\n${JSON.stringify(schema, null, 2)}\n\`\`\``;
+const indexLines = [
+  '# Baileys method contracts',
+  '',
+  'These files are generated from the installed Baileys TypeScript declarations. Every route returns `{ method, result }`; local-first routes also set `X-Evolution-Data-Source` and may set `X-Evolution-Data-Age`.',
+  '',
+  ...Object.keys(groups).map((group) => `- [${groupLabels[group][0]}](./${group}.md)`),
+  '',
+  'Identifier rules and enriched response fields are explained in [Identifiers and partial metadata](./identifiers.md).',
+  '',
+];
+fs.writeFileSync(path.join(docsDirectory, 'README.md'), indexLines.join('\n'));
+for (const [group, groupMethods] of Object.entries(groups)) {
+  const lines = [`# ${groupLabels[group][0]}`, '', groupLabels[group][1], ''];
+  for (const method of groupMethods) {
+    const definition = metadata[method];
+    lines.push(`## ${definition.displayName} (\`${method}\`)`, '', definition.description, '');
+    lines.push(`\`POST /baileys/${group}/${method}/{instanceName}\``, '');
+    if (definition.parameters.length) {
+      lines.push('| Field | Required | Meaning |', '|---|---:|---|');
+      for (const parameter of definition.parameters) {
+        lines.push(
+          `| \`${parameter.name}\` | ${parameter.required ? 'yes' : 'no'} | ${mdEscape(parameter.schema.description)} |`,
+        );
+      }
+      lines.push('');
+    } else lines.push('Request body: `{}`.', '');
+    lines.push('Response `result` structure:', '', renderSchema(definition.response), '');
+  }
+  fs.writeFileSync(path.join(docsDirectory, `${group}.md`), lines.join('\n'));
+}
 console.log(`Generated ${methods.length} typed Baileys operations.`);
