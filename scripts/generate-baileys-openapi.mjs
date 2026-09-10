@@ -10,6 +10,7 @@ const methodsPath = path.join(root, 'src/api/integrations/channel/whatsapp/baile
 const socketPath = path.join(root, 'node_modules/baileys/lib/Socket/index.d.ts');
 const generatedPath = path.join(root, 'src/api/integrations/channel/whatsapp/baileys.generated.ts');
 const openApiPath = path.join(root, 'docs/openapi.yaml');
+const archiveOpenApiPath = path.join(root, 'docs/archive.openapi.yaml');
 
 const groupLabels = {
   communities: ['Communities', 'Community creation, membership, invitations, and settings.'],
@@ -487,11 +488,13 @@ for (const [method, definition] of Object.entries(metadata)) {
   };
 }
 
+const archiveContract = YAML.parse(fs.readFileSync(archiveOpenApiPath, 'utf8'));
+
 const document = {
   openapi: '3.1.0',
   info: {
     title: 'Evolution API – Baileys 7',
-    version: '3.0.0-baileys-7.0.0-rc14',
+    version: '4.0.0-baileys-7.0.0-rc14',
     description:
       'Typed, grouped HTTP routes for the Baileys WASocket API. Named request fields are generated from the installed Baileys TypeScript declarations. Before using Try it out, click Authorize and enter the Evolution API global API key; Swagger sends it in the apikey header.',
   },
@@ -500,9 +503,10 @@ const document = {
   tags: [
     { name: 'Registry', description: 'Runtime method discovery.' },
     { name: 'Webhooks', description: 'Instance event delivery configuration, including multiple destinations.' },
+    ...archiveContract.tags,
     ...Object.values(groupLabels).map(([name, description]) => ({ name, description })),
   ],
-  paths,
+  paths: { ...paths, ...archiveContract.paths },
   components: {
     securitySchemes: {
       ApiKeyAuth: {
@@ -525,6 +529,7 @@ const document = {
         ],
       },
     },
+    ...archiveContract.components,
   },
 };
 

@@ -63,6 +63,10 @@ Configure the policy with `DATABASE_READ_THROUGH_ENABLED`, `DATABASE_READ_THROUG
 
 The v3 migration recreates `IsOnWhatsapp` as an instance-scoped table and therefore clears the old unscoped number cache. It also creates `LocalReadSnapshot`. Apply the PostgreSQL or MySQL migrations before starting v3.
 
+## WhatsApp archive
+
+Evolution API v4 adds an optional PostgreSQL-only, encrypted, append-only WhatsApp archive. It is separate from the mutable operational tables, survives operational instance deletion, supports inherited capture/media policies, and exposes preview-confirm purge operations that leave signed tombstones. See the [complete archive API, schema, policy, purge, backup, and recovery reference](./archive.md).
+
 Methods that require process-local streams, callbacks, or socket lifecycle control are intentionally excluded. In particular, use media values accepted by `sendMessage`, product, newsletter, and profile-picture operations instead of calling Baileys's internal `waUploadToServer` function directly.
 
 The manager's **Webhooks** page provides an **Add webhook** button, named and collapsible webhook cards, independent event selectors for every webhook, and the complete event list below. Its sidebar links open this server's Swagger, webhook event reference, and this fork's documentation.

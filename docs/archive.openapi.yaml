@@ -1,0 +1,832 @@
+tags:
+  - name: Archive
+    description: Encrypted PostgreSQL WhatsApp archive, policies, integrity, backfill, and preview-confirm purge.
+paths:
+  /archive/status:
+    get:
+      tags:
+        - Archive
+      summary: Read archive health and per-account counts
+      operationId: archiveStatus
+      parameters:
+        - $ref: "#/components/parameters/ArchiveKey"
+        - name: instanceName
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Archive state and account heads.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/x-archive-schemas/ArchiveStatus"
+  /archive/events/{instanceName}:
+    get:
+      tags:
+        - Archive
+      summary: Search captured archive events
+      operationId: archiveEvents
+      parameters:
+        - $ref: "#/components/parameters/ArchiveInstance"
+        - $ref: "#/components/parameters/ArchiveKey"
+        - $ref: "#/components/parameters/ArchiveEntityJid"
+        - name: eventType
+          in: query
+          schema:
+            type: string
+        - name: entityType
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: before
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: includePayload
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - $ref: "#/components/parameters/ArchiveLimit"
+      responses:
+        "200":
+          description: Matching events, newest first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/x-archive-schemas/ArchiveEvent"
+  /archive/messages/{instanceName}:
+    get:
+      tags:
+        - Archive
+      summary: Search archived message events
+      operationId: archiveMessages
+      parameters:
+        - $ref: "#/components/parameters/ArchiveInstance"
+        - $ref: "#/components/parameters/ArchiveKey"
+        - $ref: "#/components/parameters/ArchiveEntityJid"
+        - $ref: "#/components/parameters/ArchiveLimit"
+      responses:
+        "200":
+          description: Message event view.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/x-archive-schemas/ArchiveEvent"
+  /archive/contacts/{instanceName}:
+    get:
+      tags:
+        - Archive
+      summary: Search archived contact events
+      operationId: archiveContacts
+      parameters:
+        - $ref: "#/components/parameters/ArchiveInstance"
+        - $ref: "#/components/parameters/ArchiveKey"
+        - $ref: "#/components/parameters/ArchiveEntityJid"
+        - $ref: "#/components/parameters/ArchiveLimit"
+      responses:
+        "200":
+          description: Contact event view.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/x-archive-schemas/ArchiveEvent"
+  /archive/chats/{instanceName}:
+    get:
+      tags:
+        - Archive
+      summary: Search archived chat events
+      operationId: archiveChats
+      parameters:
+        - $ref: "#/components/parameters/ArchiveInstance"
+        - $ref: "#/components/parameters/ArchiveKey"
+        - $ref: "#/components/parameters/ArchiveEntityJid"
+        - $ref: "#/components/parameters/ArchiveLimit"
+      responses:
+        "200":
+          description: Chat event view.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/x-archive-schemas/ArchiveEvent"
+  /archive/groups/{instanceName}:
+    get:
+      tags:
+        - Archive
+      summary: Search archived group events
+      operationId: archiveGroups
+      parameters:
+        - $ref: "#/components/parameters/ArchiveInstance"
+        - $ref: "#/components/parameters/ArchiveKey"
+        - name: groupJid
+          in: query
+          schema:
+            type: string
+            pattern: "@g\\\\.us$"
+        - $ref: "#/components/parameters/ArchiveLimit"
+      responses:
+        "200":
+          description: Group event view.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/x-archive-schemas/ArchiveEvent"
+  /archive/media/{instanceName}:
+    get:
+      tags:
+        - Archive
+      summary: Search archive media metadata
+      operationId: archiveMedia
+      parameters:
+        - $ref: "#/components/parameters/ArchiveInstance"
+        - $ref: "#/components/parameters/ArchiveKey"
+        - $ref: "#/components/parameters/ArchiveEntityJid"
+        - name: mediaType
+          in: query
+          schema:
+            type: string
+        - name: state
+          in: query
+          schema:
+            type: string
+            enum:
+              - metadata_only
+              - stored
+        - $ref: "#/components/parameters/ArchiveLimit"
+      responses:
+        "200":
+          description: Matching media metadata.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/x-archive-schemas/ArchiveMedia"
+  /archive/policies:
+    get:
+      tags:
+        - Archive
+      summary: List archive policies and versions
+      operationId: archivePolicies
+      parameters:
+        - $ref: "#/components/parameters/ArchiveKey"
+      responses:
+        "200":
+          description: Policies.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/x-archive-schemas/ArchivePolicy"
+    put:
+      tags:
+        - Archive
+      summary: Create or version an archive policy
+      operationId: putArchivePolicy
+      parameters:
+        - $ref: "#/components/parameters/ArchiveKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/x-archive-schemas/ArchivePolicyInput"
+      responses:
+        "200":
+          description: Stored policy version.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/x-archive-schemas/ArchivePolicy"
+  /archive/backfill/{instanceName}:
+    post:
+      tags:
+        - Archive
+      summary: Import bounded existing operational rows
+      operationId: archiveBackfill
+      parameters:
+        - $ref: "#/components/parameters/ArchiveInstance"
+        - $ref: "#/components/parameters/ArchiveKey"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                limit:
+                  type: integer
+                  minimum: 1
+                  maximum: 100000
+                  default: 10000
+      responses:
+        "201":
+          description: Import counts.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - instanceName
+                  - imported
+                  - truncated
+                properties:
+                  instanceName:
+                    type: string
+                  imported:
+                    type: object
+                    properties:
+                      messages:
+                        type: integer
+                      contacts:
+                        type: integer
+                      chats:
+                        type: integer
+                  truncated:
+                    type: boolean
+  /archive/purges/preview/{instanceName}:
+    post:
+      tags:
+        - Archive
+      summary: Preview an irreversible archive purge
+      operationId: previewArchivePurge
+      parameters:
+        - $ref: "#/components/parameters/ArchiveInstance"
+        - $ref: "#/components/parameters/ArchiveKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/x-archive-schemas/ArchivePurgeCriteria"
+      responses:
+        "200":
+          description: Counts and expiring confirmation token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/x-archive-schemas/ArchivePurgePreview"
+  /archive/purges/confirm:
+    post:
+      tags:
+        - Archive
+      summary: Execute an exact purge preview and append a signed tombstone
+      operationId: confirmArchivePurge
+      parameters:
+        - $ref: "#/components/parameters/ArchiveKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - previewId
+                - confirmationToken
+              properties:
+                previewId:
+                  type: string
+                  format: uuid
+                confirmationToken:
+                  type: string
+                  writeOnly: true
+      responses:
+        "200":
+          description: Completed purge and tombstone.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - jobId
+                  - status
+                  - summary
+                  - tombstone
+                properties:
+                  jobId:
+                    type: string
+                    format: uuid
+                  status:
+                    const: completed
+                  summary:
+                    $ref: "#/components/x-archive-schemas/ArchivePurgeSummary"
+                  tombstone:
+                    $ref: "#/components/x-archive-schemas/ArchiveTombstone"
+  /archive/purges/tombstones/{instanceName}:
+    get:
+      tags:
+        - Archive
+      summary: List signed purge tombstones
+      operationId: archiveTombstones
+      parameters:
+        - $ref: "#/components/parameters/ArchiveInstance"
+        - $ref: "#/components/parameters/ArchiveKey"
+      responses:
+        "200":
+          description: Tombstones
+          newest first.: null
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/x-archive-schemas/ArchiveTombstone"
+  /archive/verify/{instanceName}:
+    post:
+      tags:
+        - Archive
+      summary: Verify event and tombstone hash chains
+      operationId: verifyArchive
+      parameters:
+        - $ref: "#/components/parameters/ArchiveInstance"
+        - $ref: "#/components/parameters/ArchiveKey"
+      responses:
+        "200":
+          description: Verification result.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - valid
+                  - accountId
+                properties:
+                  valid:
+                    type: boolean
+                  accountId:
+                    type: string
+                  checkedEvents:
+                    type: integer
+                  checkedTombstones:
+                    type: integer
+                  head:
+                    type:
+                      - string
+                      - "null"
+                  tombstoneHead:
+                    type:
+                      - string
+                      - "null"
+                  failedAtSequence:
+                    type: string
+                  failedTombstone:
+                    type: string
+  /archive/messages/{instanceName}/{messageId}/revisions:
+    get:
+      tags: [Archive]
+      summary: Read a normalized message and all observed revisions
+      operationId: archiveMessageRevisions
+      parameters:
+        - $ref: '#/components/parameters/ArchiveInstance'
+        - $ref: '#/components/parameters/ArchiveKey'
+        - { name: messageId, in: path, required: true, schema: { type: string } }
+        - { name: chatJid, in: query, schema: { type: string } }
+      responses: { '200': { description: Message head and chronological revisions., content: { application/json: { schema: { $ref: '#/components/x-archive-schemas/ArchiveMessageHistory' } } } } }
+  /archive/receipts/{instanceName}:
+    get:
+      tags: [Archive]
+      summary: Search delivery and read receipt history
+      operationId: archiveReceipts
+      parameters: [{ $ref: '#/components/parameters/ArchiveInstance' }, { $ref: '#/components/parameters/ArchiveKey' }, { name: messageId, in: query, schema: { type: string } }, { $ref: '#/components/parameters/ArchiveEntityJid' }, { $ref: '#/components/parameters/ArchiveLimit' }]
+      responses: { '200': { description: Receipt observations., content: { application/json: { schema: { type: array, items: { $ref: '#/components/x-archive-schemas/ArchiveReceipt' } } } } } }
+  /archive/reactions/{instanceName}:
+    get:
+      tags: [Archive]
+      summary: Search message reaction history
+      operationId: archiveReactions
+      parameters: [{ $ref: '#/components/parameters/ArchiveInstance' }, { $ref: '#/components/parameters/ArchiveKey' }, { name: messageId, in: query, schema: { type: string } }, { $ref: '#/components/parameters/ArchiveEntityJid' }, { $ref: '#/components/parameters/ArchiveLimit' }]
+      responses: { '200': { description: Reaction observations., content: { application/json: { schema: { type: array, items: { $ref: '#/components/x-archive-schemas/ArchiveReaction' } } } } } }
+  /archive/memberships/{instanceName}:
+    get:
+      tags: [Archive]
+      summary: Search group membership history
+      operationId: archiveMemberships
+      parameters: [{ $ref: '#/components/parameters/ArchiveInstance' }, { $ref: '#/components/parameters/ArchiveKey' }, { name: groupJid, in: query, schema: { type: string } }, { name: participantJid, in: query, schema: { type: string } }, { $ref: '#/components/parameters/ArchiveLimit' }]
+      responses: { '200': { description: Membership observations., content: { application/json: { schema: { type: array, items: { $ref: '#/components/x-archive-schemas/ArchiveMembership' } } } } } }
+  /archive/calls/{instanceName}:
+    get:
+      tags: [Archive]
+      summary: Search call history
+      operationId: archiveCalls
+      parameters: [{ $ref: '#/components/parameters/ArchiveInstance' }, { $ref: '#/components/parameters/ArchiveKey' }, { name: peerJid, in: query, schema: { type: string } }, { name: groupJid, in: query, schema: { type: string } }, { $ref: '#/components/parameters/ArchiveLimit' }]
+      responses: { '200': { description: Call observations., content: { application/json: { schema: { type: array, items: { $ref: '#/components/x-archive-schemas/ArchiveCall' } } } } } }
+  /archive/sync-gaps/{instanceName}:
+    get:
+      tags: [Archive]
+      summary: Search known synchronization gaps
+      operationId: archiveSyncGaps
+      parameters: [{ $ref: '#/components/parameters/ArchiveInstance' }, { $ref: '#/components/parameters/ArchiveKey' }, { name: status, in: query, schema: { type: string } }, { $ref: '#/components/parameters/ArchiveEntityJid' }, { $ref: '#/components/parameters/ArchiveLimit' }]
+      responses: { '200': { description: Known sync gaps; absence does not prove WhatsApp supplied complete history., content: { application/json: { schema: { type: array, items: { $ref: '#/components/x-archive-schemas/ArchiveSyncGap' } } } } } }
+components:
+  parameters:
+    ArchiveKey:
+      name: x-archive-key
+      in: header
+      required: true
+      description: Separate archive key with the scope required by the operation.
+      schema:
+        type: string
+        format: password
+    ArchiveInstance:
+      name: instanceName
+      in: path
+      required: true
+      schema:
+        type: string
+    ArchiveEntityJid:
+      name: entityJid
+      in: query
+      schema:
+        type: string
+    ArchiveLimit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 1000
+        default: 100
+  x-archive-schemas:
+    ArchiveStatus:
+      type: object
+      required:
+        - enabled
+        - provider
+        - accounts
+      properties:
+        enabled:
+          type: boolean
+        provider:
+          type: string
+        accounts:
+          type: array
+          items:
+            type: object
+            required: [id, instanceName, lastSequence, createdAt, updatedAt, events, media, lastCapturedAt]
+            properties:
+              id: { type: string, format: uuid }
+              instanceName: { type: string }
+              ownerJid: { type: [string, "null"] }
+              lastSequence: { type: string, pattern: ^\d+$ }
+              headHash: { type: [string, "null"] }
+              createdAt: { type: string, format: date-time }
+              updatedAt: { type: string, format: date-time }
+              events: { type: integer }
+              media: { type: integer }
+              lastCapturedAt: { type: [string, "null"], format: date-time }
+    ArchiveEvent:
+      type: object
+      required:
+        - id
+        - accountId
+        - instanceName
+        - sequence
+        - eventType
+        - entityType
+        - occurredAt
+        - capturedAt
+        - projection
+        - payloadHash
+        - recordHash
+        - excluded
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+        instanceName:
+          type: string
+        sequence:
+          type: string
+          pattern: ^\\d+$
+        eventType:
+          type: string
+        entityType:
+          type: string
+        entityJid:
+          type:
+            - string
+            - "null"
+        messageId:
+          type:
+            - string
+            - "null"
+        occurredAt:
+          type: string
+          format: date-time
+        capturedAt:
+          type: string
+          format: date-time
+        projection:
+          type: object
+          additionalProperties: true
+        payload:
+          description: Decrypted source data; present only with includePayload and archive:export.
+        payloadHash:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        previousHash:
+          type:
+            - string
+            - "null"
+        recordHash:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        excluded:
+          type: boolean
+        purgeJobId:
+          type:
+            - string
+            - "null"
+    ArchiveMedia:
+      type: object
+      required:
+        - id
+        - accountId
+        - eventId
+        - mediaType
+        - state
+        - createdAt
+      properties:
+        id:
+          type: string
+        accountId:
+          type: string
+        eventId:
+          type: string
+        messageId:
+          type:
+            - string
+            - "null"
+        entityJid:
+          type:
+            - string
+            - "null"
+        mediaType:
+          type: string
+        mimeType:
+          type:
+            - string
+            - "null"
+        objectKey:
+          type:
+            - string
+            - "null"
+        contentHash:
+          type:
+            - string
+            - "null"
+        sizeBytes:
+          type:
+            - string
+            - "null"
+        state:
+          type: string
+          enum:
+            - metadata_only
+            - stored
+        createdAt:
+          type: string
+          format: date-time
+        purgedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+    ArchivePolicyInput:
+      type: object
+      required:
+        - scope
+        - policy
+      properties:
+        id:
+          type: string
+        scope:
+          type: string
+          enum:
+            - general
+            - entity
+            - account
+            - jid
+        selector:
+          type: object
+          additionalProperties: true
+          default: {}
+        effectiveAt:
+          type: string
+          format: date-time
+        policy:
+          type: object
+          properties:
+            capture:
+              type: object
+              additionalProperties:
+                type: boolean
+            media:
+              type: object
+              properties:
+                mode:
+                  type: string
+                  enum:
+                    - all
+                    - images
+                    - metadata
+                    - none
+                types:
+                  type: array
+                  items:
+                    type: string
+            directions:
+              type: array
+              items:
+                type: string
+                enum:
+                  - incoming
+                  - outgoing
+            retentionDays:
+              type:
+                - integer
+                - "null"
+              minimum: 0
+            recovery:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                since:
+                  type: string
+                  format: date-time
+    ArchivePolicy:
+      allOf:
+        - $ref: "#/components/x-archive-schemas/ArchivePolicyInput"
+        - type: object
+          required:
+            - id
+            - version
+            - enabled
+            - createdAt
+            - updatedAt
+          properties:
+            version:
+              type: integer
+            enabled:
+              type: boolean
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+    ArchivePurgeCriteria:
+      type: object
+      minProperties: 1
+      properties:
+        before:
+          type: string
+          format: date-time
+        entityJid:
+          type: string
+        groupJid:
+          type: string
+          pattern: "@g\\\\.us$"
+        eventTypes:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        mediaOnly:
+          type: boolean
+          default: false
+    ArchivePurgeSummary:
+      type: object
+      required:
+        - events
+        - media
+      properties:
+        events:
+          type: integer
+        media:
+          type: integer
+        messages:
+          type: integer
+        messageRevisions:
+          type: integer
+        receipts:
+          type: integer
+        reactions:
+          type: integer
+        entityRevisions:
+          type: integer
+        memberships:
+          type: integer
+        calls:
+          type: integer
+        syncGaps:
+          type: integer
+        deletedRanges:
+          type: array
+          description: Signed, content-free hash-chain ranges included only in confirmed purge results and tombstones.
+          items:
+            type: object
+            required: [start, end, previousHash, lastHash]
+            properties:
+              start: { type: string, pattern: ^\d+$ }
+              end: { type: string, pattern: ^\d+$ }
+              previousHash: { type: [string, "null"] }
+              lastHash: { type: string }
+    ArchivePurgePreview:
+      type: object
+      required:
+        - previewId
+        - confirmationToken
+        - expiresAt
+        - criteria
+        - summary
+      properties:
+        previewId:
+          type: string
+          format: uuid
+        confirmationToken:
+          type: string
+          writeOnly: true
+        expiresAt:
+          type: string
+          format: date-time
+        criteria:
+          $ref: "#/components/x-archive-schemas/ArchivePurgeCriteria"
+        summary:
+          $ref: "#/components/x-archive-schemas/ArchivePurgeSummary"
+    ArchiveTombstone:
+      type: object
+      required:
+        - id
+        - accountId
+        - purgeJobId
+        - criteriaHash
+        - deletedSummary
+        - tombstoneHash
+        - createdAt
+      properties:
+        id:
+          type: string
+        accountId:
+          type: string
+        purgeJobId:
+          type: string
+        criteriaHash:
+          type: string
+        deletedSummary:
+          $ref: "#/components/x-archive-schemas/ArchivePurgeSummary"
+        previousHash:
+          type:
+            - string
+            - "null"
+        tombstoneHash:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    ArchiveMessageHistory:
+      type: object
+      required: [message, revisions]
+      properties:
+        message: { type: object, required: [id, accountId, waMessageId, chatJid, sentAt, latestRevision], additionalProperties: true }
+        revisions: { type: array, items: { type: object, required: [id, eventId, revision, projection, occurredAt], additionalProperties: true } }
+    ArchiveReceipt:
+      type: object
+      required: [id, accountId, eventId, occurredAt]
+      properties: { id: { type: string }, accountId: { type: string }, eventId: { type: string }, waMessageId: { type: [string, 'null'] }, chatJid: { type: [string, 'null'] }, participantJid: { type: [string, 'null'] }, status: { type: [string, 'null'] }, occurredAt: { type: string, format: date-time } }
+    ArchiveReaction:
+      type: object
+      required: [id, accountId, eventId, removed, occurredAt]
+      properties: { id: { type: string }, accountId: { type: string }, eventId: { type: string }, waMessageId: { type: [string, 'null'] }, chatJid: { type: [string, 'null'] }, participantJid: { type: [string, 'null'] }, reaction: { type: [string, 'null'] }, removed: { type: boolean }, occurredAt: { type: string, format: date-time } }
+    ArchiveMembership:
+      type: object
+      required: [id, accountId, groupJid, participantJid, state, sourceEventId, validFrom]
+      additionalProperties: true
+    ArchiveCall:
+      type: object
+      required: [id, accountId, eventId, occurredAt]
+      additionalProperties: true
+    ArchiveSyncGap:
+      type: object
+      required: [id, accountId, sourceEvent, gapType, status, details, createdAt]
+      additionalProperties: true
