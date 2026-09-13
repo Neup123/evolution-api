@@ -200,7 +200,7 @@ Confirm exactly that preview with `POST /archive/purges/confirm`:
 {"jobId":"uuid","status":"completed","summary":{"events":100,"media":12,"deletedRanges":[{"start":"1","end":"100","previousHash":null,"lastHash":"sha256"}]},"tombstone":{"id":"uuid","criteriaHash":"sha256","tombstoneHash":"hmac-sha256","createdAt":"2026-09-09T12:01:00.000Z"}}
 ```
 
-Confirmation deletes referenced S3 objects before committing database deletion. If an object deletion fails, the database content remains. Signed `deletedRanges` preserve only sequence and hash-chain boundaries, allowing verification to distinguish an authorized purge from arbitrary row deletion without retaining message content. The token expires after `ARCHIVE_CONFIRM_TTL_SECONDS` and only its hash is stored.
+Confirmation deletes referenced S3 objects before committing database deletion. If an object deletion fails, the database content remains. Signed `deletedRanges` preserve only sequence and hash-chain boundaries, allowing verification to distinguish an authorized purge from arbitrary row deletion without retaining message content. The account checkpoint is never rewound: even when a purge removes the archive tail or every retained event, the next captured event continues from the last issued sequence and hash. The token expires after `ARCHIVE_CONFIRM_TTL_SECONDS` and only its hash is stored.
 
 `GET /archive/purges/tombstones/{instanceName}` requires `archive:verify` and returns content-free deletion proofs in reverse chronological order.
 

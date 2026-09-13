@@ -45,6 +45,25 @@ async function run() {
     assert.equal(events[0].payload['key']['id'], 'message-1');
     assert.equal(events[0].sequence, '1');
 
+    const imageMessage = {
+      ...message,
+      key: { ...message.key, id: 'image-1' },
+      message: {
+        imageMessage: {
+          mimetype: 'image/jpeg',
+          fileLength: '2048',
+          fileSha256: 'synthetic-image-digest',
+        },
+      },
+    };
+    await service.capture({ instanceName: 'archive-test', event: 'messages.upsert', data: imageMessage });
+    const capturedMedia = await service.listMedia('archive-test', { groupJid: message.key.remoteJid });
+    assert.equal(capturedMedia.length, 1);
+    assert.equal(capturedMedia[0].mediaType, 'image');
+    assert.equal(capturedMedia[0].mimeType, 'image/jpeg');
+    assert.equal(capturedMedia[0].sizeBytes, '2048');
+    assert.equal(capturedMedia[0].state, 'metadata_only');
+
     await service.putPolicy({
       scope: 'jid',
       selector: { instanceName: 'archive-test', jid: message.key.remoteJid },
@@ -56,13 +75,41 @@ async function run() {
     assert.equal(excluded[0].payload, undefined);
 
     const preview = await service.previewPurge('archive-test', { groupJid: message.key.remoteJid });
-    assert.equal(preview.summary.events, 2);
+    assert.equal(preview.summary.events, 3);
+    assert.equal(preview.summary.media, 1);
     const purged = await service.confirmPurge(preview.previewId, preview.confirmationToken);
-    assert.equal(purged.summary.events, 2);
-    assert.equal(purged.summary.media, 0);
+    assert.equal(purged.summary.events, 3);
+    assert.equal(purged.summary.media, 1);
     const verification = await service.verify('archive-test');
     assert.equal(verification.valid, true);
     assert.equal(verification.checkedTombstones, 1);
+
+    await service.putPolicy({
+      scope: 'jid',
+      selector: { instanceName: 'archive-test', jid: message.key.remoteJid },
+      policy: { capture: { messages: true }, media: { mode: 'images' } },
+    });
+    await service.capture({
+      instanceName: 'archive-test',
+      event: 'messages.upsert',
+      data: { ...imageMessage, key: { ...imageMessage.key, id: 'image-2' } },
+    });
+    const mediaOnlyPreview = await service.previewPurge('archive-test', {
+      groupJid: message.key.remoteJid,
+      mediaOnly: true,
+    });
+    assert.equal(mediaOnlyPreview.summary.events, 0);
+    assert.equal(mediaOnlyPreview.summary.media, 1);
+    const mediaOnlyPurge = await service.confirmPurge(
+      mediaOnlyPreview.previewId,
+      mediaOnlyPreview.confirmationToken,
+    );
+    assert.equal(mediaOnlyPurge.summary.events, 0);
+    assert.equal(mediaOnlyPurge.summary.media, 1);
+    assert.equal((await service.listMedia('archive-test', { groupJid: message.key.remoteJid })).length, 0);
+    const mediaOnlyVerification = await service.verify('archive-test');
+    assert.equal(mediaOnlyVerification.valid, true, JSON.stringify(mediaOnlyVerification));
+
     await service.capture({
       instanceName: 'archive-test',
       event: 'messages.upsert',

@@ -199,12 +199,14 @@ export class ArchiveService {
 
     await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${account.id}))`;
-      const last = await tx.archiveEvent.findFirst({
-        where: { accountId: account.id },
-        orderBy: { sequence: 'desc' },
-        select: { sequence: true, recordHash: true },
+      // The account checkpoint remains immutable across purges. Reading the
+      // last retained row would restart the sequence when a purge removed the
+      // archive tail (or every event), invalidating the tombstone-covered chain.
+      const checkpoint = await tx.archiveAccount.findUniqueOrThrow({
+        where: { id: account.id },
+        select: { lastSequence: true, headHash: true },
       });
-      const sequence = (last?.sequence || 0n) + 1n;
+      const sequence = checkpoint.lastSequence + 1n;
       const eventId = randomUUID();
       const recordHash = this.chainDigest(
         Buffer.from(
@@ -214,7 +216,7 @@ export class ArchiveService {
             input.event,
             occurredAt.toISOString(),
             payloadHash,
-            last?.recordHash || '',
+            checkpoint.headHash || '',
           ].join('|'),
         ),
       );
@@ -234,7 +236,7 @@ export class ArchiveService {
           payloadIv: encrypted?.iv,
           payloadTag: encrypted?.tag,
           payloadHash,
-          previousHash: last?.recordHash,
+          previousHash: checkpoint.headHash,
           recordHash,
           excluded: !retain,
         },
