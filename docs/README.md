@@ -4,6 +4,8 @@ This fork exposes the installed Baileys 7 socket API as stable HTTP routes while
 
 Webhook responses have their own interactive **AsyncAPI** reference at `/webhooks/docs`. It documents all 49 event POST bodies, field types, enum options, examples, and n8n expressions. Its source is [`asyncapi.yaml`](./asyncapi.yaml), with an easier introductory guide in [`webhooks.md`](./webhooks.md).
 
+Credential and logging behavior is covered in the [security and log-redaction guide](./security.md). Evolution API 4.1.1 redacts credentials and serialized request bodies before any structured value reaches the logger; this protection is not retroactive, so rotate any credential that appeared in older logs.
+
 Regenerate the webhook contract after event changes with `npm run generate:webhook-docs`, validate it with `npm run audit:webhook-docs`, and render the self-contained site with the official AsyncAPI HTML template:
 
 ```bash
