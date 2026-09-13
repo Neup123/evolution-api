@@ -56,6 +56,60 @@ enum Background {
   VERBOSE = '\x1b[47m',
 }
 
+const isSensitiveKey = (key: string): boolean => {
+  const normalized = key.replace(/[^a-z0-9]/gi, '').toLowerCase();
+  return (
+    ['authorization', 'password', 'passwd', 'secret', 'token', 'apikey', 'jwtkey', 'masterkey'].includes(normalized) ||
+    normalized.endsWith('password') ||
+    normalized.endsWith('secret') ||
+    normalized.endsWith('apikey') ||
+    normalized.endsWith('accesstoken') ||
+    normalized.endsWith('refreshtoken') ||
+    normalized.endsWith('archivekey') ||
+    normalized.endsWith('authkey')
+  );
+};
+
+const redactString = (value: string): string => {
+  const trimmed = value.trim();
+  if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+    try {
+      return JSON.stringify(redactSensitiveData(JSON.parse(value)));
+    } catch {
+      // Keep non-JSON application text unchanged apart from credential patterns below.
+    }
+  }
+  return value
+    .replace(/\b(Bearer|Basic)\s+[^\s,;]+/gi, '$1 [REDACTED]')
+    .replace(/([?&](?:api[-_]?key|token|password|secret)=)[^&\s]+/gi, '$1[REDACTED]');
+};
+
+/** Create a log-safe copy without credentials or Axios request bodies. */
+export const redactSensitiveData = (value: unknown, seen = new WeakSet<object>()): unknown => {
+  if (typeof value === 'string') return redactString(value);
+  if (value === null || typeof value !== 'object') return value;
+  if (value instanceof Error) {
+    const httpError = value as Error & { code?: string; response?: { status?: number } };
+    return {
+      name: httpError.name,
+      message: redactString(httpError.message),
+      code: httpError.code,
+      statusCode: httpError.response?.status,
+    };
+  }
+  if (seen.has(value)) return '[Circular]';
+  seen.add(value);
+  if (value instanceof Date) return value;
+  if (Buffer.isBuffer(value)) return `[Buffer ${value.length} bytes]`;
+  if (Array.isArray(value)) return value.map((item) => redactSensitiveData(item, seen));
+  return Object.fromEntries(
+    Object.entries(value).map(([key, item]) => [
+      key,
+      isSensitiveKey(key) ? '[REDACTED]' : redactSensitiveData(item, seen),
+    ]),
+  );
+};
+
 export class Logger {
   private readonly configService = configService;
   private context: string;
@@ -79,7 +133,8 @@ export class Logger {
 
     this.configService.get<Log>('LOG').LEVEL.forEach((level) => types.push(Type[level]));
 
-    const typeValue = typeof value;
+    const safeValue = redactSensitiveData(value);
+    const typeValue = typeof safeValue;
     if (types.includes(type)) {
       if (configService.get<Log>('LOG').COLOR) {
         console.log(
@@ -104,10 +159,10 @@ export class Logger {
           Color[type] + Command.BRIGHT,
           `[${typeValue}]` + Command.RESET,
           Color[type],
-          typeValue !== 'object' ? value : '',
+          typeValue !== 'object' ? safeValue : '',
           Command.RESET,
         );
-        typeValue === 'object' ? console.log(/*Level.DARK,*/ value, '\n') : '';
+        typeValue === 'object' ? console.log(/*Level.DARK,*/ safeValue, '\n') : '';
       } else {
         console.log(
           '[Evolution API]',
@@ -118,7 +173,7 @@ export class Logger {
           `${type} `,
           `[${this.context}]`,
           `[${typeValue}]`,
-          value,
+          safeValue,
         );
       }
     }
