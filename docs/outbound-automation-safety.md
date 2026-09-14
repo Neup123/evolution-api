@@ -9,11 +9,12 @@ This feature is for traffic safety, recipient protection, and predictable user e
 1. Normalize the submitted recipient and reject a suppressed or non-allowlisted target before any WhatsApp number lookup.
 2. Resolve eligible recipients to their canonical WhatsApp JID, then re-check recipient policy and quiet hours.
 3. Check the in-process concurrency ceiling.
-4. Check the persistent failure circuit, instance and recipient limits, minimum interval, and exact duplicate fingerprint.
-5. Create a `PENDING` audit row.
-6. Calculate a bounded typing-indicator duration from visible text or caption length. A request's explicit `delay` remains authoritative when it is longer.
-7. Send the message without changing its content.
-8. Mark the audit row `SENT` or `FAILED`.
+4. Classify direct recipients as `NEW`, `DORMANT`, or `ENGAGED` from persisted inbound history. Groups and broadcasts are `NON_DIRECT`.
+5. Check the unique new/dormant-recipient quota, persistent failure circuit, instance and recipient limits, minimum interval, and exact duplicate fingerprint.
+6. Reserve a new/dormant recipient in the rolling outreach window and create a `PENDING` audit row.
+7. Calculate a bounded typing-indicator duration from visible text or caption length. A request's explicit `delay` remains authoritative when it is longer.
+8. Send the message without changing its content.
+9. Mark the audit row `SENT` or `FAILED`.
 
 Rejected requests return HTTP `429` with a machine-readable policy code and, when meaningful, `retryAfterSeconds`. Quiet-hour requests are rejected rather than silently held, so callers retain control of scheduling and idempotency.
 
@@ -60,6 +61,11 @@ Use `GET /settings/outbound-audit/{instanceName}?limit=100&status=BLOCKED&recipi
       "minimumIntervalMs": 750,
       "maxConcurrentSends": 4
     },
+    "outreach": {
+      "enabled": true,
+      "newOrDormantRecipientsPerDay": 50,
+      "dormantAfterDays": 180
+    },
     "quietHours": {
       "enabled": false,
       "start": "22:00",
@@ -95,6 +101,9 @@ All nested objects and fields are optional when using the HTTP API; omitted fiel
 | `rateLimit.recipientPerDay` | 1–100,000 | Rolling 24-hour ceiling for one recipient. |
 | `rateLimit.minimumIntervalMs` | 0–600,000 | Required interval after the last successful send to the recipient. |
 | `rateLimit.maxConcurrentSends` | 1–100 | Per-process in-flight ceiling. Persistent rolling limits still apply across restarts. |
+| `outreach.enabled` | boolean | Limit unique direct recipients that are new or dormant. This sub-policy defaults to enabled whenever the master policy is enabled. |
+| `outreach.newOrDormantRecipientsPerDay` | 1–100,000 | Unique new/dormant direct recipients accepted in a rolling 24-hour window. Repeated messages to the same person count once. |
+| `outreach.dormantAfterDays` | 1–3,650 | A contact is engaged when their latest inbound message is newer than this boundary; otherwise they are dormant. |
 | `quietHours.enabled` | boolean | Enforce the configured local-time window. |
 | `quietHours.start`, `quietHours.end` | `HH:MM` | Half-open quiet window. Overnight windows such as 22:00–08:00 are supported. Equal values disable the window. |
 | `quietHours.timeZone` | IANA name | Time zone such as `UTC`, `Europe/Athens`, or `America/New_York`. Invalid names fall back to UTC at runtime. |
@@ -119,13 +128,24 @@ All nested objects and fields are optional when using the HTTP API; omitted fiel
 | `messageType` | `text`, `media`, or `other`. |
 | `status` | `PENDING`, `SENT`, `FAILED`, or `BLOCKED`. |
 | `reason` | Stable failure or policy code, with a 100-character maximum. Raw transport errors are not persisted. |
+| `recipientCategory` | `NEW`, `DORMANT`, `ENGAGED`, or `NON_DIRECT`; null for a block decided before relationship lookup. |
 | `delayMs` | Automatically calculated indicator duration. |
 | `requestedAt`, `sentAt` | Request and successful-delivery timestamps. |
 
-Policy block codes are `recipient_suppressed`, `recipient_not_allowed`, `quiet_hours`, `concurrency_limit`, `failure_circuit_open`, `instance_rate_limit`, `instance_daily_limit`, `recipient_rate_limit`, `recipient_daily_limit`, `minimum_interval`, and `duplicate_message`.
+Policy block codes are `recipient_suppressed`, `recipient_not_allowed`, `quiet_hours`, `concurrency_limit`, `failure_circuit_open`, `instance_rate_limit`, `instance_daily_limit`, `recipient_rate_limit`, `recipient_daily_limit`, `outreach_recipient_limit`, `minimum_interval`, and `duplicate_message`.
+
+## Relationship semantics
+
+- An inbound message immediately makes a direct contact `ENGAGED`, even when operational message saving is disabled.
+- After `dormantAfterDays` without another inbound message, that contact becomes `DORMANT`.
+- Outbound-only history never makes a contact engaged. This prevents a first unsolicited send from bypassing the quota on subsequent days.
+- Groups (`@g.us`) and broadcasts (`@broadcast`) never consume the unique-person quota. The ordinary message-rate and concurrency controls still apply.
+- Existing archived direct-message history is backfilled automatically during migration. `RecipientEngagement` then maintains first/last inbound and outbound timestamps without scanning the full message archive on every send.
+- A new/dormant target is reserved when its send is accepted, so concurrent attempts cannot exceed the limit merely because transport completion is pending. A failed attempt still counts as targeted for that rolling window.
 
 ## Operational notes
 
 - Rolling limits and duplicate/failure checks use PostgreSQL or MySQL audit rows and therefore survive restarts. The concurrency count is process-local; use conservative rolling limits when running multiple API replicas.
 - Automatic retries are intentionally not performed after an uncertain WhatsApp send because retrying without a confirmed idempotency key can duplicate a message. Workflow callers should retry only clearly rejected pre-send requests.
 - The settings migration is automatic during normal Evolution API startup. Back up the database before every application upgrade as usual.
+- See [Defensive detection of automation disguise](./defensive-automation-detection.md) for safe teaching examples and detection guidance.

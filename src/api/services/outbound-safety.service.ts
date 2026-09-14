@@ -21,6 +21,7 @@ export const DEFAULT_AUTOMATION_SAFETY: Required<AutomationSafetySettings> = {
     minimumIntervalMs: 750,
     maxConcurrentSends: 4,
   },
+  outreach: { enabled: true, newOrDormantRecipientsPerDay: 50, dormantAfterDays: 180 },
   quietHours: { enabled: false, start: '22:00', end: '08:00', timeZone: 'UTC' },
   duplicate: { enabled: true, windowSeconds: 30 },
   suppression: { recipients: [], allowlistEnabled: false, allowedRecipients: [] },
@@ -45,6 +46,7 @@ export function normalizeAutomationSafety(value?: AutomationSafetySettings | nul
     enabled: value?.enabled ?? DEFAULT_AUTOMATION_SAFETY.enabled,
     typing,
     rateLimit: { ...DEFAULT_AUTOMATION_SAFETY.rateLimit, ...(value?.rateLimit ?? {}) },
+    outreach: { ...DEFAULT_AUTOMATION_SAFETY.outreach, ...(value?.outreach ?? {}) },
     quietHours: { ...DEFAULT_AUTOMATION_SAFETY.quietHours, ...(value?.quietHours ?? {}) },
     duplicate: { ...DEFAULT_AUTOMATION_SAFETY.duplicate, ...(value?.duplicate ?? {}) },
     suppression: {
@@ -64,6 +66,10 @@ function normalizeRecipient(value: string): string {
     .trim()
     .toLowerCase()
     .replace(/[\s()+-]/g, '');
+}
+
+function isDirectRecipient(recipient: string): boolean {
+  return /@(s\.whatsapp\.net|lid)$/.test(recipient);
 }
 
 function messageHasMedia(value: unknown): boolean {
@@ -174,6 +180,31 @@ export class OutboundSafetyService {
     }
   }
 
+  /** Records relationship activity independently of optional message-archive persistence. */
+  public async recordActivity(
+    instanceId: string,
+    recipient: string,
+    fromMe: boolean,
+    occurredAt: Date = new Date(),
+  ): Promise<void> {
+    const normalizedRecipient = normalizeRecipient(recipient);
+    if (!isDirectRecipient(normalizedRecipient)) return;
+    const firstField = fromMe ? 'firstOutboundAt' : 'firstInboundAt';
+    const lastField = fromMe ? 'lastOutboundAt' : 'lastInboundAt';
+    await this.repository.recipientEngagement.upsert({
+      where: { instanceId_recipient: { instanceId, recipient: normalizedRecipient } },
+      create: {
+        instanceId,
+        recipient: normalizedRecipient,
+        [firstField]: occurredAt,
+        [lastField]: occurredAt,
+      },
+      update: {
+        [lastField]: occurredAt,
+      },
+    });
+  }
+
   private async evaluate(
     instanceId: string,
     recipient: string,
@@ -206,6 +237,20 @@ export class OutboundSafetyService {
     const minuteAgo = new Date(now.getTime() - 60_000);
     const dayAgo = new Date(now.getTime() - 86_400_000);
     const countable = { in: ['PENDING', 'SENT'] };
+    const engagement = isDirectRecipient(normalizedRecipient)
+      ? await this.repository.recipientEngagement.findUnique({
+          where: { instanceId_recipient: { instanceId, recipient: normalizedRecipient } },
+        })
+      : null;
+    const activeSince = new Date(now.getTime() - policy.outreach.dormantAfterDays * 86_400_000);
+    const recipientCategory = !isDirectRecipient(normalizedRecipient)
+      ? 'NON_DIRECT'
+      : engagement?.lastInboundAt && engagement.lastInboundAt >= activeSince
+        ? 'ENGAGED'
+        : engagement?.lastInboundAt
+          ? 'DORMANT'
+          : 'NEW';
+
     const [instanceMinute, instanceDay, recipientMinute, recipientDay, lastSent, duplicate, recentFailures] =
       await Promise.all([
         this.repository.outboundMessageAudit.count({
@@ -257,20 +302,53 @@ export class OutboundSafetyService {
           messageType,
           'failure_circuit_open',
           Math.ceil((resumeAt - now.getTime()) / 1000),
+          recipientCategory,
         );
       }
     }
     if (instanceMinute >= policy.rateLimit.instancePerMinute) {
-      return this.block(instanceId, normalizedRecipient, messageHash, messageType, 'instance_rate_limit', 60);
+      return this.block(
+        instanceId,
+        normalizedRecipient,
+        messageHash,
+        messageType,
+        'instance_rate_limit',
+        60,
+        recipientCategory,
+      );
     }
     if (instanceDay >= policy.rateLimit.instancePerDay) {
-      return this.block(instanceId, normalizedRecipient, messageHash, messageType, 'instance_daily_limit', 86400);
+      return this.block(
+        instanceId,
+        normalizedRecipient,
+        messageHash,
+        messageType,
+        'instance_daily_limit',
+        86400,
+        recipientCategory,
+      );
     }
     if (recipientMinute >= policy.rateLimit.recipientPerMinute) {
-      return this.block(instanceId, normalizedRecipient, messageHash, messageType, 'recipient_rate_limit', 60);
+      return this.block(
+        instanceId,
+        normalizedRecipient,
+        messageHash,
+        messageType,
+        'recipient_rate_limit',
+        60,
+        recipientCategory,
+      );
     }
     if (recipientDay >= policy.rateLimit.recipientPerDay) {
-      return this.block(instanceId, normalizedRecipient, messageHash, messageType, 'recipient_daily_limit', 86400);
+      return this.block(
+        instanceId,
+        normalizedRecipient,
+        messageHash,
+        messageType,
+        'recipient_daily_limit',
+        86400,
+        recipientCategory,
+      );
     }
     if (lastSent?.sentAt) {
       const remaining = policy.rateLimit.minimumIntervalMs - (now.getTime() - lastSent.sentAt.getTime());
@@ -282,6 +360,7 @@ export class OutboundSafetyService {
           messageType,
           'minimum_interval',
           Math.ceil(remaining / 1000),
+          recipientCategory,
         );
       }
     }
@@ -293,7 +372,33 @@ export class OutboundSafetyService {
         messageType,
         'duplicate_message',
         policy.duplicate.windowSeconds,
+        recipientCategory,
       );
+    }
+
+    if (policy.outreach.enabled && (recipientCategory === 'NEW' || recipientCategory === 'DORMANT')) {
+      const alreadyCounted = engagement?.lastOutreachAt && engagement.lastOutreachAt >= dayAgo;
+      if (!alreadyCounted) {
+        const outreachCount = await this.repository.recipientEngagement.count({
+          where: { instanceId, lastOutreachAt: { gte: dayAgo } },
+        });
+        if (outreachCount >= policy.outreach.newOrDormantRecipientsPerDay) {
+          return this.block(
+            instanceId,
+            normalizedRecipient,
+            messageHash,
+            messageType,
+            'outreach_recipient_limit',
+            86400,
+            recipientCategory,
+          );
+        }
+        await this.repository.recipientEngagement.upsert({
+          where: { instanceId_recipient: { instanceId, recipient: normalizedRecipient } },
+          create: { instanceId, recipient: normalizedRecipient, lastOutreachAt: now },
+          update: { lastOutreachAt: now },
+        });
+      }
     }
 
     const delayMs = normalizedRecipient.includes('@broadcast')
@@ -306,6 +411,7 @@ export class OutboundSafetyService {
         messageHash,
         messageType,
         status: 'PENDING',
+        recipientCategory,
         delayMs,
       },
     });
@@ -353,9 +459,10 @@ export class OutboundSafetyService {
     messageType: string,
     reason: string,
     retryAfterSeconds?: number,
+    recipientCategory?: string,
   ): Promise<OutboundSafetyDecision> {
     await this.repository.outboundMessageAudit.create({
-      data: { instanceId, recipient, messageHash, messageType, status: 'BLOCKED', reason },
+      data: { instanceId, recipient, messageHash, messageType, status: 'BLOCKED', reason, recipientCategory },
     });
     return { allowed: false, code: reason, retryAfterSeconds };
   }

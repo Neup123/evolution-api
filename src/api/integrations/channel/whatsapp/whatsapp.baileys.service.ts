@@ -726,7 +726,7 @@ export class BaileysStartupService extends ChannelStartupService {
     try {
       this.loadChatwoot();
       this.loadSettings();
-      this.loadWebhook();
+      await this.loadWebhook();
       this.loadProxy();
 
       // Recreate the message processor so it is active after reconnection.
@@ -1163,6 +1163,20 @@ export class BaileysStartupService extends ChannelStartupService {
           if (Long.isLong(received.messageTimestamp)) {
             received.messageTimestamp = received.messageTimestamp?.toNumber();
           }
+
+          const activityTimestamp = Number(received.messageTimestamp);
+          let engagementRecipient = received.key.remoteJid;
+          if (engagementRecipient?.endsWith('@lid')) {
+            engagementRecipient =
+              (await this.client.signalRepository.lidMapping.getPNForLID(engagementRecipient).catch(() => null)) ??
+              engagementRecipient;
+          }
+          await this.outboundSafety.recordActivity(
+            this.instanceId,
+            engagementRecipient ?? '',
+            Boolean(received.key.fromMe),
+            Number.isFinite(activityTimestamp) ? new Date(activityTimestamp * 1000) : new Date(),
+          );
 
           if (settings?.groupsIgnore && received.key.remoteJid.includes('@g.us')) {
             continue;

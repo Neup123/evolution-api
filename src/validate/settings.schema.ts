@@ -67,6 +67,15 @@ export const settingsSchema: JSONSchema7 = {
             maxConcurrentSends: { type: 'integer', minimum: 1, maximum: 100 },
           },
         },
+        outreach: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            enabled: { type: 'boolean' },
+            newOrDormantRecipientsPerDay: { type: 'integer', minimum: 1, maximum: 100000 },
+            dormantAfterDays: { type: 'integer', minimum: 1, maximum: 3650 },
+          },
+        },
         quietHours: {
           type: 'object',
           additionalProperties: false,
