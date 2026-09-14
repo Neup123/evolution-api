@@ -59,6 +59,7 @@ import { PrismaRepository } from '@api/repository/repository.service';
 import { chatbotController, localReadService, waMonitor } from '@api/server.module';
 import { CacheService } from '@api/services/cache.service';
 import { ChannelStartupService } from '@api/services/channel.service';
+import { OutboundSafetyService } from '@api/services/outbound-safety.service';
 import { Events, MessageSubtype, TypeMediaMessage, wa } from '@api/types/wa.types';
 import { CacheEngine } from '@cache/cacheengine';
 import {
@@ -75,7 +76,12 @@ import {
   QrCode,
   S3,
 } from '@config/env.config';
-import { BadRequestException, InternalServerErrorException, NotFoundException } from '@exceptions';
+import {
+  BadRequestException,
+  InternalServerErrorException,
+  NotFoundException,
+  TooManyRequestsException,
+} from '@exceptions';
 import ffmpegPath from '@ffmpeg-installer/ffmpeg';
 import { Boom } from '@hapi/boom';
 import { createId as cuid } from '@paralleldrive/cuid2';
@@ -220,6 +226,7 @@ async function getVideoDuration(input: Buffer | string | Readable): Promise<numb
 
 export class BaileysStartupService extends ChannelStartupService {
   private messageProcessor = new BaileysMessageProcessor();
+  private readonly outboundSafety: OutboundSafetyService;
 
   constructor(
     public readonly configService: ConfigService,
@@ -231,6 +238,7 @@ export class BaileysStartupService extends ChannelStartupService {
     private readonly providerFiles: ProviderFiles,
   ) {
     super(configService, eventEmitter, prismaRepository, chatwootCache);
+    this.outboundSafety = new OutboundSafetyService(prismaRepository);
     this.instance.qrcode = { count: 0 };
     this.messageProcessor.mount({
       onMessageReceive: this.messageHandle['messages.upsert'].bind(this), // Bind the method to the current context
@@ -2407,6 +2415,27 @@ export class BaileysStartupService extends ChannelStartupService {
     options?: Options,
     isIntegration = false,
   ) {
+    const requestedRecipient = createJid(number).toLowerCase();
+    const preflightBlockCode = this.outboundSafety.preflightBlockCode(
+      requestedRecipient,
+      this.localSettings.automationSafety,
+    );
+    if (preflightBlockCode) {
+      const preflight = await this.outboundSafety.begin(
+        this.instanceId,
+        requestedRecipient,
+        message,
+        this.localSettings.automationSafety,
+      );
+      if (preflight.allowed === false) {
+        throw new TooManyRequestsException({
+          code: preflight.code,
+          retryAfterSeconds: preflight.retryAfterSeconds,
+          message: 'Outbound message blocked by the instance automation safety policy.',
+        });
+      }
+    }
+
     const isWA = (await this.whatsappNumber({ numbers: [number] }))?.shift();
 
     if (!isWA.exists && !isJidGroup(isWA.jid) && !isWA.jid.includes('@broadcast')) {
@@ -2415,43 +2444,27 @@ export class BaileysStartupService extends ChannelStartupService {
 
     const sender = isWA.jid.toLowerCase();
 
+    const safety = await this.outboundSafety.begin(
+      this.instanceId,
+      sender,
+      message,
+      this.localSettings.automationSafety,
+    );
+    if (safety.allowed === false) {
+      throw new TooManyRequestsException({
+        code: safety.code,
+        retryAfterSeconds: safety.retryAfterSeconds,
+        message: 'Outbound message blocked by the instance automation safety policy.',
+      });
+    }
+    const pacingDelay = Math.max(options?.delay ?? 0, safety.delayMs);
+    const pacingPresence = options?.presence ?? safety.presence;
+    let deliveryRecorded = false;
+
     this.logger.verbose(`Sending message to ${sender}`);
 
     try {
-      if (options?.delay) {
-        this.logger.verbose(`Typing for ${options.delay}ms to ${sender}`);
-        if (options.delay > 20000) {
-          let remainingDelay = options.delay;
-          while (remainingDelay > 20000) {
-            await this.client.presenceSubscribe(sender);
-
-            await this.client.sendPresenceUpdate((options.presence as WAPresence) ?? 'composing', sender);
-
-            await delay(20000);
-
-            await this.client.sendPresenceUpdate('paused', sender);
-
-            remainingDelay -= 20000;
-          }
-          if (remainingDelay > 0) {
-            await this.client.presenceSubscribe(sender);
-
-            await this.client.sendPresenceUpdate((options.presence as WAPresence) ?? 'composing', sender);
-
-            await delay(remainingDelay);
-
-            await this.client.sendPresenceUpdate('paused', sender);
-          }
-        } else {
-          await this.client.presenceSubscribe(sender);
-
-          await this.client.sendPresenceUpdate((options.presence as WAPresence) ?? 'composing', sender);
-
-          await delay(options.delay);
-
-          await this.client.sendPresenceUpdate('paused', sender);
-        }
-      }
+      await this.applyOutboundPresence(sender, pacingDelay, pacingPresence as WAPresence);
 
       const linkPreview = options?.linkPreview != false ? undefined : false;
 
@@ -2531,6 +2544,13 @@ export class BaileysStartupService extends ChannelStartupService {
           undefined,
           contextInfo,
         );
+      }
+
+      deliveryRecorded = true;
+      try {
+        await this.outboundSafety.sent(this.instanceId, safety.auditId);
+      } catch (auditError) {
+        this.logger.warn(['Could not update outbound delivery audit', auditError?.message]);
       }
 
       if (Long.isLong(messageSent?.messageTimestamp)) {
@@ -2671,8 +2691,69 @@ export class BaileysStartupService extends ChannelStartupService {
 
       return messageRaw;
     } catch (error) {
+      if (!deliveryRecorded) {
+        try {
+          await this.outboundSafety.failed(this.instanceId, safety.auditId, error?.message ?? error?.toString());
+        } catch (auditError) {
+          this.logger.warn(['Could not update failed outbound delivery audit', auditError?.message]);
+        }
+      }
       this.logger.error(error);
       throw new BadRequestException(error.toString());
+    }
+  }
+
+  private async applyOutboundPresence(sender: string, durationMs: number, presence: WAPresence) {
+    if (!durationMs) return;
+    this.logger.verbose(`Applying outbound pacing for ${durationMs}ms to ${sender}`);
+    let remaining = durationMs;
+    while (remaining > 0) {
+      const segment = Math.min(remaining, 20000);
+      await this.client.presenceSubscribe(sender);
+      await this.client.sendPresenceUpdate(presence, sender);
+      await delay(segment);
+      await this.client.sendPresenceUpdate('paused', sender);
+      remaining -= segment;
+    }
+  }
+
+  private async sendRawBaileysMessageWithSafety(sender: string, message: AnyMessageContent, options?: any) {
+    if (typeof sender !== 'string' || sender.length === 0) throw new BadRequestException('A recipient JID is required');
+    const recipient = sender.toLowerCase();
+    const safety = await this.outboundSafety.begin(
+      this.instanceId,
+      recipient,
+      message,
+      this.localSettings.automationSafety,
+    );
+    if (safety.allowed === false) {
+      throw new TooManyRequestsException({
+        code: safety.code,
+        retryAfterSeconds: safety.retryAfterSeconds,
+        message: 'Outbound message blocked by the instance automation safety policy.',
+      });
+    }
+
+    let delivered = false;
+    try {
+      await this.applyOutboundPresence(recipient, safety.delayMs, safety.presence);
+      const result = await this.client.sendMessage(recipient, message, options);
+      delivered = true;
+      try {
+        await this.outboundSafety.sent(this.instanceId, safety.auditId);
+      } catch (auditError) {
+        this.logger.warn(['Could not update raw Baileys delivery audit', auditError?.message]);
+      }
+      return result;
+    } catch (error) {
+      if (!delivered) {
+        try {
+          await this.outboundSafety.failed(this.instanceId, safety.auditId, error?.message ?? error?.toString());
+        } catch (auditError) {
+          this.logger.warn(['Could not update failed raw Baileys delivery audit', auditError?.message]);
+        }
+      }
+      throw error;
     }
   }
 
@@ -5176,6 +5257,12 @@ export class BaileysStartupService extends ChannelStartupService {
             }),
           ),
         };
+      } else if (method === 'sendMessage') {
+        result = await this.sendRawBaileysMessageWithSafety(
+          normalizedArgs[0] as string,
+          normalizedArgs[1] as AnyMessageContent,
+          normalizedArgs[2],
+        );
       } else {
         result = await socketMethod.apply(this.client, normalizedArgs);
       }
@@ -5222,6 +5309,7 @@ export class BaileysStartupService extends ChannelStartupService {
       }
       return response;
     } catch (error) {
+      if (error && typeof error === 'object' && (error as any).status === 429) throw error;
       const message = error instanceof Error ? error.message : String(error);
       throw new BadRequestException(
         `Baileys method ${method} failed`,

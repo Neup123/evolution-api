@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Evolution API – Baileys 7
-  version: 4.1.0-baileys-7.0.0-rc14
+  version: 4.2.0-baileys-7.0.0-rc14
   description: Typed, grouped HTTP routes for the Baileys WASocket API. Named request fields are generated from the installed Baileys TypeScript declarations. Before using Try it out, click Authorize and enter the Evolution API global API key; Swagger sends it in the apikey header.
 servers:
   - url: /
@@ -235,12 +235,82 @@ paths:
                       type: integer
                       minimum: 0
                       maximum: 2592000
+                  automationSafety:
+                    type:
+                      - object
+                      - "null"
+                    description: Content-preserving outbound automation safeguards. Omitted nested fields use documented defaults.
+                    additionalProperties: false
+                    properties:
+                      enabled:
+                        type: boolean
+                        default: false
+                      typing:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          enabled: { type: boolean, default: true }
+                          minMs: { type: integer, minimum: 0, maximum: 20000, default: 500 }
+                          maxMs: { type: integer, minimum: 0, maximum: 20000, default: 5000 }
+                          charactersPerSecond: { type: number, minimum: 1, maximum: 100, default: 18 }
+                          jitterPercent: { type: integer, minimum: 0, maximum: 25, default: 10 }
+                          presence: { type: string, enum: [composing, recording], default: composing }
+                          applyToMediaCaptions: { type: boolean, default: true }
+                      rateLimit:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          instancePerMinute: { type: integer, minimum: 1, maximum: 10000, default: 60 }
+                          instancePerDay: { type: integer, minimum: 1, maximum: 1000000, default: 5000 }
+                          recipientPerMinute: { type: integer, minimum: 1, maximum: 1000, default: 10 }
+                          recipientPerDay: { type: integer, minimum: 1, maximum: 100000, default: 250 }
+                          minimumIntervalMs: { type: integer, minimum: 0, maximum: 600000, default: 750 }
+                          maxConcurrentSends: { type: integer, minimum: 1, maximum: 100, default: 4 }
+                      quietHours:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          enabled: { type: boolean, default: false }
+                          start: { type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$', default: '22:00' }
+                          end: { type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$', default: '08:00' }
+                          timeZone: { type: string, default: UTC, description: IANA time zone name. }
+                      duplicate:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          enabled: { type: boolean, default: true }
+                          windowSeconds: { type: integer, minimum: 1, maximum: 86400, default: 30 }
+                      suppression:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          recipients:
+                            type: array
+                            maxItems: 10000
+                            items: { type: string }
+                          allowlistEnabled: { type: boolean, default: false }
+                          allowedRecipients:
+                            type: array
+                            maxItems: 10000
+                            items: { type: string }
+                      failurePause:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          enabled: { type: boolean, default: true }
+                          threshold: { type: integer, minimum: 1, maximum: 100, default: 5 }
+                          pauseSeconds: { type: integer, minimum: 1, maximum: 86400, default: 300 }
+                      audit:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          retentionDays: { type: integer, minimum: 1, maximum: 3650, default: 90 }
                 additionalProperties: false
   /settings/set/{instanceName}:
     post:
       tags:
         - Instance settings
-      summary: Set instance behavior and local-read TTL settings
+      summary: Set instance behavior, local-read TTL, and outbound automation safety settings
       operationId: setInstanceSettings
       parameters:
         - *a1
@@ -252,6 +322,49 @@ paths:
       responses:
         "201":
           description: Settings persisted for the instance.
+  /settings/outbound-audit/{instanceName}:
+    get:
+      tags:
+        - Instance settings
+      summary: List persistent outbound safety audit records
+      operationId: listOutboundSafetyAudit
+      parameters:
+        - *a1
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
+        - name: recipient
+          in: query
+          required: false
+          schema: { type: string }
+          description: Exact normalized recipient JID or number.
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [PENDING, SENT, FAILED, BLOCKED] }
+      responses:
+        "200":
+          description: Newest outbound audit records first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [id, instanceId, recipient, messageType, status, requestedAt]
+                  properties:
+                    id: { type: string }
+                    instanceId: { type: string }
+                    recipient: { type: string }
+                    messageHash: { type: [string, "null"], description: SHA-256 of exact visible text; the message body is not stored here. }
+                    messageType: { type: string, enum: [text, media, other] }
+                    status: { type: string, enum: [PENDING, SENT, FAILED, BLOCKED] }
+                    reason: { type: [string, "null"] }
+                    delayMs: { type: [integer, "null"] }
+                    requestedAt: { type: string, format: date-time }
+                    sentAt: { type: [string, "null"], format: date-time }
+                  additionalProperties: false
   /baileys/communities/communityMetadata/{instanceName}:
     post:
       tags:

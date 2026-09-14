@@ -1,3 +1,18 @@
+# 4.2.0 (2026-09-14)
+
+### Features
+
+* Added per-instance outbound automation safety and content-preserving pacing settings.
+* Added persistent instance/recipient minute and daily limits, exact duplicate detection, suppression and opt-in allowlists, quiet hours, failure circuits, and delivery audit retention.
+* Added bounded message-length typing indicators without modifying message text, URLs, codes, or identifiers.
+* Applied the policy to normal Evolution message sends, chatbot/n8n sends, and the typed Baileys `sendMessage` route.
+* Added `GET /settings/outbound-audit/{instanceName}` with recipient/status filters.
+* Added PostgreSQL, PgBouncer, and MySQL schemas and automatic migrations for `OutboundMessageAudit`.
+
+### Documentation
+
+* Added complete settings, processing-order, audit-record, HTTP 429, Manager, n8n, and OpenAPI documentation.
+
 # 3.0.0 (2026-09-09)
 
 ### Breaking changes

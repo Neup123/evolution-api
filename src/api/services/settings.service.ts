@@ -28,4 +28,8 @@ export class SettingsService {
       return null;
     }
   }
+
+  public async outboundAudit(instance: InstanceDto, limit?: number, recipient?: string, status?: string) {
+    return this.waMonitor.waInstances[instance.instanceName].listOutboundAudit(limit, recipient, status);
+  }
 }

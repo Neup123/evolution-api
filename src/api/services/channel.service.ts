@@ -154,6 +154,7 @@ export class ChannelStartupService {
     this.localSettings.readStatus = data?.readStatus;
     this.localSettings.syncFullHistory = data?.syncFullHistory;
     this.localSettings.wavoipToken = data?.wavoipToken;
+    this.localSettings.automationSafety = data?.automationSafety as wa.LocalSettings['automationSafety'];
   }
 
   public async setSettings(data: SettingsDto) {
@@ -172,6 +173,7 @@ export class ChannelStartupService {
         wavoipToken: data.wavoipToken,
         localReadTtlSeconds: data.localReadTtlSeconds,
         localReadTtlOverrides: data.localReadTtlOverrides,
+        automationSafety: data.automationSafety,
       },
       create: {
         rejectCall: data.rejectCall,
@@ -184,6 +186,7 @@ export class ChannelStartupService {
         wavoipToken: data.wavoipToken,
         localReadTtlSeconds: data.localReadTtlSeconds,
         localReadTtlOverrides: data.localReadTtlOverrides,
+        automationSafety: data.automationSafety,
         instanceId: this.instanceId,
       },
     });
@@ -196,6 +199,7 @@ export class ChannelStartupService {
     this.localSettings.readStatus = data?.readStatus;
     this.localSettings.syncFullHistory = data?.syncFullHistory;
     this.localSettings.wavoipToken = data?.wavoipToken;
+    this.localSettings.automationSafety = data?.automationSafety;
 
     if (this.localSettings.wavoipToken && this.localSettings.wavoipToken.length > 0) {
       this.client.ws.close();
@@ -225,7 +229,28 @@ export class ChannelStartupService {
       wavoipToken: data.wavoipToken,
       localReadTtlSeconds: data.localReadTtlSeconds,
       localReadTtlOverrides: data.localReadTtlOverrides as Record<string, number> | null,
+      automationSafety: data.automationSafety as wa.LocalSettings['automationSafety'],
     };
+  }
+
+  public async listOutboundAudit(limit = 100, recipient?: string, status?: string) {
+    const safeLimit = Math.min(500, Math.max(1, Number(limit) || 100));
+    return this.prismaRepository.outboundMessageAudit.findMany({
+      where: {
+        instanceId: this.instanceId,
+        ...(recipient
+          ? {
+              recipient: recipient
+                .trim()
+                .toLowerCase()
+                .replace(/[\s()+-]/g, ''),
+            }
+          : {}),
+        ...(status ? { status: status.trim().toUpperCase() } : {}),
+      },
+      orderBy: { requestedAt: 'desc' },
+      take: safeLimit,
+    });
   }
 
   public async loadChatwoot() {

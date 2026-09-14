@@ -13,4 +13,8 @@ export class SettingsController {
     const settings = this.settingsService.find(instance);
     return settings;
   }
+
+  public async outboundAudit(instance: InstanceDto, limit?: number, recipient?: string, status?: string) {
+    return this.settingsService.outboundAudit(instance, limit, recipient, status);
+  }
 }
