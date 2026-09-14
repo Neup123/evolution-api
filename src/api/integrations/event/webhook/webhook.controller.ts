@@ -82,8 +82,7 @@ export class WebhookController extends EventController implements EventControlle
     });
 
     const channel = this.monitor.waInstances[instanceName];
-    channel.localWebhook.enabled = webhook.enabled;
-    channel.localWebhook.webhookBase64 = webhook.webhookBase64;
+    await channel.loadWebhook();
 
     return webhook;
   }
@@ -131,8 +130,7 @@ export class WebhookController extends EventController implements EventControlle
     });
 
     const channel = this.monitor.waInstances[instanceName];
-    channel.localWebhook.enabled = saved.some((webhook) => webhook.enabled);
-    channel.localWebhook.webhookBase64 = saved.some((webhook) => webhook.enabled && webhook.webhookBase64);
+    await channel.loadWebhook();
     return saved;
   }
 

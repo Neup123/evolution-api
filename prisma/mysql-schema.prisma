@@ -115,6 +115,7 @@ model Instance {
   LocalReadSnapshot       LocalReadSnapshot[]
   IsOnWhatsapp            IsOnWhatsapp[]
   OutboundMessageAudit    OutboundMessageAudit[]
+  RecipientEngagement     RecipientEngagement[]
 }
 
 model Session {
@@ -315,6 +316,7 @@ model OutboundMessageAudit {
   messageType String    @db.VarChar(50)
   status      String    @db.VarChar(30)
   reason      String?   @db.VarChar(100)
+  recipientCategory String? @db.VarChar(20)
   delayMs     Int?      @db.Int
   requestedAt DateTime  @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp
   sentAt      DateTime? @db.Timestamp
@@ -323,6 +325,24 @@ model OutboundMessageAudit {
   @@index([instanceId, requestedAt])
   @@index([instanceId, recipient, requestedAt])
   @@index([instanceId, recipient, messageHash, requestedAt])
+}
+
+model RecipientEngagement {
+  id                 String    @id @default(cuid())
+  instanceId         String
+  recipient          String    @db.VarChar(100)
+  firstInboundAt     DateTime? @db.DateTime(3)
+  lastInboundAt      DateTime? @db.DateTime(3)
+  firstOutboundAt    DateTime? @db.DateTime(3)
+  lastOutboundAt     DateTime? @db.DateTime(3)
+  lastOutreachAt     DateTime? @db.DateTime(3)
+  createdAt          DateTime  @default(now()) @db.DateTime(3)
+  updatedAt          DateTime  @updatedAt @db.DateTime(3)
+  Instance           Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@unique([instanceId, recipient])
+  @@index([instanceId, lastInboundAt])
+  @@index([instanceId, lastOutreachAt])
 }
 
 model Rabbitmq {

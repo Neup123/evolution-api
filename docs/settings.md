@@ -20,4 +20,4 @@ The local-read precedence order is method override for this instance, instance d
 
 Archive capture and purge settings are separate because they require `ARCHIVE_API_KEY`. They appear lower on the same manager page and are fully documented in [the archive reference](./archive.md).
 
-The Manager exposes every `automationSafety` field under **Instance → Settings → Automation safety & pacing**. See the [full policy reference](./outbound-automation-safety.md), including defaults, bounds, response behavior, and examples.
+The Manager exposes every `automationSafety` field under **Instance → Settings → Automation safety & pacing**, including the separate unique new/dormant-recipient quota and its inactivity window. See the [full policy reference](./outbound-automation-safety.md), including defaults, relationship semantics, bounds, response behavior, and examples.

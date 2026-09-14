@@ -34,6 +34,12 @@ export type AutomationSafetySettings = {
     minimumIntervalMs?: number;
     maxConcurrentSends?: number;
   };
+  /** Limits unique first-contact or dormant direct recipients, without limiting replies to active contacts. */
+  outreach?: {
+    enabled?: boolean;
+    newOrDormantRecipientsPerDay?: number;
+    dormantAfterDays?: number;
+  };
   quietHours?: {
     enabled?: boolean;
     start?: string;

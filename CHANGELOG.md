@@ -1,3 +1,17 @@
+# 5.0.0 (2026-09-14)
+
+### Breaking changes
+
+* Instance connect/restart errors now use HTTP 400 instead of returning an HTTP 200 body with `{ "error": true }`. Clients must handle non-2xx responses.
+
+### Fixes and features
+
+* Made restart/connect failures return real non-2xx responses and made restart wait for a Baileys transition; closed instances now start reconnection.
+* Applied webhook endpoint changes to runtime flags immediately and removed the startup reload race.
+* Added a persistent unique new/dormant-recipient quota that excludes active inbound contacts, groups, and broadcasts.
+* Added automatic archived-message backfill and continuous relationship activity tracking.
+* Added complete runtime-action, webhook-reload, relationship-policy, audit-field, and defensive automation-disguise documentation.
+
 # 4.2.0 (2026-09-14)
 
 ### Features

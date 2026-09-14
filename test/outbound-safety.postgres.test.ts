@@ -40,10 +40,50 @@ async function main() {
 
     const rows = await prisma.outboundMessageAudit.findMany({ where: { instanceId: instance.id } });
     assert.equal(rows.length, 3);
-    assert.deepEqual(
-      rows.map((row) => row.status).sort(),
-      ['BLOCKED', 'BLOCKED', 'SENT'],
+    assert.deepEqual(rows.map((row) => row.status).sort(), ['BLOCKED', 'BLOCKED', 'SENT']);
+
+    const outreachPolicy = {
+      enabled: true,
+      typing: { enabled: false },
+      rateLimit: { minimumIntervalMs: 0, instancePerDay: 1000 },
+      duplicate: { enabled: false },
+      outreach: { enabled: true, newOrDormantRecipientsPerDay: 1, dormantAfterDays: 180 },
+    };
+    const firstNew = await service.begin(
+      instance.id,
+      '15550000001@s.whatsapp.net',
+      { conversation: 'Hello one' },
+      outreachPolicy,
     );
+    assert.equal(firstNew.allowed, true);
+    if (firstNew.allowed) await service.sent(instance.id, firstNew.auditId);
+
+    const secondNew = await service.begin(
+      instance.id,
+      '15550000002@s.whatsapp.net',
+      { conversation: 'Hello two' },
+      outreachPolicy,
+    );
+    assert.deepEqual(secondNew, { allowed: false, code: 'outreach_recipient_limit', retryAfterSeconds: 86400 });
+
+    await service.recordActivity(instance.id, '15550000003@s.whatsapp.net', false, new Date());
+    const reply = await service.begin(
+      instance.id,
+      '15550000003@s.whatsapp.net',
+      { conversation: 'Reply' },
+      outreachPolicy,
+    );
+    assert.equal(reply.allowed, true);
+    if (reply.allowed) await service.sent(instance.id, reply.auditId);
+
+    const engagement = await prisma.recipientEngagement.findUnique({
+      where: { instanceId_recipient: { instanceId: instance.id, recipient: '15550000003@s.whatsapp.net' } },
+    });
+    assert.ok(engagement?.lastInboundAt);
+    const outreachBlock = await prisma.outboundMessageAudit.findFirst({
+      where: { instanceId: instance.id, reason: 'outreach_recipient_limit' },
+    });
+    assert.equal(outreachBlock?.recipientCategory, 'NEW');
   } finally {
     await prisma.instance.delete({ where: { id: instance.id } });
     const remaining = await prisma.outboundMessageAudit.count({ where: { instanceId: instance.id } });

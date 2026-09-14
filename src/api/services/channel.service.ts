@@ -129,14 +129,22 @@ export class ChannelStartupService {
   }
 
   public async loadWebhook() {
-    const data = await this.prismaRepository.webhook.findUnique({
-      where: {
-        instanceId: this.instanceId,
-      },
+    const endpoints = await this.prismaRepository.webhookEndpoint.findMany({
+      where: { instanceId: this.instanceId },
+      select: { enabled: true, webhookBase64: true },
     });
+    const legacy = endpoints.length
+      ? null
+      : await this.prismaRepository.webhook.findUnique({
+          where: {
+            instanceId: this.instanceId,
+          },
+        });
 
-    this.localWebhook.enabled = data?.enabled;
-    this.localWebhook.webhookBase64 = data?.webhookBase64;
+    this.localWebhook.enabled = endpoints.length ? endpoints.some((item) => item.enabled) : Boolean(legacy?.enabled);
+    this.localWebhook.webhookBase64 = endpoints.length
+      ? endpoints.some((item) => item.enabled && item.webhookBase64)
+      : Boolean(legacy?.enabled && legacy.webhookBase64);
   }
 
   public async loadSettings() {

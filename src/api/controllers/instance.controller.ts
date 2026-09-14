@@ -339,7 +339,8 @@ export class InstanceController {
       };
     } catch (error) {
       this.logger.error(error);
-      return { error: true, message: error.toString() };
+      if (error?.status) throw error;
+      throw new BadRequestException(error?.message ?? error?.toString());
     }
   }
 
@@ -352,10 +353,19 @@ export class InstanceController {
         throw new BadRequestException('The "' + instanceName + '" instance does not exist');
       }
 
-      if (state === 'close') {
-        throw new BadRequestException('The "' + instanceName + '" instance is not connected');
-      }
       this.logger.info(`Restarting instance: ${instanceName}`);
+
+      if (state === 'close') {
+        await instance.connectToWhatsapp();
+        await delay(1000);
+        return {
+          instance: {
+            instanceName,
+            status: instance.connectionStatus?.state || 'connecting',
+          },
+          action: 'reconnect_started',
+        };
+      }
 
       if (typeof instance.restart === 'function') {
         await instance.restart();
@@ -373,9 +383,22 @@ export class InstanceController {
       if (state === 'open' || state === 'connecting') {
         if (this.configService.get<Chatwoot>('CHATWOOT').ENABLED) instance.clearCacheChatwoot();
 
+        const previousClient = instance.client;
         instance.client?.ws?.close();
         instance.client?.end(new Error('restart'));
-        return await this.connectToWhatsapp({ instanceName });
+        let transitionObserved = false;
+        for (let attempt = 0; attempt < 40; attempt++) {
+          await delay(250);
+          const currentState = instance.connectionStatus?.state;
+          transitionObserved ||= currentState !== state || instance.client !== previousClient;
+          if (transitionObserved && (currentState === 'open' || currentState === 'connecting')) {
+            return {
+              instance: { instanceName, status: currentState },
+              action: 'restart_completed',
+            };
+          }
+        }
+        throw new BadRequestException('The restart was requested but no connection transition was observed');
       }
 
       return {
@@ -386,7 +409,8 @@ export class InstanceController {
       };
     } catch (error) {
       this.logger.error(error);
-      return { error: true, message: error.toString() };
+      if (error?.status) throw error;
+      throw new BadRequestException(error?.message ?? error?.toString());
     }
   }
 
