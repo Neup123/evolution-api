@@ -114,6 +114,7 @@ model Instance {
   Pusher                  Pusher?
   LocalReadSnapshot       LocalReadSnapshot[]
   IsOnWhatsapp            IsOnWhatsapp[]
+  OutboundMessageAudit    OutboundMessageAudit[]
 }
 
 model Session {
@@ -297,12 +298,31 @@ model Setting {
   wavoipToken     String?   @db.VarChar(100)
   localReadTtlSeconds   Int?
   localReadTtlOverrides Json?
+  automationSafety     Json?
   createdAt       DateTime? @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp
   updatedAt       DateTime  @updatedAt @db.Timestamp
   Instance        Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   instanceId      String    @unique
 
   @@index([instanceId])
+}
+
+model OutboundMessageAudit {
+  id          String    @id @default(cuid())
+  instanceId  String
+  recipient   String    @db.VarChar(100)
+  messageHash String?   @db.VarChar(64)
+  messageType String    @db.VarChar(50)
+  status      String    @db.VarChar(30)
+  reason      String?   @db.VarChar(100)
+  delayMs     Int?      @db.Int
+  requestedAt DateTime  @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp
+  sentAt      DateTime? @db.Timestamp
+  Instance    Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@index([instanceId, requestedAt])
+  @@index([instanceId, recipient, requestedAt])
+  @@index([instanceId, recipient, messageHash, requestedAt])
 }
 
 model Rabbitmq {

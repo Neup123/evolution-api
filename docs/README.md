@@ -61,6 +61,8 @@ Eligible reads use a persistent, instance-scoped database snapshot before contac
 
 See the [local-first read-through reference](./local-first-reads.md) and [complete instance-settings reference](./settings.md) for the method matrix, every setting, identity rules, invalidation behavior, migration sequence, examples, and rollback guidance.
 
+Automated outbound sends can use the per-instance [automation safety and pacing policy](./outbound-automation-safety.md). It provides content-preserving typing indicators, rolling minute/daily limits, quiet hours, suppression and optional recipient allowlisting, exact-duplicate blocking, failure circuits, and persistent audit records. It never rewrites message text or attempts to conceal automation.
+
 Configure global defaults with `DATABASE_READ_THROUGH_ENABLED`, `DATABASE_READ_THROUGH_TTL_SECONDS`, and `DATABASE_READ_THROUGH_TTL_OVERRIDES`. Configure each instance's TTL and method overrides under **Manager → Instance → Settings → Local data cache**. A live refresh failure is returned to the caller; stale data is never substituted silently.
 
 The v3 migration recreates `IsOnWhatsapp` as an instance-scoped table and therefore clears the old unscoped number cache. It also creates `LocalReadSnapshot`. Apply the PostgreSQL or MySQL migrations before starting v3.

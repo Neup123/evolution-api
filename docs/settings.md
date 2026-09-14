@@ -14,7 +14,10 @@ The manager displays these values under **Instance → Settings**. `GET /setting
 | `wavoipToken` | string, optional | WA VoIP integration token. Changing it reconnects the socket. |
 | `localReadTtlSeconds` | integer or null | Default lifetime, in seconds, of this instance's reusable PostgreSQL read snapshots. Range 0–2,592,000; null uses the environment default. |
 | `localReadTtlOverrides` | object or null | Exact method-name to TTL map, such as `{"groupMetadata":3600,"fetchStatus":60}`. It takes priority over the instance default. |
+| `automationSafety` | object or null | Optional outbound safety, pacing, quiet-hours, suppression, duplicate, failure-pause, and audit-retention policy. Disabled by default. |
 
 The local-read precedence order is method override for this instance, instance default, environment method override, and environment default. `live=true` always bypasses a snapshot. Missing, expired, and method-relevant empty results fetch WhatsApp live and save the observation.
 
 Archive capture and purge settings are separate because they require `ARCHIVE_API_KEY`. They appear lower on the same manager page and are fully documented in [the archive reference](./archive.md).
+
+The Manager exposes every `automationSafety` field under **Instance → Settings → Automation safety & pacing**. See the [full policy reference](./outbound-automation-safety.md), including defaults, bounds, response behavior, and examples.

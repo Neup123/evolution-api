@@ -38,6 +38,8 @@ lerna-debug.log*
 !/instances/.gitkeep
 /test/*
 !/test/local-read.test.ts
+!/test/outbound-safety.test.ts
+!/test/outbound-safety.postgres.test.ts
 /src/env.yml
 /store
 *.env

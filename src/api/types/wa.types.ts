@@ -104,6 +104,7 @@ export declare namespace wa {
     readStatus?: boolean;
     syncFullHistory?: boolean;
     wavoipToken?: string;
+    automationSafety?: import('@api/dto/settings.dto').AutomationSafetySettings | null;
   };
 
   export type LocalEvent = {

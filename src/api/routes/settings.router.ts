@@ -30,6 +30,22 @@ export class SettingsRouter extends RouterBroker {
         });
 
         res.status(HttpStatus.OK).json(response);
+      })
+      .get(this.routerPath('outbound-audit'), ...guards, async (req, res) => {
+        const response = await this.dataValidate<InstanceDto>({
+          request: req,
+          schema: null,
+          ClassRef: InstanceDto,
+          execute: (instance) =>
+            settingsController.outboundAudit(
+              instance,
+              Number(req.query.limit) || undefined,
+              req.query.recipient as string,
+              req.query.status as string,
+            ),
+        });
+
+        res.status(HttpStatus.OK).json(response);
       });
   }
 
