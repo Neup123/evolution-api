@@ -4,6 +4,8 @@ Evolution API 4 can maintain an audit-grade WhatsApp archive in PostgreSQL while
 
 This is an archive of the information observed by the connected client. WhatsApp does not guarantee that a newly linked client can recover all older history. The integrity result therefore proves what Evolution captured; it does not claim that WhatsApp supplied events it never synchronized.
 
+The encrypted archive is distinct from the mutable operational `Message` table. For canonical WhatsApp message IDs, PN/LID aliases, provisional-versus-delivered state, and the `findMessages` response contract, see [Operational message integrity](./message-archive-integrity.md).
+
 ## Deployment and migration
 
 The Docker entrypoint already runs `prisma migrate deploy` before starting Evolution API. For a standard Compose upgrade, select the v4 image, keep the same PostgreSQL volume/connection, add the archive variables below, and recreate the API container. No manual SQL is needed. Take a `pg_dump` before any major upgrade; migrations change the database and are not a backup.

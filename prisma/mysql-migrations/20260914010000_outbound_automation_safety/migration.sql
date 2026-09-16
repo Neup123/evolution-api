@@ -15,6 +15,6 @@ CREATE TABLE `OutboundMessageAudit` (
   PRIMARY KEY (`id`),
   INDEX `OutboundMessageAudit_instanceId_requestedAt_idx` (`instanceId`, `requestedAt`),
   INDEX `OutboundMessageAudit_instanceId_recipient_requestedAt_idx` (`instanceId`, `recipient`, `requestedAt`),
-  INDEX `OutboundMessageAudit_instanceId_recipient_messageHash_requestedAt_idx` (`instanceId`, `recipient`, `messageHash`, `requestedAt`),
+  INDEX `OutboundAudit_instance_recipient_hash_requested_idx` (`instanceId`, `recipient`, `messageHash`, `requestedAt`),
   CONSTRAINT `OutboundMessageAudit_instanceId_fkey` FOREIGN KEY (`instanceId`) REFERENCES `Instance`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

@@ -63,6 +63,8 @@ See the [local-first read-through reference](./local-first-reads.md) and [comple
 
 Automated outbound sends can use the per-instance [automation safety and pacing policy](./outbound-automation-safety.md). It provides content-preserving typing indicators, rolling minute/daily limits, quiet hours, suppression and optional recipient allowlisting, exact-duplicate blocking, failure circuits, and persistent audit records. It never rewrites message text or attempts to conceal automation.
 
+The local `Message` table now distinguishes a provisional API send from WhatsApp server acceptance and recipient delivery, deduplicates future events by WhatsApp message ID, and reconciles PN/LID aliases without rewriting either identity. See [Operational message integrity](./message-archive-integrity.md) for every field, state transition, search response, migration rule, and workflow requirement.
+
 Instance restart/connect behavior and immediate multi-webhook runtime application are documented in [Runtime actions and webhook reloads](./runtime-actions-and-webhooks.md). For teaching and defense, [Defensive detection of automation disguise](./defensive-automation-detection.md) describes typo/cadence evasion signals and countermeasures without providing a production evasion engine.
 
 Configure global defaults with `DATABASE_READ_THROUGH_ENABLED`, `DATABASE_READ_THROUGH_TTL_SECONDS`, and `DATABASE_READ_THROUGH_TTL_OVERRIDES`. Configure each instance's TTL and method overrides under **Manager → Instance → Settings → Local data cache**. A live refresh failure is returned to the caller; stale data is never substituted silently.

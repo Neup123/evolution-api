@@ -670,9 +670,21 @@ export class ChannelStartupService {
             ? [
                 {
                   OR: [
-                    ...(keyFilters.remoteJid ? [{ key: { path: ['remoteJid'], equals: keyFilters.remoteJid } }] : []),
+                    ...(keyFilters.remoteJid
+                      ? [
+                          { key: { path: ['remoteJid'], equals: keyFilters.remoteJid } },
+                          { key: { path: ['remoteJidAlt'], equals: keyFilters.remoteJid } },
+                          { remoteJid: keyFilters.remoteJid },
+                          { remoteJidAlt: keyFilters.remoteJid },
+                        ]
+                      : []),
                     ...(keyFilters.remoteJidAlt
-                      ? [{ key: { path: ['remoteJidAlt'], equals: keyFilters.remoteJidAlt } }]
+                      ? [
+                          { key: { path: ['remoteJid'], equals: keyFilters.remoteJidAlt } },
+                          { key: { path: ['remoteJidAlt'], equals: keyFilters.remoteJidAlt } },
+                          { remoteJid: keyFilters.remoteJidAlt },
+                          { remoteJidAlt: keyFilters.remoteJidAlt },
+                        ]
                       : []),
                   ],
                 },
@@ -705,9 +717,21 @@ export class ChannelStartupService {
             ? [
                 {
                   OR: [
-                    ...(keyFilters.remoteJid ? [{ key: { path: ['remoteJid'], equals: keyFilters.remoteJid } }] : []),
+                    ...(keyFilters.remoteJid
+                      ? [
+                          { key: { path: ['remoteJid'], equals: keyFilters.remoteJid } },
+                          { key: { path: ['remoteJidAlt'], equals: keyFilters.remoteJid } },
+                          { remoteJid: keyFilters.remoteJid },
+                          { remoteJidAlt: keyFilters.remoteJid },
+                        ]
+                      : []),
                     ...(keyFilters.remoteJidAlt
-                      ? [{ key: { path: ['remoteJidAlt'], equals: keyFilters.remoteJidAlt } }]
+                      ? [
+                          { key: { path: ['remoteJid'], equals: keyFilters.remoteJidAlt } },
+                          { key: { path: ['remoteJidAlt'], equals: keyFilters.remoteJidAlt } },
+                          { remoteJid: keyFilters.remoteJidAlt },
+                          { remoteJidAlt: keyFilters.remoteJidAlt },
+                        ]
                       : []),
                   ],
                 },
@@ -730,6 +754,15 @@ export class ChannelStartupService {
         instanceId: true,
         source: true,
         contextInfo: true,
+        status: true,
+        waMessageId: true,
+        remoteJid: true,
+        remoteJidAlt: true,
+        archiveOrigin: true,
+        archiveState: true,
+        serverAcceptedAt: true,
+        deliveredAt: true,
+        readAt: true,
         MessageUpdate: {
           select: {
             status: true,

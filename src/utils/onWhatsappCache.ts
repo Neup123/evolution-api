@@ -3,66 +3,14 @@ import { configService, Database } from '@config/env.config';
 import { Logger } from '@config/logger.config';
 import dayjs from 'dayjs';
 
+import { getAvailableNumbers } from './jidOptions';
+
 const logger = new Logger('OnWhatsappCache');
-
-function getAvailableNumbers(remoteJid: string) {
-  const numbersAvailable: string[] = [];
-
-  if (remoteJid.startsWith('+')) {
-    remoteJid = remoteJid.slice(1);
-  }
-
-  const [number, domain] = remoteJid.split('@');
-
-  // If this is already an @lid, return it without appending the domain again.
-  if (domain === 'lid' || domain === 'g.us') {
-    return [remoteJid]; // Return @lid and @g.us identifiers unchanged.
-  }
-
-  // Brazilian numbers
-  if (remoteJid.startsWith('55')) {
-    const numberWithDigit =
-      number.slice(4, 5) === '9' && number.length === 13 ? number : `${number.slice(0, 4)}9${number.slice(4)}`;
-    const numberWithoutDigit = number.length === 12 ? number : number.slice(0, 4) + number.slice(5);
-
-    numbersAvailable.push(numberWithDigit);
-    numbersAvailable.push(numberWithoutDigit);
-  }
-
-  // Mexican/Argentina numbers
-  // Ref: https://faq.whatsapp.com/1294841057948784
-  else if (number.startsWith('52') || number.startsWith('54')) {
-    let prefix = '';
-    if (number.startsWith('52')) {
-      prefix = '1';
-    }
-    if (number.startsWith('54')) {
-      prefix = '9';
-    }
-
-    const numberWithDigit =
-      number.slice(2, 3) === prefix && number.length === 13
-        ? number
-        : `${number.slice(0, 2)}${prefix}${number.slice(2)}`;
-    const numberWithoutDigit = number.length === 12 ? number : number.slice(0, 2) + number.slice(3);
-
-    numbersAvailable.push(numberWithDigit);
-    numbersAvailable.push(numberWithoutDigit);
-  }
-
-  // Other countries
-  else {
-    numbersAvailable.push(remoteJid);
-  }
-
-  // Add @domain only to identifiers that are not already @lid values.
-  return numbersAvailable.map((number) => `${number}@${domain}`);
-}
 
 interface ISaveOnWhatsappCacheParams {
   remoteJid: string;
   remoteJidAlt?: string;
-  lid?: 'lid' | undefined;
+  lid?: string | null;
   exists?: boolean;
 }
 
@@ -86,11 +34,16 @@ export async function saveOnWhatsappCache(data: ISaveOnWhatsappCacheParams[], in
       }
 
       const altJidNormalized = normalizeJid(item.remoteJidAlt);
-      const lidAltJid = altJidNormalized && altJidNormalized.includes('@lid') ? altJidNormalized : null;
+      const lidAltJid = altJidNormalized?.endsWith('@lid') ? altJidNormalized : null;
+      const explicitLid = normalizeJid(item.lid);
+      const resolvedLid =
+        (explicitLid?.endsWith('@lid') ? explicitLid : null) ??
+        lidAltJid ??
+        (remoteJid.endsWith('@lid') ? remoteJid : null);
 
       const baseJids = [remoteJid]; // Ensure remoteJid is present in the initial list.
-      if (lidAltJid) {
-        baseJids.push(lidAltJid);
+      if (resolvedLid) {
+        baseJids.push(resolvedLid);
       }
 
       const expandedJids = baseJids.flatMap((jid) => getAvailableNumbers(jid));
@@ -116,8 +69,8 @@ export async function saveOnWhatsappCache(data: ISaveOnWhatsappCacheParams[], in
       // 2. Merge JIDs in a Set to keep them unique.
       const finalJidOptions = new Set(expandedJids);
 
-      if (lidAltJid) {
-        finalJidOptions.add(lidAltJid);
+      if (resolvedLid) {
+        finalJidOptions.add(resolvedLid);
       }
 
       if (existingRecord?.jidOptions) {
@@ -128,7 +81,7 @@ export async function saveOnWhatsappCache(data: ISaveOnWhatsappCacheParams[], in
       // Sort JIDs so the stored string is deterministic.
       const sortedJidOptions = [...finalJidOptions].sort();
       const newJidOptionsString = sortedJidOptions.join(',');
-      const newLid = item.lid === 'lid' || item.remoteJid?.includes('@lid') ? 'lid' : null;
+      const newLid = resolvedLid;
 
       const dataPayload = {
         remoteJid: remoteJid,

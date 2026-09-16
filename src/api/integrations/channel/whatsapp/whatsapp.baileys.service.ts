@@ -59,6 +59,13 @@ import { PrismaRepository } from '@api/repository/repository.service';
 import { chatbotController, localReadService, waMonitor } from '@api/server.module';
 import { CacheService } from '@api/services/cache.service';
 import { ChannelStartupService } from '@api/services/channel.service';
+import {
+  acknowledgementTimestamps,
+  alternateJid,
+  mergeMessageArchiveState,
+  messageArchiveStateFromStatus,
+  messageUpdateIdentity,
+} from '@api/services/message-archive.service';
 import { OutboundSafetyService } from '@api/services/outbound-safety.service';
 import { Events, MessageSubtype, TypeMediaMessage, wa } from '@api/types/wa.types';
 import { CacheEngine } from '@cache/cacheengine';
@@ -897,6 +904,65 @@ export class BaileysStartupService extends ChannelStartupService {
     },
   };
 
+  private async persistArchivedMessage(
+    messageRaw: any,
+    archiveOrigin: 'LOCAL_OUTBOUND' | 'WHATSAPP_EVENT' | 'HISTORY_SYNC',
+  ) {
+    const waMessageId = messageRaw?.key?.id as string | undefined;
+    const observedRemoteJid = messageRaw?.key?.remoteJid as string | undefined;
+    const observedRemoteJidAlt = messageRaw?.key?.remoteJidAlt as string | undefined;
+    const incomingState = messageArchiveStateFromStatus(
+      messageRaw?.status,
+      Boolean(messageRaw?.key?.fromMe),
+      archiveOrigin,
+    );
+
+    if (!waMessageId) {
+      return this.prismaRepository.message.create({
+        data: {
+          ...messageRaw,
+          remoteJid: observedRemoteJid,
+          remoteJidAlt: observedRemoteJidAlt,
+          archiveOrigin,
+          archiveState: incomingState,
+          ...acknowledgementTimestamps(incomingState),
+        },
+      });
+    }
+
+    const existing = await this.prismaRepository.message.findUnique({
+      where: { instanceId_waMessageId: { instanceId: this.instanceId, waMessageId } },
+    });
+    const remoteJid = existing?.remoteJid ?? observedRemoteJid;
+    const remoteJidAlt = existing?.remoteJidAlt ?? observedRemoteJidAlt ?? alternateJid(remoteJid, observedRemoteJid);
+    const archiveState = mergeMessageArchiveState(existing?.archiveState, incomingState);
+    const incomingTimestamps = acknowledgementTimestamps(incomingState);
+    const key = {
+      ...messageRaw.key,
+      ...(remoteJid ? { remoteJid } : {}),
+      ...(remoteJidAlt ? { remoteJidAlt } : {}),
+    };
+    const commonData = {
+      ...messageRaw,
+      key,
+      status: !existing || archiveState === incomingState ? messageRaw.status : existing.status,
+      waMessageId,
+      remoteJid,
+      remoteJidAlt,
+      archiveState,
+      ...incomingTimestamps,
+      serverAcceptedAt: existing?.serverAcceptedAt ?? incomingTimestamps.serverAcceptedAt,
+      deliveredAt: existing?.deliveredAt ?? incomingTimestamps.deliveredAt,
+      readAt: existing?.readAt ?? incomingTimestamps.readAt,
+    };
+
+    return this.prismaRepository.message.upsert({
+      where: { instanceId_waMessageId: { instanceId: this.instanceId, waMessageId } },
+      create: { ...commonData, archiveOrigin },
+      update: commonData,
+    });
+  }
+
   private readonly messageHandle = {
     'messaging-history.set': async ({
       messages,
@@ -921,7 +987,7 @@ export class BaileysStartupService extends ChannelStartupService {
             lidPnMappings.map((mapping) => ({
               remoteJid: mapping.pn,
               remoteJidAlt: mapping.lid,
-              lid: 'lid' as const,
+              lid: mapping.lid,
               exists: true,
             })),
             this.instanceId,
@@ -1045,7 +1111,19 @@ export class BaileysStartupService extends ChannelStartupService {
         });
 
         if (this.configService.get<Database>('DATABASE').SAVE_DATA.HISTORIC) {
-          await this.prismaRepository.message.createMany({ data: messagesRaw, skipDuplicates: true });
+          const archivedMessages = messagesRaw.map((messageRaw: any) => ({
+            ...messageRaw,
+            waMessageId: messageRaw.key?.id,
+            remoteJid: messageRaw.key?.remoteJid,
+            remoteJidAlt: messageRaw.key?.remoteJidAlt,
+            archiveOrigin: 'HISTORY_SYNC',
+            archiveState: messageArchiveStateFromStatus(
+              messageRaw.status,
+              Boolean(messageRaw.key?.fromMe),
+              'HISTORY_SYNC',
+            ),
+          }));
+          await this.prismaRepository.message.createMany({ data: archivedMessages, skipDuplicates: true });
         }
 
         if (
@@ -1362,7 +1440,7 @@ export class BaileysStartupService extends ChannelStartupService {
           if (this.configService.get<Database>('DATABASE').SAVE_DATA.NEW_MESSAGE) {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { pollUpdates, ...messageData } = messageRaw;
-            const msg = await this.prismaRepository.message.create({ data: messageData });
+            const msg = await this.persistArchivedMessage(messageData, 'WHATSAPP_EVENT');
 
             const { remoteJid } = received.key;
             const timestamp = msg.messageTimestamp;
@@ -1522,7 +1600,12 @@ export class BaileysStartupService extends ChannelStartupService {
                   remoteJid:
                     messageRaw.key.addressingMode === 'lid' ? messageRaw.key.remoteJidAlt : messageRaw.key.remoteJid,
                   remoteJidAlt: messageRaw.key.remoteJidAlt,
-                  lid: messageRaw.key.addressingMode === 'lid' ? 'lid' : null,
+                  lid:
+                    messageRaw.key.addressingMode === 'lid'
+                      ? messageRaw.key.remoteJid
+                      : messageRaw.key.remoteJidAlt?.endsWith('@lid')
+                        ? messageRaw.key.remoteJidAlt
+                        : null,
                 },
               ],
               this.instanceId,
@@ -1605,7 +1688,7 @@ export class BaileysStartupService extends ChannelStartupService {
           }
         }
 
-        if (key.remoteJid !== 'status@broadcast' && key.id !== undefined) {
+        if (key.remoteJid && key.remoteJid !== 'status@broadcast' && key.id !== undefined) {
           let pollUpdates: any;
 
           if (update.pollUpdates) {
@@ -1619,14 +1702,19 @@ export class BaileysStartupService extends ChannelStartupService {
             }
           }
 
+          const resolvedStatus =
+            update.message === null && update.status === undefined
+              ? 'DELETED'
+              : (status[update.status] ?? 'SERVER_ACK');
           const message: any = {
             keyId: key.id,
             remoteJid: key?.remoteJid,
             fromMe: key.fromMe,
             participant: key?.participant,
-            status: status[update.status] ?? 'SERVER_ACK',
+            status: resolvedStatus,
             pollUpdates,
             instanceId: this.instanceId,
+            updateIdentity: messageUpdateIdentity(key.id, resolvedStatus, key.remoteJid, key.participant),
           };
 
           if (update.message) {
@@ -1646,13 +1734,21 @@ export class BaileysStartupService extends ChannelStartupService {
 
             const searchId = originalMessageId || key.id;
 
-            const messages = (await this.prismaRepository.$queryRaw`
-              SELECT * FROM "Message"
-              WHERE "instanceId" = ${this.instanceId}
-              AND "key"->>'id' = ${searchId}
-              LIMIT 1
-            `) as any[];
-            findMessage = messages[0] || null;
+            findMessage = await this.prismaRepository.message.findUnique({
+              where: {
+                instanceId_waMessageId: { instanceId: this.instanceId, waMessageId: searchId },
+              },
+            });
+
+            if (!findMessage) {
+              const jsonPath = this.configService.get<Database>('DATABASE').PROVIDER === 'mysql' ? '$.id' : ['id'];
+              findMessage = await this.prismaRepository.message.findFirst({
+                where: {
+                  instanceId: this.instanceId,
+                  key: { path: jsonPath, equals: searchId } as any,
+                },
+              });
+            }
 
             if (!findMessage?.id) {
               this.logger.warn(`Original message not found for update. Skipping. Key: ${JSON.stringify(key)}`);
@@ -1665,7 +1761,16 @@ export class BaileysStartupService extends ChannelStartupService {
             this.sendDataWebhook(Events.MESSAGES_DELETE, { ...key, status: 'DELETED' });
 
             if (this.configService.get<Database>('DATABASE').SAVE_DATA.MESSAGE_UPDATE)
-              await this.prismaRepository.messageUpdate.create({ data: message });
+              await this.prismaRepository.messageUpdate.upsert({
+                where: {
+                  instanceId_updateIdentity: {
+                    instanceId: this.instanceId,
+                    updateIdentity: message.updateIdentity,
+                  },
+                },
+                create: message,
+                update: { pollUpdates: message.pollUpdates },
+              });
 
             if (this.configService.get<Chatwoot>('CHATWOOT').ENABLED && this.localChatwoot?.enabled) {
               this.chatwootService.eventWhatsapp(
@@ -1678,7 +1783,7 @@ export class BaileysStartupService extends ChannelStartupService {
             continue;
           }
 
-          if (findMessage && update.status !== undefined && status[update.status] !== findMessage.status) {
+          if (findMessage && update.status !== undefined) {
             if (!key.fromMe && key.remoteJid) {
               readChatToUpdate[key.remoteJid] = true;
 
@@ -1695,16 +1800,44 @@ export class BaileysStartupService extends ChannelStartupService {
                   await this.updateMessagesReadedByTimestamp(remoteJid, timestamp);
                   await this.baileysCache.set(messageKey, true, this.MESSAGE_CACHE_TTL_SECONDS);
                 }
-
-                await this.prismaRepository.message.update({
-                  where: { id: findMessage.id },
-                  data: { status: status[update.status] },
-                });
               } else {
                 this.logger.info(
                   `Update readed messages duplicated ignored in message.update [avoid deadlock]: ${messageKey}`,
                 );
               }
+            }
+
+            const observedStatus = status[update.status] ?? 'SERVER_ACK';
+            const incomingArchiveState = messageArchiveStateFromStatus(
+              observedStatus,
+              Boolean(key.fromMe),
+              'WHATSAPP_EVENT',
+            );
+            const archiveState = mergeMessageArchiveState(findMessage.archiveState, incomingArchiveState);
+            const originalRemoteJid =
+              findMessage.remoteJid ?? (findMessage.key as Record<string, unknown>)?.remoteJid?.toString();
+            const remoteJidAlt = findMessage.remoteJidAlt ?? alternateJid(originalRemoteJid, key.remoteJid);
+            const incomingTimestamps = acknowledgementTimestamps(incomingArchiveState);
+
+            await this.prismaRepository.message.update({
+              where: { id: findMessage.id },
+              data: {
+                status: archiveState === incomingArchiveState ? observedStatus : findMessage.status,
+                archiveState,
+                ...(remoteJidAlt ? { remoteJidAlt } : {}),
+                serverAcceptedAt: findMessage.serverAcceptedAt ?? incomingTimestamps.serverAcceptedAt,
+                deliveredAt: findMessage.deliveredAt ?? incomingTimestamps.deliveredAt,
+                readAt: findMessage.readAt ?? incomingTimestamps.readAt,
+              },
+            });
+
+            const pnJid = [originalRemoteJid, key.remoteJid].find((jid) => jid?.endsWith('@s.whatsapp.net'));
+            const lidJid = [originalRemoteJid, key.remoteJid].find((jid) => jid?.endsWith('@lid'));
+            if (pnJid && lidJid) {
+              await saveOnWhatsappCache(
+                [{ remoteJid: pnJid, remoteJidAlt: lidJid, lid: lidJid, exists: true }],
+                this.instanceId,
+              );
             }
           }
 
@@ -1713,7 +1846,16 @@ export class BaileysStartupService extends ChannelStartupService {
           if (this.configService.get<Database>('DATABASE').SAVE_DATA.MESSAGE_UPDATE) {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { message: _msg, ...messageData } = message;
-            await this.prismaRepository.messageUpdate.create({ data: messageData });
+            await this.prismaRepository.messageUpdate.upsert({
+              where: {
+                instanceId_updateIdentity: {
+                  instanceId: this.instanceId,
+                  updateIdentity: messageData.updateIdentity,
+                },
+              },
+              create: messageData,
+              update: { pollUpdates: messageData.pollUpdates },
+            });
           }
 
           const existingChat = await this.prismaRepository.chat.findFirst({
@@ -1967,7 +2109,7 @@ export class BaileysStartupService extends ChannelStartupService {
               const mapping = events['lid-mapping.update'];
               this.sendDataWebhook(Events.LID_MAPPING_UPDATE, mapping);
               await saveOnWhatsappCache(
-                [{ remoteJid: mapping.pn, remoteJidAlt: mapping.lid, lid: 'lid', exists: true }],
+                [{ remoteJid: mapping.pn, remoteJidAlt: mapping.lid, lid: mapping.lid, exists: true }],
                 this.instanceId,
               );
               await localReadService.invalidate(this.instanceId, [
@@ -2605,7 +2747,7 @@ export class BaileysStartupService extends ChannelStartupService {
       }
 
       if (this.configService.get<Database>('DATABASE').SAVE_DATA.NEW_MESSAGE) {
-        const msg = await this.prismaRepository.message.create({ data: messageRaw });
+        const msg = await this.persistArchivedMessage(messageRaw, 'LOCAL_OUTBOUND');
 
         if (isMedia && this.configService.get<S3>('S3').ENABLE) {
           try {
@@ -3788,7 +3930,7 @@ export class BaileysStartupService extends ChannelStartupService {
             cached.exists,
             user.number,
             contacts.find((c) => c.remoteJid === cached.remoteJid)?.pushName,
-            cached.lid || (cached.remoteJid.includes('@lid') ? 'lid' : undefined),
+            cached.lid || (cached.remoteJid.includes('@lid') ? cached.remoteJid : undefined),
           );
         }
 
@@ -3871,7 +4013,7 @@ export class BaileysStartupService extends ChannelStartupService {
       await saveOnWhatsappCache(
         numbersToCache.map((user) => ({
           remoteJid: user.jid,
-          lid: user.lid === 'lid' ? 'lid' : undefined,
+          lid: user.lid?.endsWith('@lid') ? user.lid : undefined,
           exists: user.exists,
         })),
         this.instanceId,
