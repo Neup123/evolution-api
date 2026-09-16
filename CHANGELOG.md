@@ -1,3 +1,10 @@
+# 5.1.1 (2026-09-16)
+
+### Security
+
+* Redacted database credentials from Docker migration and Prisma-generation startup logs.
+* Patched the transitive libsignal session lifecycle logger so cryptographic session material is never printed.
+
 # 5.1.0 (2026-09-16)
 
 ### Breaking data-semantics change
