@@ -178,26 +178,39 @@ model Message {
   Media                        Media?
   webhookUrl                   String?         @db.VarChar(500)
   status                       String?         @db.VarChar(30)
+  waMessageId                  String?         @db.VarChar(100)
+  remoteJid                    String?         @db.VarChar(100)
+  remoteJidAlt                 String?         @db.VarChar(100)
+  archiveOrigin                String          @default("WHATSAPP_EVENT") @db.VarChar(30)
+  archiveState                 String          @default("AUTHORITATIVE") @db.VarChar(30)
+  serverAcceptedAt             DateTime?       @db.Timestamp
+  deliveredAt                  DateTime?       @db.Timestamp
+  readAt                       DateTime?       @db.Timestamp
 
   sessionId String?
   session   IntegrationSession? @relation(fields: [sessionId], references: [id])
 
+  @@unique([instanceId, waMessageId])
   @@index([instanceId])
+  @@index([instanceId, remoteJid])
+  @@index([instanceId, remoteJidAlt])
 }
 
 model MessageUpdate {
-  id          String   @id @default(cuid())
-  keyId       String   @db.VarChar(100)
-  remoteJid   String   @db.VarChar(100)
-  fromMe      Boolean  @db.Boolean
-  participant String?  @db.VarChar(100)
-  pollUpdates Json?    @db.JsonB
-  status      String   @db.VarChar(30)
-  Message     Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  messageId   String
-  Instance    Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
-  instanceId  String
+  id             String   @id @default(cuid())
+  keyId          String   @db.VarChar(100)
+  remoteJid      String   @db.VarChar(100)
+  fromMe         Boolean  @db.Boolean
+  participant    String?  @db.VarChar(100)
+  pollUpdates    Json?    @db.JsonB
+  status         String   @db.VarChar(30)
+  Message        Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  messageId      String
+  Instance       Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  instanceId     String
+  updateIdentity String?  @db.VarChar(500)
 
+  @@unique([instanceId, updateIdentity])
   @@index([instanceId])
   @@index([messageId])
 }
@@ -289,39 +302,39 @@ model Proxy {
 }
 
 model Setting {
-  id              String    @id @default(cuid())
-  rejectCall      Boolean   @default(false) @db.Boolean
-  msgCall         String?   @db.VarChar(100)
-  groupsIgnore    Boolean   @default(false) @db.Boolean
-  alwaysOnline    Boolean   @default(false) @db.Boolean
-  readMessages    Boolean   @default(false) @db.Boolean
-  readStatus      Boolean   @default(false) @db.Boolean
-  syncFullHistory Boolean   @default(false) @db.Boolean
-  wavoipToken     String?   @db.VarChar(100)
-  localReadTtlSeconds   Int?  @db.Integer
-  localReadTtlOverrides Json? @db.JsonB
-  automationSafety     Json? @db.JsonB
-  createdAt       DateTime? @default(now()) @db.Timestamp
-  updatedAt       DateTime  @updatedAt @db.Timestamp
-  Instance        Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
-  instanceId      String    @unique
+  id                    String    @id @default(cuid())
+  rejectCall            Boolean   @default(false) @db.Boolean
+  msgCall               String?   @db.VarChar(100)
+  groupsIgnore          Boolean   @default(false) @db.Boolean
+  alwaysOnline          Boolean   @default(false) @db.Boolean
+  readMessages          Boolean   @default(false) @db.Boolean
+  readStatus            Boolean   @default(false) @db.Boolean
+  syncFullHistory       Boolean   @default(false) @db.Boolean
+  wavoipToken           String?   @db.VarChar(100)
+  localReadTtlSeconds   Int?      @db.Integer
+  localReadTtlOverrides Json?     @db.JsonB
+  automationSafety      Json?     @db.JsonB
+  createdAt             DateTime? @default(now()) @db.Timestamp
+  updatedAt             DateTime  @updatedAt @db.Timestamp
+  Instance              Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  instanceId            String    @unique
 
   @@index([instanceId])
 }
 
 model OutboundMessageAudit {
-  id          String    @id @default(cuid())
-  instanceId  String
-  recipient   String    @db.VarChar(100)
-  messageHash String?   @db.VarChar(64)
-  messageType String    @db.VarChar(50)
-  status      String    @db.VarChar(30)
-  reason      String?   @db.VarChar(100)
-  recipientCategory String? @db.VarChar(20)
-  delayMs     Int?      @db.Integer
-  requestedAt DateTime  @default(now()) @db.Timestamp
-  sentAt      DateTime? @db.Timestamp
-  Instance    Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  id                String    @id @default(cuid())
+  instanceId        String
+  recipient         String    @db.VarChar(100)
+  messageHash       String?   @db.VarChar(64)
+  messageType       String    @db.VarChar(50)
+  status            String    @db.VarChar(30)
+  reason            String?   @db.VarChar(100)
+  recipientCategory String?   @db.VarChar(20)
+  delayMs           Int?      @db.Integer
+  requestedAt       DateTime  @default(now()) @db.Timestamp
+  sentAt            DateTime? @db.Timestamp
+  Instance          Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
 
   @@index([instanceId, requestedAt])
   @@index([instanceId, recipient, requestedAt])
@@ -329,17 +342,17 @@ model OutboundMessageAudit {
 }
 
 model RecipientEngagement {
-  id                 String    @id @default(cuid())
-  instanceId         String
-  recipient          String    @db.VarChar(100)
-  firstInboundAt     DateTime? @db.Timestamp
-  lastInboundAt      DateTime? @db.Timestamp
-  firstOutboundAt    DateTime? @db.Timestamp
-  lastOutboundAt     DateTime? @db.Timestamp
-  lastOutreachAt     DateTime? @db.Timestamp
-  createdAt          DateTime  @default(now()) @db.Timestamp
-  updatedAt          DateTime  @updatedAt @db.Timestamp
-  Instance           Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  id              String    @id @default(cuid())
+  instanceId      String
+  recipient       String    @db.VarChar(100)
+  firstInboundAt  DateTime? @db.Timestamp
+  lastInboundAt   DateTime? @db.Timestamp
+  firstOutboundAt DateTime? @db.Timestamp
+  lastOutboundAt  DateTime? @db.Timestamp
+  lastOutreachAt  DateTime? @db.Timestamp
+  createdAt       DateTime  @default(now()) @db.Timestamp
+  updatedAt       DateTime  @updatedAt @db.Timestamp
+  Instance        Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
 
   @@unique([instanceId, recipient])
   @@index([instanceId, lastInboundAt])
@@ -847,7 +860,6 @@ model EvoaiSetting {
   instanceId      String    @unique
 }
 
-
 model ArchiveAccount {
   id           String   @id
   instanceName String   @unique @db.VarChar(255)
@@ -873,25 +885,25 @@ model ArchivePolicy {
 }
 
 model ArchiveEvent {
-  id                String    @id
-  accountId         String    @db.VarChar(36)
-  instanceName      String    @db.VarChar(255)
+  id                String   @id
+  accountId         String   @db.VarChar(36)
+  instanceName      String   @db.VarChar(255)
   sequence          BigInt
-  eventType         String    @db.VarChar(100)
-  entityType        String    @db.VarChar(32)
-  entityJid         String?   @db.VarChar(255)
-  messageId         String?   @db.VarChar(255)
-  occurredAt        DateTime  @db.Timestamptz(6)
-  capturedAt        DateTime  @default(now()) @db.Timestamptz(6)
-  projection        Json      @db.JsonB
+  eventType         String   @db.VarChar(100)
+  entityType        String   @db.VarChar(32)
+  entityJid         String?  @db.VarChar(255)
+  messageId         String?  @db.VarChar(255)
+  occurredAt        DateTime @db.Timestamptz(6)
+  capturedAt        DateTime @default(now()) @db.Timestamptz(6)
+  projection        Json     @db.JsonB
   payloadCiphertext Bytes?
   payloadIv         Bytes?
   payloadTag        Bytes?
-  payloadHash       String    @db.VarChar(64)
-  previousHash      String?   @db.VarChar(64)
-  recordHash        String    @db.VarChar(64)
-  excluded          Boolean   @default(false)
-  purgeJobId        String?   @db.VarChar(36)
+  payloadHash       String   @db.VarChar(64)
+  previousHash      String?  @db.VarChar(64)
+  recordHash        String   @db.VarChar(64)
+  excluded          Boolean  @default(false)
+  purgeJobId        String?  @db.VarChar(36)
 
   @@unique([accountId, sequence])
   @@index([accountId, eventType, occurredAt])
@@ -932,13 +944,13 @@ model ArchiveIdentityMapping {
 }
 
 model ArchivePurgePreview {
-  id              String   @id
-  accountId       String   @db.VarChar(36)
-  criteria        Json     @db.JsonB
-  summary         Json     @db.JsonB
-  confirmationHash String  @db.VarChar(64)
-  expiresAt       DateTime @db.Timestamptz(6)
-  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  id               String   @id
+  accountId        String   @db.VarChar(36)
+  criteria         Json     @db.JsonB
+  summary          Json     @db.JsonB
+  confirmationHash String   @db.VarChar(64)
+  expiresAt        DateTime @db.Timestamptz(6)
+  createdAt        DateTime @default(now()) @db.Timestamptz(6)
 }
 
 model ArchivePurgeJob {
@@ -976,7 +988,6 @@ model ArchiveAccessLog {
 
   @@index([accountId, createdAt])
 }
-
 
 model ArchiveMessage {
   id             String    @id

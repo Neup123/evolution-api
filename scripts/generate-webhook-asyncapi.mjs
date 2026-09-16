@@ -282,10 +282,43 @@ const schemas = {
   },
   ResolvedParticipant: {
     type: 'object',
-    required: ['jid', 'phoneNumber'],
+    required: [
+      'jid',
+      'lid',
+      'phoneNumber',
+      'phoneNumberDigits',
+      'canonicalJid',
+      'identifierType',
+      'identityResolved',
+      'participantDigits',
+    ],
     properties: {
       jid: { $ref: '#/components/schemas/Jid' },
-      phoneNumber: { type: 'string' },
+      lid: {
+        type: ['string', 'null'],
+        description: 'Full @lid identity when known. Its local part is not a telephone number.',
+      },
+      phoneNumber: {
+        type: ['string', 'null'],
+        description: 'Verified full PN JID ending in @s.whatsapp.net, or null when WhatsApp supplied no mapping.',
+      },
+      phoneNumberDigits: {
+        type: ['string', 'null'],
+        description: 'Digits from a verified PN JID only; never derived from a LID.',
+      },
+      canonicalJid: {
+        type: ['string', 'null'],
+        description: 'Verified PN JID when known, otherwise LID or the original participant JID.',
+      },
+      identifierType: { type: 'string', enum: ['phone-number', 'lid', 'unknown'] },
+      identityResolved: {
+        type: 'boolean',
+        description: 'True only when a verified PN JID is available.',
+      },
+      participantDigits: {
+        type: ['string', 'null'],
+        description: 'Compatibility local part of jid. This is explicitly not a verified phone number when jid is a LID.',
+      },
       name: { type: 'string' },
       imgUrl: { type: ['string', 'null'], format: 'uri' },
     },
@@ -872,7 +905,17 @@ const events = [
       id: '120363000000000000@g.us',
       participants: ['151672961659093@lid'],
       action: 'add',
-      participantsData: [{ jid: '151672961659093@lid', phoneNumber: '15551234567', name: 'Alice' }],
+      participantsData: [{
+        jid: '151672961659093@lid',
+        lid: '151672961659093@lid',
+        phoneNumber: '15551234567@s.whatsapp.net',
+        phoneNumberDigits: '15551234567',
+        canonicalJid: '15551234567@s.whatsapp.net',
+        identifierType: 'lid',
+        identityResolved: true,
+        participantDigits: '151672961659093',
+        name: 'Alice',
+      }],
     },
   ),
   event(
@@ -1278,7 +1321,9 @@ Useful expressions for message workflows:
 | Plain text | \`{{$json.data.message.conversation || $json.data.message.extendedTextMessage?.text}}\` |
 | Group participant action | \`{{$json.data.action}}\` |
 | Changed participant JIDs | \`{{$json.data.participants}}\` |
-| Resolved participant phone | \`{{$json.data.participantsData?.[0]?.phoneNumber}}\` |
+| Verified participant PN JID | \`{{$json.data.participantsData?.[0]?.phoneNumber}}\` |
+| Participant canonical JID | \`{{$json.data.participantsData?.[0]?.canonicalJid}}\` |
+| PN mapping is verified | \`{{$json.data.participantsData?.[0]?.identityResolved}}\` |
 
 Webhook delivery can be retried. Make downstream writes idempotent. For messages, a practical key is \`instance + data.key.remoteJid + data.key.id\`. Do not assume optional display names, phone mappings, profile pictures, quoted context, or media URLs are always present.
 
@@ -1291,7 +1336,7 @@ ${table}
 ## Compatibility notes
 
 - \`MESSAGES_UPSERT\` delivers one Evolution-prepared message in \`data\`, rather than the raw Baileys \`{ messages, type }\` batch.
-- \`GROUP_PARTICIPANTS_UPDATE\` keeps \`participants: string[]\` and adds optional \`participantsData\` with resolved JID, phone number, name, and image URL.
+- \`GROUP_PARTICIPANTS_UPDATE\` keeps \`participants: string[]\` and adds optional identity-safe \`participantsData\`. \`phoneNumber\` is a full verified PN JID or null; LID digits are exposed only as \`participantDigits\` and must not be treated as a telephone number.
 - \`CREDS_UPDATE\` never exposes Baileys credentials; only instance metadata is sent.
 - \`CONTACTS_SET\` remains selectable for compatibility, but Baileys 7 currently does not emit it.
 - Protobuf/WhatsApp payloads evolve. Documented objects allow additional fields; workflows should read the fields they need and tolerate unknown fields.

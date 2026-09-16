@@ -179,26 +179,39 @@ model Message {
   Media                        Media?
   webhookUrl                   String?         @db.VarChar(500)
   status                       String?         @db.VarChar(30)
+  waMessageId                  String?         @db.VarChar(100)
+  remoteJid                    String?         @db.VarChar(100)
+  remoteJidAlt                 String?         @db.VarChar(100)
+  archiveOrigin                String          @default("WHATSAPP_EVENT") @db.VarChar(30)
+  archiveState                 String          @default("AUTHORITATIVE") @db.VarChar(30)
+  serverAcceptedAt             DateTime?       @db.Timestamp
+  deliveredAt                  DateTime?       @db.Timestamp
+  readAt                       DateTime?       @db.Timestamp
 
   sessionId String?
   session   IntegrationSession? @relation(fields: [sessionId], references: [id])
 
+  @@unique([instanceId, waMessageId])
   @@index([instanceId])
+  @@index([instanceId, remoteJid])
+  @@index([instanceId, remoteJidAlt])
 }
 
 model MessageUpdate {
-  id          String   @id @default(cuid())
-  keyId       String   @db.VarChar(100)
-  remoteJid   String   @db.VarChar(100)
-  fromMe      Boolean
-  participant String?  @db.VarChar(100)
-  pollUpdates Json?    @db.Json
-  status      String   @db.VarChar(30)
-  Message     Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  messageId   String
-  Instance    Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
-  instanceId  String
+  id             String   @id @default(cuid())
+  keyId          String   @db.VarChar(100)
+  remoteJid      String   @db.VarChar(100)
+  fromMe         Boolean
+  participant    String?  @db.VarChar(100)
+  pollUpdates    Json?    @db.Json
+  status         String   @db.VarChar(30)
+  Message        Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  messageId      String
+  Instance       Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  instanceId     String
+  updateIdentity String?  @db.VarChar(500)
 
+  @@unique([instanceId, updateIdentity])
   @@index([instanceId])
   @@index([messageId])
 }
@@ -288,39 +301,39 @@ model Proxy {
 }
 
 model Setting {
-  id              String    @id @default(cuid())
-  rejectCall      Boolean   @default(false)
-  msgCall         String?   @db.VarChar(100)
-  groupsIgnore    Boolean   @default(false)
-  alwaysOnline    Boolean   @default(false)
-  readMessages    Boolean   @default(false)
-  readStatus      Boolean   @default(false)
-  syncFullHistory Boolean   @default(false)
-  wavoipToken     String?   @db.VarChar(100)
+  id                    String    @id @default(cuid())
+  rejectCall            Boolean   @default(false)
+  msgCall               String?   @db.VarChar(100)
+  groupsIgnore          Boolean   @default(false)
+  alwaysOnline          Boolean   @default(false)
+  readMessages          Boolean   @default(false)
+  readStatus            Boolean   @default(false)
+  syncFullHistory       Boolean   @default(false)
+  wavoipToken           String?   @db.VarChar(100)
   localReadTtlSeconds   Int?
   localReadTtlOverrides Json?
-  automationSafety     Json?
-  createdAt       DateTime? @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp
-  updatedAt       DateTime  @updatedAt @db.Timestamp
-  Instance        Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
-  instanceId      String    @unique
+  automationSafety      Json?
+  createdAt             DateTime? @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp
+  updatedAt             DateTime  @updatedAt @db.Timestamp
+  Instance              Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  instanceId            String    @unique
 
   @@index([instanceId])
 }
 
 model OutboundMessageAudit {
-  id          String    @id @default(cuid())
-  instanceId  String
-  recipient   String    @db.VarChar(100)
-  messageHash String?   @db.VarChar(64)
-  messageType String    @db.VarChar(50)
-  status      String    @db.VarChar(30)
-  reason      String?   @db.VarChar(100)
-  recipientCategory String? @db.VarChar(20)
-  delayMs     Int?      @db.Int
-  requestedAt DateTime  @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp
-  sentAt      DateTime? @db.Timestamp
-  Instance    Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  id                String    @id @default(cuid())
+  instanceId        String
+  recipient         String    @db.VarChar(100)
+  messageHash       String?   @db.VarChar(64)
+  messageType       String    @db.VarChar(50)
+  status            String    @db.VarChar(30)
+  reason            String?   @db.VarChar(100)
+  recipientCategory String?   @db.VarChar(20)
+  delayMs           Int?      @db.Int
+  requestedAt       DateTime  @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp
+  sentAt            DateTime? @db.Timestamp
+  Instance          Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
 
   @@index([instanceId, requestedAt])
   @@index([instanceId, recipient, requestedAt])
@@ -328,17 +341,17 @@ model OutboundMessageAudit {
 }
 
 model RecipientEngagement {
-  id                 String    @id @default(cuid())
-  instanceId         String
-  recipient          String    @db.VarChar(100)
-  firstInboundAt     DateTime? @db.DateTime(3)
-  lastInboundAt      DateTime? @db.DateTime(3)
-  firstOutboundAt    DateTime? @db.DateTime(3)
-  lastOutboundAt     DateTime? @db.DateTime(3)
-  lastOutreachAt     DateTime? @db.DateTime(3)
-  createdAt          DateTime  @default(now()) @db.DateTime(3)
-  updatedAt          DateTime  @updatedAt @db.DateTime(3)
-  Instance           Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  id              String    @id @default(cuid())
+  instanceId      String
+  recipient       String    @db.VarChar(100)
+  firstInboundAt  DateTime? @db.DateTime(3)
+  lastInboundAt   DateTime? @db.DateTime(3)
+  firstOutboundAt DateTime? @db.DateTime(3)
+  lastOutboundAt  DateTime? @db.DateTime(3)
+  lastOutreachAt  DateTime? @db.DateTime(3)
+  createdAt       DateTime  @default(now()) @db.DateTime(3)
+  updatedAt       DateTime  @updatedAt @db.DateTime(3)
+  Instance        Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
 
   @@unique([instanceId, recipient])
   @@index([instanceId, lastInboundAt])

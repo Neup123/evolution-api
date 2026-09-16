@@ -385,6 +385,10 @@ function addEvolutionResponseFields(schema) {
         enum: ['phone-number', 'lid', 'unknown'],
         description: 'Namespace used by the participant id field.',
       },
+      identityResolved: {
+        type: 'boolean',
+        description: 'True only when WhatsApp supplied a verified PN JID for this participant.',
+      },
     });
   }
   const linkedItems = schema.properties?.linkedGroups?.items;
@@ -641,6 +645,152 @@ paths['/settings/set/{instanceName}'] = {
   },
 };
 
+const operationalMessageSchema = {
+  type: 'object',
+  required: [
+    'id',
+    'key',
+    'messageType',
+    'message',
+    'messageTimestamp',
+    'instanceId',
+    'status',
+    'archiveOrigin',
+    'archiveState',
+    'MessageUpdate',
+  ],
+  properties: {
+    id: { type: 'string', description: 'Evolution database row ID. Do not use it as the WhatsApp message identity.' },
+    waMessageId: {
+      type: ['string', 'null'],
+      description: 'Stable WhatsApp message ID, unique within the instance. Null is possible only for ambiguous legacy rows.',
+    },
+    key: {
+      type: 'object',
+      description: 'Original Baileys message key. Existing integrations may continue reading id, remoteJid, remoteJidAlt, fromMe, and participant here.',
+      additionalProperties: true,
+    },
+    remoteJid: { type: ['string', 'null'], description: 'First observed chat JID for the canonical message.' },
+    remoteJidAlt: {
+      type: ['string', 'null'],
+      description: 'Alternate PN or LID address observed for the same WhatsApp message. It never replaces remoteJid.',
+    },
+    pushName: { type: ['string', 'null'] },
+    messageType: { type: 'string' },
+    message: { type: 'object', additionalProperties: true, description: 'Baileys message content.' },
+    messageTimestamp: { type: 'integer', description: 'WhatsApp message time as Unix seconds.' },
+    instanceId: { type: 'string' },
+    source: { type: ['string', 'null'] },
+    contextInfo: { type: ['object', 'null'], additionalProperties: true },
+    status: {
+      type: ['string', 'null'],
+      description: 'Highest non-regressing Baileys acknowledgement observed for this message.',
+    },
+    archiveOrigin: {
+      type: 'string',
+      enum: ['LOCAL_OUTBOUND', 'WHATSAPP_EVENT', 'HISTORY_SYNC', 'LEGACY'],
+      description: 'Where Evolution first learned about this operational message.',
+    },
+    archiveState: {
+      type: 'string',
+      enum: ['PROVISIONAL', 'SERVER_ACCEPTED', 'AUTHORITATIVE', 'DELIVERED', 'READ', 'PLAYED', 'FAILED'],
+      description: 'Monotonic evidence state. PROVISIONAL is local only; SERVER_ACCEPTED is not delivery proof.',
+    },
+    serverAcceptedAt: { type: ['string', 'null'], format: 'date-time' },
+    deliveredAt: { type: ['string', 'null'], format: 'date-time' },
+    readAt: { type: ['string', 'null'], format: 'date-time' },
+    MessageUpdate: {
+      type: 'array',
+      description: 'Distinct acknowledgement observations. Use DELIVERY_ACK, READ, or PLAYED as delivery evidence.',
+      items: {
+        type: 'object',
+        required: ['status'],
+        properties: { status: { type: 'string' } },
+        additionalProperties: false,
+      },
+    },
+  },
+  additionalProperties: false,
+};
+
+paths['/chat/findMessages/{instanceName}'] = {
+  post: {
+    tags: ['Operational message archive'],
+    summary: 'Search canonical locally stored messages',
+    description:
+      'Reads the local database only. PN and LID filters match both the primary and alternate JID. New messages are idempotent by instance plus WhatsApp message ID.',
+    operationId: 'findMessages',
+    parameters: [instanceParameter],
+    requestBody: {
+      required: false,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              where: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  source: { type: 'string' },
+                  messageType: { type: 'string' },
+                  messageTimestamp: {
+                    type: 'object',
+                    properties: { gte: { type: 'string', format: 'date-time' }, lte: { type: 'string', format: 'date-time' } },
+                    additionalProperties: false,
+                  },
+                  key: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string' },
+                      fromMe: { type: 'boolean' },
+                      remoteJid: { type: 'string' },
+                      remoteJidAlt: { type: 'string' },
+                      participant: { type: 'string' },
+                    },
+                    additionalProperties: false,
+                  },
+                },
+                additionalProperties: false,
+              },
+              page: { type: 'integer', minimum: 1, default: 1 },
+              offset: { type: 'integer', minimum: 1, default: 50, description: 'Rows per page.' },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Paginated canonical message rows and acknowledgement evidence.',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['messages'],
+              properties: {
+                messages: {
+                  type: 'object',
+                  required: ['total', 'pages', 'currentPage', 'records'],
+                  properties: {
+                    total: { type: 'integer' },
+                    pages: { type: 'integer' },
+                    currentPage: { type: 'integer' },
+                    records: { type: 'array', items: operationalMessageSchema },
+                  },
+                  additionalProperties: false,
+                },
+              },
+              additionalProperties: false,
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
 for (const [method, definition] of Object.entries(metadata)) {
   paths[`/baileys/${definition.group}/${method}/{instanceName}`] = {
     post: {
@@ -714,7 +864,7 @@ const document = {
   openapi: '3.1.0',
   info: {
     title: 'Evolution API – Baileys 7',
-    version: '4.1.0-baileys-7.0.0-rc14',
+    version: '5.1.0-baileys-7.0.0-rc14',
     description:
       'Typed, grouped HTTP routes for the Baileys WASocket API. Named request fields are generated from the installed Baileys TypeScript declarations. Before using Try it out, click Authorize and enter the Evolution API global API key; Swagger sends it in the apikey header.',
   },
@@ -724,6 +874,10 @@ const document = {
     { name: 'Registry', description: 'Runtime method discovery.' },
     { name: 'Instance settings', description: 'Per-instance WhatsApp behavior and local database snapshot TTL.' },
     { name: 'Webhooks', description: 'Instance event delivery configuration, including multiple destinations.' },
+    {
+      name: 'Operational message archive',
+      description: 'Canonical local messages, PN/LID identity, provenance, and acknowledgement evidence.',
+    },
     ...archiveContract.tags,
     ...Object.values(groupLabels).map(([name, description]) => ({ name, description })),
   ],
@@ -767,7 +921,11 @@ const indexLines = [
   '',
   ...Object.keys(groups).map((group) => `- [${groupLabels[group][0]}](./${group}.md)`),
   '',
-  'Identifier rules and enriched response fields are explained in [Identifiers and partial metadata](./identifiers.md).',
+  '## Identifier model',
+  '',
+  "Before storing or joining contacts, group members, messages, or channels, read [WhatsApp identifiers, contacts, groups, and channels](./identifiers.md). It explains PN (`@s.whatsapp.net`) versus LID (`@lid`), group (`@g.us`) and newsletter (`@newsletter`) conversation IDs, message `remoteJid`/`participant` fields, Evolution database IDs, and this fork's normalized participant fields.",
+  '',
+  'In particular, group membership does **not** create a new person ID. The same WhatsApp person may appear through either their PN JID or LID depending on WhatsApp addressing and available mappings.',
   '',
 ];
 fs.writeFileSync(path.join(docsDirectory, 'README.md'), indexLines.join('\n'));

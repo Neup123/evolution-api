@@ -147,11 +147,9 @@ Never interpret the numeric part of a `...@lid` value as a phone number.
 }
 ```
 
-and adds a backward-compatible `participantsData` array containing `jid`, `phoneNumber`, `name`, and `imgUrl` when available.
+and adds an identity-safe `participantsData` array. `phoneNumber` is a full PN JID only when WhatsApp supplied a real mapping; otherwise it is null. `phoneNumberDigits` is derived only from that verified PN. `lid`, `canonicalJid`, `identifierType`, and `identityResolved` make the mapping state explicit. `participantDigits` preserves the local part of the original event JID for compatibility, but it is explicitly not a verified telephone number when `jid` ends in `@lid`.
 
-There is an important compatibility detail: `participantsData.phoneNumber` is **best effort**. When `findParticipants` supplied a real `phoneNumber` mapping, that value is the PN JID and can be used as the mapped phone identity. When no mapping is available, the current compatibility fallback strips the suffix from the original participant ID. If that original ID is a LID, the resulting digits are LID digits, **not a verified phone number**.
-
-For logic that requires an authoritative phone identity, require a real PN mapping rather than assuming every `participantsData.phoneNumber` value is a telephone number.
+Earlier releases used a compatibility fallback that stripped the suffix from every participant JID and placed the result in `phoneNumber`. Version 5.1 removes that unsafe fallback. This is a deliberate breaking correction: require `identityResolved: true` or a non-null PN `phoneNumber` for logic that needs an authoritative telephone identity.
 
 ## LID mapping events
 

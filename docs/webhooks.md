@@ -49,7 +49,9 @@ Useful expressions for message workflows:
 | Plain text | `{{$json.data.message.conversation || $json.data.message.extendedTextMessage?.text}}` |
 | Group participant action | `{{$json.data.action}}` |
 | Changed participant JIDs | `{{$json.data.participants}}` |
-| Resolved participant phone | `{{$json.data.participantsData?.[0]?.phoneNumber}}` |
+| Verified participant PN JID | `{{$json.data.participantsData?.[0]?.phoneNumber}}` |
+| Participant canonical JID | `{{$json.data.participantsData?.[0]?.canonicalJid}}` |
+| PN mapping is verified | `{{$json.data.participantsData?.[0]?.identityResolved}}` |
 
 Webhook delivery can be retried. Make downstream writes idempotent. For messages, a practical key is `instance + data.key.remoteJid + data.key.id`. Do not assume optional display names, phone mappings, profile pictures, quoted context, or media URLs are always present.
 
@@ -110,7 +112,7 @@ Webhook delivery can be retried. Make downstream writes idempotent. For messages
 ## Compatibility notes
 
 - `MESSAGES_UPSERT` delivers one Evolution-prepared message in `data`, rather than the raw Baileys `{ messages, type }` batch.
-- `GROUP_PARTICIPANTS_UPDATE` keeps `participants: string[]` and adds optional `participantsData` with resolved JID, phone number, name, and image URL.
+- `GROUP_PARTICIPANTS_UPDATE` keeps `participants: string[]` and adds optional identity-safe `participantsData`. `phoneNumber` is a full verified PN JID or null; LID digits are exposed only as `participantDigits` and must not be treated as a telephone number.
 - `CREDS_UPDATE` never exposes Baileys credentials; only instance metadata is sent.
 - `CONTACTS_SET` remains selectable for compatibility, but Baileys 7 currently does not emit it.
 - Protobuf/WhatsApp payloads evolve. Documented objects allow additional fields; workflows should read the fields they need and tolerate unknown fields.

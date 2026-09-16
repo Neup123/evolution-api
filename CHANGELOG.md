@@ -1,3 +1,19 @@
+# 5.1.0 (2026-09-16)
+
+### Breaking data-semantics change
+
+* A successful outbound API call is now stored as `PROVISIONAL`; consumers must require `DELIVERED`, `READ`, or `PLAYED` before treating it as recipient delivery. `SERVER_ACK` means server acceptance only.
+
+### Fixes and features
+
+* Canonicalized future messages by instance and WhatsApp message ID, while retaining ambiguous legacy duplicates without destructive merging.
+* Updated outgoing message status from WhatsApp acknowledgements and prevented late events from downgrading stronger evidence.
+* Reconciled PN/LID aliases without replacing either JID and corrected malformed number-cache JIDs and literal LID markers.
+* Made message acknowledgement inserts idempotent.
+* Removed the unsafe `GROUP_PARTICIPANTS_UPDATE` fallback that labeled stripped LID digits as a phone number; webhook identity fields now distinguish verified PN, LID, canonical JID, and compatibility digits.
+* Added PostgreSQL, PgBouncer, and MySQL schema support and automatic migrations; fixed the MySQL clean-install index name limit.
+* Added the full `findMessages` request/response and operational integrity contract to Swagger and the documentation tree.
+
 # 5.0.0 (2026-09-14)
 
 ### Breaking changes
