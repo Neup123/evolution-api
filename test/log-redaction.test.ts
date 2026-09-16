@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 
 import { redactSensitiveData } from '../src/config/logger.config';
 
@@ -26,5 +27,9 @@ assert.equal(safeError.statusCode, 503);
 assert.equal(safeError.message, 'connect failed for ?apikey=[REDACTED]');
 assert.equal('config' in safeError, false);
 assert.equal(JSON.stringify(safeError).includes('must-not-appear'), false);
+
+const libsignalSessionRecord = fs.readFileSync('node_modules/libsignal/src/session_record.js', 'utf8');
+assert.equal(libsignalSessionRecord.includes('console.info("Closing session:", session)'), false);
+assert.equal(libsignalSessionRecord.includes('console.warn("Session already closed", session)'), false);
 
 console.log('log redaction tests passed');

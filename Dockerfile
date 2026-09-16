@@ -12,6 +12,7 @@ WORKDIR /evolution
 COPY ./package*.json ./
 COPY ./tsconfig.json ./
 COPY ./tsup.config.ts ./
+COPY ./scripts/patch-libsignal-logging.mjs ./scripts/patch-libsignal-logging.mjs
 
 RUN npm ci --silent
 
