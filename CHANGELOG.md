@@ -10,6 +10,7 @@
 * Updated outgoing message status from WhatsApp acknowledgements and prevented late events from downgrading stronger evidence.
 * Reconciled PN/LID aliases without replacing either JID and corrected malformed number-cache JIDs and literal LID markers.
 * Made message acknowledgement inserts idempotent.
+* Removed the unsafe `GROUP_PARTICIPANTS_UPDATE` fallback that labeled stripped LID digits as a phone number; webhook identity fields now distinguish verified PN, LID, canonical JID, and compatibility digits.
 * Added PostgreSQL, PgBouncer, and MySQL schema support and automatic migrations; fixed the MySQL clean-install index name limit.
 * Added the full `findMessages` request/response and operational integrity contract to Swagger and the documentation tree.
 

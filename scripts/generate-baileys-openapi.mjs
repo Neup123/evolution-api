@@ -385,6 +385,10 @@ function addEvolutionResponseFields(schema) {
         enum: ['phone-number', 'lid', 'unknown'],
         description: 'Namespace used by the participant id field.',
       },
+      identityResolved: {
+        type: 'boolean',
+        description: 'True only when WhatsApp supplied a verified PN JID for this participant.',
+      },
     });
   }
   const linkedItems = schema.properties?.linkedGroups?.items;
@@ -917,7 +921,11 @@ const indexLines = [
   '',
   ...Object.keys(groups).map((group) => `- [${groupLabels[group][0]}](./${group}.md)`),
   '',
-  'Identifier rules and enriched response fields are explained in [Identifiers and partial metadata](./identifiers.md).',
+  '## Identifier model',
+  '',
+  "Before storing or joining contacts, group members, messages, or channels, read [WhatsApp identifiers, contacts, groups, and channels](./identifiers.md). It explains PN (`@s.whatsapp.net`) versus LID (`@lid`), group (`@g.us`) and newsletter (`@newsletter`) conversation IDs, message `remoteJid`/`participant` fields, Evolution database IDs, and this fork's normalized participant fields.",
+  '',
+  'In particular, group membership does **not** create a new person ID. The same WhatsApp person may appear through either their PN JID or LID depending on WhatsApp addressing and available mappings.',
   '',
 ];
 fs.writeFileSync(path.join(docsDirectory, 'README.md'), indexLines.join('\n'));

@@ -26,6 +26,8 @@ The state is monotonic: a late `PENDING` or `SERVER_ACK` cannot replace `DELIVER
 
 `IsOnWhatsapp.jidOptions` now stores each complete JID exactly once. The former helper could create values such as `number@s.whatsapp.net@s.whatsapp.net`; migration 5.1 repairs those values. The `lid` column contains the actual `number@lid` value or null, never the literal marker `"lid"`.
 
+The same identity rule applies to group participant webhooks: the local part of `123456@lid` is not a phone number. `GROUP_PARTICIPANTS_UPDATE.participantsData.phoneNumber` is now a verified full PN JID or null, and `identityResolved` tells consumers whether that PN mapping exists. See [WhatsApp identifiers, contacts, groups, and channels](./baileys/identifiers.md).
+
 Acknowledgement rows use a stable identity made from instance, WhatsApp message ID, status, remote JID, and participant. Duplicate event delivery therefore cannot create repeated future `MessageUpdate` rows.
 
 ## Origin

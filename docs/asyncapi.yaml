@@ -1400,7 +1400,13 @@ components:
               action: add
               participantsData:
                 - jid: 151672961659093@lid
-                  phoneNumber: "15551234567"
+                  lid: 151672961659093@lid
+                  phoneNumber: 15551234567@s.whatsapp.net
+                  phoneNumberDigits: "15551234567"
+                  canonicalJid: 15551234567@s.whatsapp.net
+                  identifierType: lid
+                  identityResolved: true
+                  participantDigits: "151672961659093"
                   name: Alice
             destination: https://n8n.example/webhook/evolution/group-participants-update
             date_time: 2026-09-07T12:00:00.000Z
@@ -2503,12 +2509,50 @@ components:
       type: object
       required:
         - jid
+        - lid
         - phoneNumber
+        - phoneNumberDigits
+        - canonicalJid
+        - identifierType
+        - identityResolved
+        - participantDigits
       properties:
         jid:
           $ref: "#/components/schemas/Jid"
+        lid:
+          type:
+            - string
+            - "null"
+          description: Full @lid identity when known. Its local part is not a telephone number.
         phoneNumber:
+          type:
+            - string
+            - "null"
+          description: Verified full PN JID ending in @s.whatsapp.net, or null when WhatsApp supplied no mapping.
+        phoneNumberDigits:
+          type:
+            - string
+            - "null"
+          description: Digits from a verified PN JID only; never derived from a LID.
+        canonicalJid:
+          type:
+            - string
+            - "null"
+          description: Verified PN JID when known, otherwise LID or the original participant JID.
+        identifierType:
           type: string
+          enum:
+            - phone-number
+            - lid
+            - unknown
+        identityResolved:
+          type: boolean
+          description: True only when a verified PN JID is available.
+        participantDigits:
+          type:
+            - string
+            - "null"
+          description: Compatibility local part of jid. This is explicitly not a verified phone number when jid is a LID.
         name:
           type: string
         imgUrl:

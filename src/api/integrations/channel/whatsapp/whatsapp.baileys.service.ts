@@ -102,6 +102,7 @@ import { sendTelemetry } from '@utils/sendTelemetry';
 import useMultiFileAuthStatePrisma from '@utils/use-multi-file-auth-state-prisma';
 import { AuthStateProvider } from '@utils/use-multi-file-auth-state-provider-files';
 import { useMultiFileAuthStateRedisDb } from '@utils/use-multi-file-auth-state-redis-db';
+import { normalizeParticipantIdentity } from '@utils/whatsappIdentity';
 import axios from 'axios';
 import makeWASocket, {
   AnyMessageContent,
@@ -1925,16 +1926,8 @@ export class BaileysStartupService extends ChannelStartupService {
       participants: string[];
       action: ParticipantAction;
     }) => {
-      // ENHANCEMENT: Adds participantsData field while maintaining backward compatibility
-      // MAINTAINS: participants: string[] (original JID strings)
-      // ADDS: participantsData: { jid: string, phoneNumber: string, name?: string, imgUrl?: string }[]
-      // This enables LID to phoneNumber conversion without breaking existing webhook consumers
-
-      // Helper to normalize participantId as phone number
-      const normalizePhoneNumber = (id: string | null | undefined): string => {
-        // Remove @lid, @s.whatsapp.net suffixes and extract just the number part
-        return String(id || '').split('@')[0];
-      };
+      // Preserve the original event and add identity-safe PN/LID metadata. A LID's
+      // numeric local part is never represented as a verified phone number.
 
       try {
         // Use the same lookup as the /group/participants endpoint.
@@ -1947,18 +1940,20 @@ export class BaileysStartupService extends ChannelStartupService {
 
         // Resolve only the participants included in this event.
         const resolvedParticipants = participantsUpdate.participants.map((participantId) => {
-          const participantData = groupParticipants.participants.find((p) => p.id === participantId);
-
-          let phoneNumber: string;
-          if (participantData?.phoneNumber) {
-            phoneNumber = participantData.phoneNumber;
-          } else {
-            phoneNumber = normalizePhoneNumber(participantId);
-          }
+          const participantData = groupParticipants.participants.find((participant) =>
+            [participant.id, participant.phoneNumber, participant.lid].includes(participantId),
+          );
+          const identity = normalizeParticipantIdentity(participantData, participantId);
 
           return {
             jid: participantId,
-            phoneNumber,
+            lid: identity.lid,
+            phoneNumber: identity.phoneNumber,
+            phoneNumberDigits: identity.phoneNumberDigits,
+            canonicalJid: identity.canonicalJid,
+            identifierType: identity.identifierType,
+            identityResolved: identity.identityResolved,
+            participantDigits: identity.participantDigits,
             name: participantData?.name,
             imgUrl: participantData?.imgUrl,
           };
@@ -5299,26 +5294,15 @@ export class BaileysStartupService extends ChannelStartupService {
 
   private clarifyGroupParticipantIdentifiers(value: unknown): unknown {
     const clarifyParticipant = (participant: any) => {
-      const id = typeof participant?.id === 'string' ? participant.id : null;
-      const phoneJid =
-        typeof participant?.phoneNumber === 'string' && participant.phoneNumber.endsWith('@s.whatsapp.net')
-          ? participant.phoneNumber
-          : id?.endsWith('@s.whatsapp.net')
-            ? id
-            : null;
-      const lidJid =
-        typeof participant?.lid === 'string' && participant.lid.endsWith('@lid')
-          ? participant.lid
-          : id?.endsWith('@lid')
-            ? id
-            : null;
+      const identity = normalizeParticipantIdentity(participant);
       return {
         ...participant,
-        lid: lidJid,
-        phoneNumber: phoneJid,
-        phoneNumberDigits: phoneJid?.split('@')[0] ?? null,
-        canonicalJid: phoneJid ?? lidJid ?? id,
-        identifierType: id?.endsWith('@lid') ? 'lid' : id?.endsWith('@s.whatsapp.net') ? 'phone-number' : 'unknown',
+        lid: identity.lid,
+        phoneNumber: identity.phoneNumber,
+        phoneNumberDigits: identity.phoneNumberDigits,
+        canonicalJid: identity.canonicalJid,
+        identifierType: identity.identifierType,
+        identityResolved: identity.identityResolved,
       };
     };
     const clarifyMetadata = (metadata: any) =>

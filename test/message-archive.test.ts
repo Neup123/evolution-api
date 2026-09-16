@@ -8,6 +8,7 @@ import {
   messageUpdateIdentity,
 } from '../src/api/services/message-archive.service';
 import { getAvailableNumbers } from '../src/utils/jidOptions';
+import { normalizeParticipantIdentity } from '../src/utils/whatsappIdentity';
 
 assert.deepEqual(getAvailableNumbers('12142238715@s.whatsapp.net'), ['12142238715@s.whatsapp.net']);
 assert.deepEqual(getAvailableNumbers('230687726690306@lid'), ['230687726690306@lid']);
@@ -34,5 +35,32 @@ assert.deepEqual(acknowledgementTimestamps('READ', now), {
   deliveredAt: now,
   readAt: now,
 });
+
+assert.deepEqual(normalizeParticipantIdentity({ id: '123456@lid' }), {
+  id: '123456@lid',
+  lid: '123456@lid',
+  phoneNumber: null,
+  phoneNumberDigits: null,
+  canonicalJid: '123456@lid',
+  identifierType: 'lid',
+  identityResolved: false,
+  participantDigits: '123456',
+});
+assert.deepEqual(
+  normalizeParticipantIdentity(
+    { id: '15551234567@s.whatsapp.net', phoneNumber: '15551234567@s.whatsapp.net', lid: '123456@lid' },
+    '123456@lid',
+  ),
+  {
+    id: '123456@lid',
+    lid: '123456@lid',
+    phoneNumber: '15551234567@s.whatsapp.net',
+    phoneNumberDigits: '15551234567',
+    canonicalJid: '15551234567@s.whatsapp.net',
+    identifierType: 'lid',
+    identityResolved: true,
+    participantDigits: '123456',
+  },
+);
 
 console.log('message archive tests passed');
