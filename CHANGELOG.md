@@ -1,3 +1,11 @@
+# 5.2.0 (2026-09-16)
+
+### Features
+
+* Added a configurable 1–100% duplicate-similarity threshold while preserving exact-only matching at the default of 100%.
+* Persisted non-reversible 64-bit text fingerprints for near-duplicate comparison without duplicating message bodies in the audit table.
+* Documented that duplicate lookback checks every successful send to the same recipient inside the configured time window and has no fixed message-count cap.
+
 # 5.1.1 (2026-09-16)
 
 ### Security

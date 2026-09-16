@@ -23,7 +23,7 @@ export const DEFAULT_AUTOMATION_SAFETY: Required<AutomationSafetySettings> = {
   },
   outreach: { enabled: true, newOrDormantRecipientsPerDay: 50, dormantAfterDays: 180 },
   quietHours: { enabled: false, start: '22:00', end: '08:00', timeZone: 'UTC' },
-  duplicate: { enabled: true, windowSeconds: 30 },
+  duplicate: { enabled: true, windowSeconds: 30, similarityThresholdPercent: 100 },
   suppression: { recipients: [], allowlistEnabled: false, allowedRecipients: [] },
   failurePause: { enabled: true, threshold: 5, pauseSeconds: 300 },
   audit: { retentionDays: 90 },
@@ -100,6 +100,49 @@ export function extractOutboundText(message: unknown, includeMediaCaptions = tru
 
   visit(message);
   return fragments.join('\n').trim();
+}
+
+export function normalizeDuplicateText(text: string): string {
+  return text.normalize('NFKC').toLocaleLowerCase('und').replace(/\s+/gu, ' ').trim();
+}
+
+/**
+ * Creates a privacy-preserving 64-bit SimHash from normalized character trigrams.
+ * The original message cannot be reconstructed from this fingerprint.
+ */
+export function createSimilarityFingerprint(text: string): string | null {
+  const normalized = normalizeDuplicateText(text);
+  if (!normalized) return null;
+  const padded = `  ${normalized}  `;
+  const features = new Map<string, number>();
+  for (let index = 0; index <= padded.length - 3; index += 1) {
+    const feature = padded.slice(index, index + 3);
+    features.set(feature, (features.get(feature) ?? 0) + 1);
+  }
+  const weights = Array.from({ length: 64 }, () => 0);
+  for (const [feature, weight] of features) {
+    const digest = createHash('sha256').update(feature).digest();
+    for (let bit = 0; bit < 64; bit += 1) {
+      const set = (digest[Math.floor(bit / 8)] & (1 << (7 - (bit % 8)))) !== 0;
+      weights[bit] += set ? weight : -weight;
+    }
+  }
+  let fingerprint = 0n;
+  weights.forEach((weight, bit) => {
+    if (weight >= 0) fingerprint |= 1n << BigInt(63 - bit);
+  });
+  return fingerprint.toString(16).padStart(16, '0');
+}
+
+export function fingerprintSimilarityPercent(left: string, right: string): number {
+  if (!/^[0-9a-f]{16}$/i.test(left) || !/^[0-9a-f]{16}$/i.test(right)) return 0;
+  let difference = BigInt(`0x${left}`) ^ BigInt(`0x${right}`);
+  let differentBits = 0;
+  while (difference) {
+    difference &= difference - 1n;
+    differentBits += 1;
+  }
+  return ((64 - differentBits) / 64) * 100;
 }
 
 export function calculateTypingDelay(
@@ -215,6 +258,7 @@ export class OutboundSafetyService {
     const normalizedRecipient = normalizeRecipient(recipient);
     const text = extractOutboundText(message, policy.typing.applyToMediaCaptions);
     const messageHash = text ? createHash('sha256').update(text).digest('hex') : null;
+    const messageFingerprint = text ? createSimilarityFingerprint(text) : null;
     const messageType = messageHasMedia(message) ? 'media' : text ? 'text' : 'other';
 
     if (!policy.enabled) {
@@ -251,7 +295,7 @@ export class OutboundSafetyService {
           ? 'DORMANT'
           : 'NEW';
 
-    const [instanceMinute, instanceDay, recipientMinute, recipientDay, lastSent, duplicate, recentFailures] =
+    const [instanceMinute, instanceDay, recipientMinute, recipientDay, lastSent, duplicateCandidates, recentFailures] =
       await Promise.all([
         this.repository.outboundMessageAudit.count({
           where: { instanceId, requestedAt: { gte: minuteAgo }, status: countable },
@@ -270,16 +314,16 @@ export class OutboundSafetyService {
           orderBy: { sentAt: 'desc' },
         }),
         messageHash && policy.duplicate.enabled
-          ? this.repository.outboundMessageAudit.findFirst({
+          ? this.repository.outboundMessageAudit.findMany({
               where: {
                 instanceId,
                 recipient: normalizedRecipient,
-                messageHash,
                 status: 'SENT',
                 sentAt: { gte: new Date(now.getTime() - policy.duplicate.windowSeconds * 1000) },
               },
+              select: { messageHash: true, messageFingerprint: true },
             })
-          : Promise.resolve(null),
+          : Promise.resolve([]),
         policy.failurePause.enabled
           ? this.repository.outboundMessageAudit.findMany({
               where: { instanceId, status: { in: ['SENT', 'FAILED'] } },
@@ -364,6 +408,15 @@ export class OutboundSafetyService {
         );
       }
     }
+    const duplicate = duplicateCandidates.some(
+      (candidate) =>
+        candidate.messageHash === messageHash ||
+        (policy.duplicate.similarityThresholdPercent < 100 &&
+          messageFingerprint &&
+          candidate.messageFingerprint &&
+          fingerprintSimilarityPercent(messageFingerprint, candidate.messageFingerprint) >=
+            policy.duplicate.similarityThresholdPercent),
+    );
     if (duplicate) {
       return this.block(
         instanceId,
@@ -373,6 +426,7 @@ export class OutboundSafetyService {
         'duplicate_message',
         policy.duplicate.windowSeconds,
         recipientCategory,
+        messageFingerprint,
       );
     }
 
@@ -409,6 +463,7 @@ export class OutboundSafetyService {
         instanceId,
         recipient: normalizedRecipient,
         messageHash,
+        messageFingerprint,
         messageType,
         status: 'PENDING',
         recipientCategory,
@@ -460,9 +515,19 @@ export class OutboundSafetyService {
     reason: string,
     retryAfterSeconds?: number,
     recipientCategory?: string,
+    messageFingerprint: string | null = null,
   ): Promise<OutboundSafetyDecision> {
     await this.repository.outboundMessageAudit.create({
-      data: { instanceId, recipient, messageHash, messageType, status: 'BLOCKED', reason, recipientCategory },
+      data: {
+        instanceId,
+        recipient,
+        messageHash,
+        messageFingerprint,
+        messageType,
+        status: 'BLOCKED',
+        reason,
+        recipientCategory,
+      },
     });
     return { allowed: false, code: reason, retryAfterSeconds };
   }

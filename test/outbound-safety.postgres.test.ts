@@ -16,6 +16,7 @@ async function main() {
       typing: { enabled: false },
       rateLimit: { minimumIntervalMs: 0 },
       duplicate: { enabled: true, windowSeconds: 60 },
+      outreach: { enabled: false },
     };
     const message = { conversation: 'Database-backed duplicate test' };
 
@@ -38,9 +39,25 @@ async function main() {
     const duplicate = await service.begin(instance.id, '15551234567@s.whatsapp.net', message, policy);
     assert.deepEqual(duplicate, { allowed: false, code: 'duplicate_message', retryAfterSeconds: 60 });
 
+    const fuzzyFirst = await service.begin(
+      instance.id,
+      '15551234568@s.whatsapp.net',
+      { conversation: 'Your scheduled appointment is tomorrow at 10:00.' },
+      { ...policy, duplicate: { enabled: true, windowSeconds: 60, similarityThresholdPercent: 70 } },
+    );
+    assert.equal(fuzzyFirst.allowed, true);
+    if (fuzzyFirst.allowed) await service.sent(instance.id, fuzzyFirst.auditId);
+    const fuzzyDuplicate = await service.begin(
+      instance.id,
+      '15551234568@s.whatsapp.net',
+      { conversation: 'Your scheduled appointment is tomorrow at 10:30.' },
+      { ...policy, duplicate: { enabled: true, windowSeconds: 60, similarityThresholdPercent: 70 } },
+    );
+    assert.deepEqual(fuzzyDuplicate, { allowed: false, code: 'duplicate_message', retryAfterSeconds: 60 });
+
     const rows = await prisma.outboundMessageAudit.findMany({ where: { instanceId: instance.id } });
-    assert.equal(rows.length, 3);
-    assert.deepEqual(rows.map((row) => row.status).sort(), ['BLOCKED', 'BLOCKED', 'SENT']);
+    assert.equal(rows.length, 5);
+    assert.deepEqual(rows.map((row) => row.status).sort(), ['BLOCKED', 'BLOCKED', 'BLOCKED', 'SENT', 'SENT']);
 
     const outreachPolicy = {
       enabled: true,

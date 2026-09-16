@@ -61,7 +61,7 @@ Eligible reads use a persistent, instance-scoped database snapshot before contac
 
 See the [local-first read-through reference](./local-first-reads.md) and [complete instance-settings reference](./settings.md) for the method matrix, every setting, identity rules, invalidation behavior, migration sequence, examples, and rollback guidance.
 
-Automated outbound sends can use the per-instance [automation safety and pacing policy](./outbound-automation-safety.md). It provides content-preserving typing indicators, rolling minute/daily limits, quiet hours, suppression and optional recipient allowlisting, exact-duplicate blocking, failure circuits, and persistent audit records. It never rewrites message text or attempts to conceal automation.
+Automated outbound sends can use the per-instance [automation safety and pacing policy](./outbound-automation-safety.md). It provides content-preserving typing indicators, rolling minute/daily limits, quiet hours, suppression and optional recipient allowlisting, configurable exact/near-duplicate blocking, failure circuits, and persistent audit records. It never rewrites message text or attempts to conceal automation.
 
 The local `Message` table now distinguishes a provisional API send from WhatsApp server acceptance and recipient delivery, deduplicates future events by WhatsApp message ID, and reconciles PN/LID aliases without rewriting either identity. See [Operational message integrity](./message-archive-integrity.md) for every field, state transition, search response, migration rule, and workflow requirement.
 
