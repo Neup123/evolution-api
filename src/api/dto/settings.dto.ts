@@ -49,6 +49,8 @@ export type AutomationSafetySettings = {
   duplicate?: {
     enabled?: boolean;
     windowSeconds?: number;
+    /** Minimum normalized fingerprint similarity required to block, from 1 through 100. */
+    similarityThresholdPercent?: number;
   };
   suppression?: {
     recipients?: string[];

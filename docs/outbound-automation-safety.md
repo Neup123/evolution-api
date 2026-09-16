@@ -10,7 +10,7 @@ This feature is for traffic safety, recipient protection, and predictable user e
 2. Resolve eligible recipients to their canonical WhatsApp JID, then re-check recipient policy and quiet hours.
 3. Check the in-process concurrency ceiling.
 4. Classify direct recipients as `NEW`, `DORMANT`, or `ENGAGED` from persisted inbound history. Groups and broadcasts are `NON_DIRECT`.
-5. Check the unique new/dormant-recipient quota, persistent failure circuit, instance and recipient limits, minimum interval, and exact duplicate fingerprint.
+5. Check the unique new/dormant-recipient quota, persistent failure circuit, instance and recipient limits, minimum interval, and configured duplicate-similarity threshold.
 6. Reserve a new/dormant recipient in the rolling outreach window and create a `PENDING` audit row.
 7. Calculate a bounded typing-indicator duration from visible text or caption length. A request's explicit `delay` remains authoritative when it is longer.
 8. Send the message without changing its content.
@@ -72,7 +72,11 @@ Use `GET /settings/outbound-audit/{instanceName}?limit=100&status=BLOCKED&recipi
       "end": "08:00",
       "timeZone": "Europe/Athens"
     },
-    "duplicate": { "enabled": true, "windowSeconds": 30 },
+    "duplicate": {
+      "enabled": true,
+      "windowSeconds": 30,
+      "similarityThresholdPercent": 100
+    },
     "suppression": {
       "recipients": ["15551234567@s.whatsapp.net", "120363000000000000@g.us"],
       "allowlistEnabled": false,
@@ -107,8 +111,9 @@ All nested objects and fields are optional when using the HTTP API; omitted fiel
 | `quietHours.enabled` | boolean | Enforce the configured local-time window. |
 | `quietHours.start`, `quietHours.end` | `HH:MM` | Half-open quiet window. Overnight windows such as 22:00–08:00 are supported. Equal values disable the window. |
 | `quietHours.timeZone` | IANA name | Time zone such as `UTC`, `Europe/Athens`, or `America/New_York`. Invalid names fall back to UTC at runtime. |
-| `duplicate.enabled` | boolean | Block the same exact visible text fingerprint to the same recipient. |
-| `duplicate.windowSeconds` | 1–86,400 | Rolling duplicate window. Media without visible text is not fingerprinted. |
+| `duplicate.enabled` | boolean | Block exact or sufficiently similar visible text sent to the same recipient. |
+| `duplicate.windowSeconds` | 1–86,400 | Rolling time window. Every successful send to the recipient inside it is checked; there is no fixed message-count limit. Media without visible text is not fingerprinted. |
+| `duplicate.similarityThresholdPercent` | 1–100 | Minimum approximate similarity that is blocked. `100` (default) preserves exact-only behavior. Lower values add near-duplicate detection; `85` is a practical starting point and should be tuned against real traffic. |
 | `suppression.recipients` | string array | Numbers or JIDs that automated sends must never target. Comparison is normalized and case-insensitive. |
 | `suppression.allowlistEnabled` | boolean | Opt-in mode that rejects every recipient not present in `allowedRecipients`. |
 | `suppression.allowedRecipients` | string array | Numbers or JIDs permitted when allowlist mode is enabled. Comparison is normalized and case-insensitive. |
@@ -125,6 +130,7 @@ All nested objects and fields are optional when using the HTTP API; omitted fiel
 |---|---|
 | `recipient` | Normalized target number or JID. |
 | `messageHash` | SHA-256 of exact visible text/caption, or null for non-text sends. The message body itself is not duplicated in this table. |
+| `messageFingerprint` | Non-reversible 64-bit SimHash of normalized character trigrams, or null for non-text and legacy rows. It supports approximate comparison without retaining another message-body copy. |
 | `messageType` | `text`, `media`, or `other`. |
 | `status` | `PENDING`, `SENT`, `FAILED`, or `BLOCKED`. |
 | `reason` | Stable failure or policy code, with a 100-character maximum. Raw transport errors are not persisted. |
@@ -146,6 +152,8 @@ Policy block codes are `recipient_suppressed`, `recipient_not_allowed`, `quiet_h
 ## Operational notes
 
 - Rolling limits and duplicate/failure checks use PostgreSQL or MySQL audit rows and therefore survive restarts. The concurrency count is process-local; use conservative rolling limits when running multiple API replicas.
+- Similarity comparison normalizes Unicode compatibility forms, letter case, and repeated whitespace, then compares a 64-bit character-trigram SimHash. The displayed percentage is an approximate fingerprint similarity, not an edit-distance guarantee. Exact SHA-256 equality is always blocked regardless of the configured percentage.
+- Audit rows created before the similarity migration have no similarity fingerprint. They still participate in exact matching, but near-duplicate matching starts with sends recorded after the upgrade.
 - Automatic retries are intentionally not performed after an uncertain WhatsApp send because retrying without a confirmed idempotency key can duplicate a message. Workflow callers should retry only clearly rejected pre-send requests.
 - The settings migration is automatic during normal Evolution API startup. Back up the database before every application upgrade as usual.
 - See [Defensive detection of automation disguise](./defensive-automation-detection.md) for safe teaching examples and detection guidance.

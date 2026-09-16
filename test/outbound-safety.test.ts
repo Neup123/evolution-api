@@ -2,8 +2,11 @@ import assert from 'node:assert/strict';
 
 import {
   calculateTypingDelay,
+  createSimilarityFingerprint,
   extractOutboundText,
+  fingerprintSimilarityPercent,
   isQuietHours,
+  normalizeDuplicateText,
   normalizeAutomationSafety,
   OutboundSafetyService,
 } from '../src/api/services/outbound-safety.service';
@@ -13,6 +16,12 @@ async function main() {
     conversation: 'Keep https://example.com/A1 and code ZX-42 exactly unchanged.',
   };
   assert.equal(extractOutboundText(message), message.conversation);
+  assert.equal(normalizeDuplicateText('  HELLO\tWorld  '), 'hello world');
+  const normalizedFingerprint = createSimilarityFingerprint('  HELLO\tWorld  ');
+  assert.equal(normalizedFingerprint, createSimilarityFingerprint('hello world'));
+  assert.equal(normalizedFingerprint?.length, 16);
+  assert.equal(fingerprintSimilarityPercent(normalizedFingerprint!, normalizedFingerprint!), 100);
+  assert.equal(fingerprintSimilarityPercent('invalid', normalizedFingerprint!), 0);
 
   const policy = normalizeAutomationSafety({
     enabled: true,

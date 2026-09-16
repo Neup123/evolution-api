@@ -92,6 +92,7 @@ export const settingsSchema: JSONSchema7 = {
           properties: {
             enabled: { type: 'boolean' },
             windowSeconds: { type: 'integer', minimum: 1, maximum: 86400 },
+            similarityThresholdPercent: { type: 'integer', minimum: 1, maximum: 100 },
           },
         },
         suppression: {

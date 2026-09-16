@@ -322,18 +322,19 @@ model Setting {
 }
 
 model OutboundMessageAudit {
-  id                String    @id @default(cuid())
-  instanceId        String
-  recipient         String    @db.VarChar(100)
-  messageHash       String?   @db.VarChar(64)
-  messageType       String    @db.VarChar(50)
-  status            String    @db.VarChar(30)
-  reason            String?   @db.VarChar(100)
-  recipientCategory String?   @db.VarChar(20)
-  delayMs           Int?      @db.Int
-  requestedAt       DateTime  @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp
-  sentAt            DateTime? @db.Timestamp
-  Instance          Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  id                 String    @id @default(cuid())
+  instanceId         String
+  recipient          String    @db.VarChar(100)
+  messageHash        String?   @db.VarChar(64)
+  messageFingerprint String?   @db.VarChar(16)
+  messageType        String    @db.VarChar(50)
+  status             String    @db.VarChar(30)
+  reason             String?   @db.VarChar(100)
+  recipientCategory  String?   @db.VarChar(20)
+  delayMs            Int?      @db.Int
+  requestedAt        DateTime  @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp
+  sentAt             DateTime? @db.Timestamp
+  Instance           Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
 
   @@index([instanceId, requestedAt])
   @@index([instanceId, recipient, requestedAt])
