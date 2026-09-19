@@ -68,6 +68,10 @@ class Key {
   id: string;
   fromMe: boolean;
   remoteJid: string;
+  remoteJidAlt?: string;
+  participant?: string;
+  participantAlt?: string;
+  addressingMode?: string;
 }
 export class ReadMessageDto {
   readMessages: Key[];
@@ -98,12 +102,7 @@ export class PrivacySettingDto {
   groupadd: WAPrivacyGroupAddValue;
 }
 
-export class DeleteMessage {
-  id: string;
-  fromMe: boolean;
-  remoteJid: string;
-  participant?: string;
-}
+export class DeleteMessage extends Key {}
 export class Options {
   delay?: number;
   presence?: WAPresence;
