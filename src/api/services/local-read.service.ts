@@ -3,6 +3,8 @@ import type { ConfigService, Database } from '@config/env.config';
 import type { Prisma } from '@prisma/client';
 import { createHash } from 'crypto';
 
+import { SettingsTemplateService } from './settings-template.service';
+
 export const LOCALIZABLE_BAILEYS_METHODS = [
   'communityMetadata',
   'communityFetchLinkedGroups',
@@ -106,15 +108,19 @@ export class LocalReadService {
   constructor(
     private readonly prismaRepository: PrismaRepository,
     private readonly configService: ConfigService,
-  ) {}
+  ) {
+    this.settingsTemplates = new SettingsTemplateService(prismaRepository);
+  }
 
   private readonly inFlight = new Map<string, Promise<unknown>>();
+  private readonly settingsTemplates: SettingsTemplateService;
 
   public async execute<T>(options: {
     instanceName: string;
     method: string;
     args?: unknown[];
     live?: boolean;
+    settingsTemplateId?: string;
     callLive: () => Promise<T>;
   }): Promise<LocalReadResult<T>> {
     const database = this.configService.get<Database>('DATABASE');
@@ -137,9 +143,19 @@ export class LocalReadService {
 
     const argumentsKey = localReadArgumentsKey(args);
     const uniqueKey = `${instance.id}:${options.method}:${argumentsKey}`;
-    const instanceOverrides = (instance.Setting?.localReadTtlOverrides as Record<string, number> | null) ?? {};
+    const scopedTarget = args.find((arg) => typeof arg === 'string' && arg.includes('@')) as string | undefined;
+    const templateSettings = await this.settingsTemplates.resolve(
+      instance.id,
+      scopedTarget,
+      options.settingsTemplateId,
+    );
+    const instanceOverrides =
+      templateSettings?.localReadTtlOverrides ??
+      (instance.Setting?.localReadTtlOverrides as Record<string, number> | null) ??
+      {};
     const ttlSeconds =
       instanceOverrides[options.method] ??
+      templateSettings?.localReadTtlSeconds ??
       instance.Setting?.localReadTtlSeconds ??
       database.READ_THROUGH.TTL_OVERRIDES[options.method] ??
       database.READ_THROUGH.TTL_SECONDS;

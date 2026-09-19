@@ -52,6 +52,7 @@ import {
   StatusMessage,
   TypeButton,
 } from '@api/dto/sendMessage.dto';
+import { BAILEYS_METHOD_METADATA } from '@api/integrations/channel/whatsapp/baileys.generated';
 import { chatwootImport } from '@api/integrations/chatbot/chatwoot/utils/chatwoot-import-helper';
 import * as s3Service from '@api/integrations/storage/s3/libs/minio.server';
 import { ProviderFiles } from '@api/provider/sessions';
@@ -66,7 +67,9 @@ import {
   messageArchiveStateFromStatus,
   messageUpdateIdentity,
 } from '@api/services/message-archive.service';
+import { preserveMessageKey } from '@api/services/message-key.service';
 import { OutboundSafetyService } from '@api/services/outbound-safety.service';
+import { SettingsTemplateService } from '@api/services/settings-template.service';
 import { Events, MessageSubtype, TypeMediaMessage, wa } from '@api/types/wa.types';
 import { CacheEngine } from '@cache/cacheengine';
 import {
@@ -102,7 +105,14 @@ import { sendTelemetry } from '@utils/sendTelemetry';
 import useMultiFileAuthStatePrisma from '@utils/use-multi-file-auth-state-prisma';
 import { AuthStateProvider } from '@utils/use-multi-file-auth-state-provider-files';
 import { useMultiFileAuthStateRedisDb } from '@utils/use-multi-file-auth-state-redis-db';
-import { normalizeParticipantIdentity } from '@utils/whatsappIdentity';
+import {
+  AuthoritativeLidRegistry,
+  normalizeGroupJoinRequestIdentity,
+  normalizeParticipantIdentity,
+  responseContainsAuthoritativeLid,
+  validateMessageKeyRemoteJid,
+  validateOutboundIdentifier,
+} from '@utils/whatsappIdentity';
 import axios from 'axios';
 import makeWASocket, {
   AnyMessageContent,
@@ -233,8 +243,10 @@ async function getVideoDuration(input: Buffer | string | Readable): Promise<numb
 }
 
 export class BaileysStartupService extends ChannelStartupService {
+  private readonly authoritativeLids = new AuthoritativeLidRegistry();
   private messageProcessor = new BaileysMessageProcessor();
   private readonly outboundSafety: OutboundSafetyService;
+  private readonly settingsTemplates: SettingsTemplateService;
 
   constructor(
     public readonly configService: ConfigService,
@@ -247,6 +259,7 @@ export class BaileysStartupService extends ChannelStartupService {
   ) {
     super(configService, eventEmitter, prismaRepository, chatwootCache);
     this.outboundSafety = new OutboundSafetyService(prismaRepository);
+    this.settingsTemplates = new SettingsTemplateService(prismaRepository);
     this.instance.qrcode = { count: 0 };
     this.messageProcessor.mount({
       onMessageReceive: this.messageHandle['messages.upsert'].bind(this), // Bind the method to the current context
@@ -1947,12 +1960,14 @@ export class BaileysStartupService extends ChannelStartupService {
 
           return {
             jid: participantId,
+            username: identity.username,
             lid: identity.lid,
             phoneNumber: identity.phoneNumber,
             phoneNumberDigits: identity.phoneNumberDigits,
             canonicalJid: identity.canonicalJid,
             identifierType: identity.identifierType,
             identityResolved: identity.identityResolved,
+            resolutionReason: identity.resolutionReason,
             participantDigits: identity.participantDigits,
             name: participantData?.name,
             imgUrl: participantData?.imgUrl,
@@ -2457,7 +2472,10 @@ export class BaileysStartupService extends ChannelStartupService {
         return await this.client.sendMessage(
           sender,
           {
-            react: { text: message['reactionMessage']['text'], key: message['reactionMessage']['key'] },
+            react: {
+              text: message['reactionMessage']['text'],
+              key: preserveMessageKey(message['reactionMessage']['key']),
+            },
           } as unknown as AnyMessageContent,
           option as unknown as MiscMessageGenerationOptions,
         );
@@ -2565,19 +2583,26 @@ export class BaileysStartupService extends ChannelStartupService {
     message: T,
     options?: Options,
     isIntegration = false,
+    settingsTemplateId?: string,
   ) {
+    const identifierValidation = validateOutboundIdentifier(number);
+    if (identifierValidation.valid === false) {
+      throw new BadRequestException({
+        code: identifierValidation.code,
+        message: identifierValidation.message,
+        identifier: number,
+      });
+    }
     const requestedRecipient = createJid(number).toLowerCase();
-    const preflightBlockCode = this.outboundSafety.preflightBlockCode(
+    const templateSettings = await this.settingsTemplates.resolve(
+      this.instanceId,
       requestedRecipient,
-      this.localSettings.automationSafety,
+      settingsTemplateId,
     );
+    const effectiveSafety = templateSettings?.automationSafety ?? this.localSettings.automationSafety;
+    const preflightBlockCode = this.outboundSafety.preflightBlockCode(requestedRecipient, effectiveSafety);
     if (preflightBlockCode) {
-      const preflight = await this.outboundSafety.begin(
-        this.instanceId,
-        requestedRecipient,
-        message,
-        this.localSettings.automationSafety,
-      );
+      const preflight = await this.outboundSafety.begin(this.instanceId, requestedRecipient, message, effectiveSafety);
       if (preflight.allowed === false) {
         throw new TooManyRequestsException({
           code: preflight.code,
@@ -2595,12 +2620,7 @@ export class BaileysStartupService extends ChannelStartupService {
 
     const sender = isWA.jid.toLowerCase();
 
-    const safety = await this.outboundSafety.begin(
-      this.instanceId,
-      sender,
-      message,
-      this.localSettings.automationSafety,
-    );
+    const safety = await this.outboundSafety.begin(this.instanceId, sender, message, effectiveSafety);
     if (safety.allowed === false) {
       throw new TooManyRequestsException({
         code: safety.code,
@@ -2622,7 +2642,7 @@ export class BaileysStartupService extends ChannelStartupService {
       let quoted: WAMessage;
 
       if (options?.quoted) {
-        const m = options?.quoted;
+        const m = { ...options.quoted, key: preserveMessageKey(options.quoted.key) };
 
         const msg = m?.message ? m : ((await this.getMessage(m.key, true)) as WAMessage);
 
@@ -2990,8 +3010,10 @@ export class BaileysStartupService extends ChannelStartupService {
         linkPreview: data?.linkPreview,
         mentionsEveryOne: data?.mentionsEveryOne,
         mentioned: data?.mentioned,
+        settingsTemplateId: data?.settingsTemplateId,
       },
       isIntegration,
+      data.settingsTemplateId,
     );
   }
 
@@ -3006,6 +3028,7 @@ export class BaileysStartupService extends ChannelStartupService {
         linkPreview: data?.linkPreview,
         mentionsEveryOne: data?.mentionsEveryOne,
         mentioned: data?.mentioned,
+        settingsTemplateId: data?.settingsTemplateId,
       },
     );
   }
@@ -3319,6 +3342,7 @@ export class BaileysStartupService extends ChannelStartupService {
         quoted: data?.quoted,
         mentionsEveryOne: data?.mentionsEveryOne,
         mentioned: data?.mentioned,
+        settingsTemplateId: data?.settingsTemplateId,
       },
     );
 
@@ -3341,8 +3365,10 @@ export class BaileysStartupService extends ChannelStartupService {
         quoted: data?.quoted,
         mentionsEveryOne: data?.mentionsEveryOne,
         mentioned: data?.mentioned,
+        settingsTemplateId: data?.settingsTemplateId,
       },
       isIntegration,
+      data.settingsTemplateId,
     );
 
     return mediaSent;
@@ -3357,6 +3383,7 @@ export class BaileysStartupService extends ChannelStartupService {
       quoted: data?.quoted,
       mentionsEveryOne: data?.mentionsEveryOne,
       mentioned: data?.mentioned,
+      settingsTemplateId: data?.settingsTemplateId,
     };
 
     if (file) mediaData.media = file.buffer.toString('base64');
@@ -3372,8 +3399,10 @@ export class BaileysStartupService extends ChannelStartupService {
         quoted: data?.quoted,
         mentionsEveryOne: data?.mentionsEveryOne,
         mentioned: data?.mentioned,
+        settingsTemplateId: data?.settingsTemplateId,
       },
       isIntegration,
+      data.settingsTemplateId,
     );
 
     return mediaSent;
@@ -3590,6 +3619,7 @@ export class BaileysStartupService extends ChannelStartupService {
       },
       { presence: 'recording', delay: data?.delay },
       isIntegration,
+      data.settingsTemplateId,
     );
   }
 
@@ -3704,6 +3734,7 @@ export class BaileysStartupService extends ChannelStartupService {
         quoted: data?.quoted,
         mentionsEveryOne: data?.mentionsEveryOne,
         mentioned: data?.mentioned,
+        settingsTemplateId: data?.settingsTemplateId,
       });
     }
 
@@ -3756,6 +3787,7 @@ export class BaileysStartupService extends ChannelStartupService {
       quoted: data?.quoted,
       mentionsEveryOne: data?.mentionsEveryOne,
       mentioned: data?.mentioned,
+      settingsTemplateId: data?.settingsTemplateId,
     });
   }
 
@@ -3776,6 +3808,7 @@ export class BaileysStartupService extends ChannelStartupService {
         quoted: data?.quoted,
         mentionsEveryOne: data?.mentionsEveryOne,
         mentioned: data?.mentioned,
+        settingsTemplateId: data?.settingsTemplateId,
       },
     );
   }
@@ -3799,6 +3832,7 @@ export class BaileysStartupService extends ChannelStartupService {
         quoted: data?.quoted,
         mentionsEveryOne: data?.mentionsEveryOne,
         mentioned: data?.mentioned,
+        settingsTemplateId: data?.settingsTemplateId,
       },
     );
   }
@@ -3841,7 +3875,11 @@ export class BaileysStartupService extends ChannelStartupService {
       };
     }
 
-    return await this.sendMessageWithTyping(data.number, { ...message }, {});
+    return await this.sendMessageWithTyping(
+      data.number,
+      { ...message },
+      { settingsTemplateId: data.settingsTemplateId },
+    );
   }
 
   public async reactionMessage(data: SendReactionDto) {
@@ -3851,6 +3889,18 @@ export class BaileysStartupService extends ChannelStartupService {
   }
 
   // Chat Controller
+  private async isAuthoritativeLid(jid: string): Promise<boolean> {
+    if (this.authoritativeLids.has(jid)) return true;
+
+    // The local-read snapshot is server-originated evidence and survives process
+    // restarts. It must never turn an arbitrary caller-supplied LID into success.
+    const snapshots = await this.prismaRepository.localReadSnapshot.findMany({
+      where: { instanceId: this.instanceId, method: 'groupRequestParticipantsList', complete: true },
+      select: { result: true },
+    });
+    return snapshots.some((snapshot) => responseContainsAuthoritativeLid(snapshot.result, jid));
+  }
+
   public async whatsappNumber(data: WhatsAppNumberDto, forceLive = false) {
     const jids: {
       groups: { number: string; jid: string }[];
@@ -3929,11 +3979,15 @@ export class BaileysStartupService extends ChannelStartupService {
           );
         }
 
-        // WhatsApp cannot authoritatively verify an unknown LID. Never invent success.
         if (user.jid.includes('@lid')) {
+          // A join-request JID comes directly from WhatsApp and is actionable even
+          // when WhatsApp intentionally withholds the phone-number identity.
+          if (await this.isAuthoritativeLid(user.jid)) {
+            return new OnWhatsAppDto(user.jid, true, user.number, undefined, user.jid);
+          }
           throw new BadRequestException(
             `Unknown LID ${user.jid}`,
-            'Use a phone-number JID or wait until this instance receives an authoritative PN/LID mapping.',
+            'Use an authoritative LID returned by this instance (for example from groupRequestParticipantsList), or a phone-number JID.',
           );
         }
 
@@ -4115,13 +4169,22 @@ export class BaileysStartupService extends ChannelStartupService {
 
   public async deleteMessage(del: DeleteMessage) {
     try {
-      const response = await this.client.sendMessage(del.remoteJid, { delete: del });
+      const jidValidation = validateMessageKeyRemoteJid(del.remoteJid);
+      if (jidValidation.valid === false) {
+        throw new BadRequestException({
+          code: jidValidation.code,
+          message: jidValidation.message,
+          remoteJid: del.remoteJid,
+        });
+      }
+      const deleteKey = preserveMessageKey(del);
+      const response = await this.client.sendMessage(deleteKey.remoteJid, { delete: deleteKey });
       if (response) {
-        const messageId = response.message?.protocolMessage?.key?.id;
+        const messageId = deleteKey.id;
         if (messageId) {
           const isLogicalDeleted = configService.get<Database>('DATABASE').DELETE_DATA.LOGICAL_MESSAGE_DELETE;
           let message = await this.prismaRepository.message.findFirst({
-            where: { key: { path: ['id'], equals: messageId } },
+            where: { instanceId: this.instanceId, key: { path: ['id'], equals: messageId } },
           });
           if (isLogicalDeleted) {
             if (!message) return response;
@@ -5297,12 +5360,14 @@ export class BaileysStartupService extends ChannelStartupService {
       const identity = normalizeParticipantIdentity(participant);
       return {
         ...participant,
+        username: identity.username,
         lid: identity.lid,
         phoneNumber: identity.phoneNumber,
         phoneNumberDigits: identity.phoneNumberDigits,
         canonicalJid: identity.canonicalJid,
         identifierType: identity.identifierType,
         identityResolved: identity.identityResolved,
+        resolutionReason: identity.resolutionReason,
       };
     };
     const clarifyMetadata = (metadata: any) =>
@@ -5407,6 +5472,11 @@ export class BaileysStartupService extends ChannelStartupService {
         result = await socketMethod.apply(this.client, normalizedArgs);
       }
 
+      if (method === 'groupRequestParticipantsList' && Array.isArray(result)) {
+        this.authoritativeLids.observeJoinRequests(result);
+        result = result.map((request) => normalizeGroupJoinRequestIdentity(request as Record<string, unknown>));
+      }
+
       if (
         method === 'groupMetadata' ||
         method === 'communityMetadata' ||
@@ -5451,11 +5521,21 @@ export class BaileysStartupService extends ChannelStartupService {
     } catch (error) {
       if (error && typeof error === 'object' && (error as any).status === 429) throw error;
       const message = error instanceof Error ? error.message : String(error);
-      throw new BadRequestException(
-        `Baileys method ${method} failed`,
-        message,
-        'Verify that the JID belongs to the selected resource and that the connected WhatsApp account has permission to perform this operation.',
+      const isConnectionFailure = /connection closed|timed? ?out|socket|disconnected/i.test(message);
+      const methodMetadata = BAILEYS_METHOD_METADATA[method] as unknown as { parameters?: { name: string }[] };
+      const hasJidParameter = ['jid', 'to', 'toJid', 'participants'].some((name) =>
+        methodMetadata.parameters?.some((parameter) => parameter.name === name),
       );
+      throw new BadRequestException({
+        code: isConnectionFailure ? 'baileys_connection_unavailable' : 'baileys_operation_failed',
+        method,
+        message,
+        remediation: isConnectionFailure
+          ? 'Reconnect the WhatsApp instance and retry this read operation after the connection is open.'
+          : hasJidParameter
+            ? 'Verify that the JID belongs to the selected resource and that the connected account has permission.'
+            : 'Verify that the connected WhatsApp account supports and has permission for this operation.',
+      });
     }
   }
 

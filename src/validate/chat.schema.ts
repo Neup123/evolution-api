@@ -124,11 +124,18 @@ export const deleteMessageSchema: JSONSchema7 = {
   properties: {
     id: { type: 'string' },
     fromMe: { type: 'boolean', enum: [true, false] },
-    remoteJid: { type: 'string' },
+    remoteJid: {
+      type: 'string',
+      pattern: '^(?:\\d+@(?:s\\.whatsapp\\.net|lid)|\\d+-\\d+@g\\.us|status@broadcast|[^@\\s]+@broadcast)$',
+      description: 'remoteJid must be a full WhatsApp JID, not an internal database row ID.',
+    },
+    remoteJidAlt: { type: 'string' },
     participant: { type: 'string' },
+    participantAlt: { type: 'string' },
+    addressingMode: { type: 'string', enum: ['lid', 'pn'] },
   },
   required: ['id', 'fromMe', 'remoteJid'],
-  ...isNotEmpty('id', 'remoteJid', 'participant'),
+  ...isNotEmpty('id', 'remoteJid'),
 };
 
 export const profilePictureSchema: JSONSchema7 = {

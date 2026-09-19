@@ -3616,7 +3616,8 @@ export const BAILEYS_METHOD_METADATA = {
   sendMessage: {
     group: 'messages',
     displayName: 'Send Message',
-    description: 'Send a Baileys message payload directly to a chat or group.',
+    description:
+      'Send a Baileys message payload directly to a chat or group. An @lid returned by this instance in a join-request record is authoritative and can be used without a phone-number mapping.',
     parameters: [
       {
         name: 'jid',
@@ -5002,7 +5003,8 @@ export const BAILEYS_METHOD_METADATA = {
   groupRequestParticipantsList: {
     group: 'groups',
     displayName: 'Request Participants List',
-    description: 'List pending requests from people who want to join a group.',
+    description:
+      'List pending requests with the authoritative participant JID/LID used for moderation and the username used for display when WhatsApp supplies it.',
     parameters: [
       {
         name: 'jid',
@@ -5048,7 +5050,8 @@ export const BAILEYS_METHOD_METADATA = {
             type: 'string',
             description: 'string',
           },
-          description: 'Participant WhatsApp JIDs, each including the @s.whatsapp.net suffix.',
+          description:
+            'Authoritative participant JIDs from the join-request list. Both @lid and @s.whatsapp.net identifiers are accepted; a phone number is not required when WhatsApp supplies an @lid.',
         },
       },
       {

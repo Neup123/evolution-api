@@ -41,6 +41,7 @@ lerna-debug.log*
 !/test/outbound-safety.test.ts
 !/test/outbound-safety.postgres.test.ts
 !/test/message-archive.test.ts
+!/test/message-key.test.ts
 /src/env.yml
 /store
 *.env

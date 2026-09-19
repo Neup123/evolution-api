@@ -200,6 +200,7 @@ Local storage or S3/MinIO. Automatic media download from WhatsApp. Optional audi
 | Swagger UI | [`/docs`](./docs/openapi.yaml) |
 | Fork documentation | [`docs/README.md`](./docs/README.md) |
 | Every Baileys method and response | [`docs/baileys/README.md`](./docs/baileys/README.md) |
+| WhatsApp usernames and authoritative LIDs | [`docs/username-lid-identities.md`](./docs/username-lid-identities.md) |
 | WhatsApp archive | [`docs/archive.md`](./docs/archive.md) |
 | Local-first reads | [`docs/local-first-reads.md`](./docs/local-first-reads.md) |
 | Every instance setting | [`docs/settings.md`](./docs/settings.md) |
@@ -263,3 +264,5 @@ Third-party attributions are documented in [NOTICE](./NOTICE).
 <p align="center">
   Made by <a href="https://evolutionfoundation.com.br">Evolution Foundation</a> · © 2026
 </p>
+
+- [Settings templates and precedence](./docs/settings-templates.md)

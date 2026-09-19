@@ -71,6 +71,7 @@ export class GroupController {
         instanceName: instance.instanceName,
         method: 'group.findGroupInfos',
         args: [groupJid.groupJid],
+        settingsTemplateId: instance.settingsTemplateId,
         live: forceLiveRead(groupJid.live, instance.live),
         callLive: () => this.waMonitor.waInstances[instance.instanceName].findGroup(groupJid),
       })
@@ -83,6 +84,7 @@ export class GroupController {
         instanceName: instance.instanceName,
         method: 'group.fetchAllGroups',
         args: [getPaticipants.getParticipants],
+        settingsTemplateId: instance.settingsTemplateId,
         live: forceLiveRead(getPaticipants.live, instance.live),
         callLive: () => this.waMonitor.waInstances[instance.instanceName].fetchAllGroups(getPaticipants),
       })
@@ -117,6 +119,7 @@ export class GroupController {
         instanceName: instance.instanceName,
         method: 'group.participants',
         args: [groupJid.groupJid],
+        settingsTemplateId: instance.settingsTemplateId,
         live: forceLiveRead(groupJid.live, instance.live),
         callLive: () => this.waMonitor.waInstances[instance.instanceName].findParticipants(groupJid),
       })

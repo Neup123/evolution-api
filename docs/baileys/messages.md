@@ -626,7 +626,7 @@ Response `result` structure:
 
 ## Send Message (`sendMessage`)
 
-Send a Baileys message payload directly to a chat or group.
+Send a Baileys message payload directly to a chat or group. An @lid returned by this instance in a join-request record is authoritative and can be used without a phone-number mapping.
 
 `POST /baileys/messages/sendMessage/{instanceName}`
 
