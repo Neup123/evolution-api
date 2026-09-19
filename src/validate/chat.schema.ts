@@ -125,10 +125,13 @@ export const deleteMessageSchema: JSONSchema7 = {
     id: { type: 'string' },
     fromMe: { type: 'boolean', enum: [true, false] },
     remoteJid: { type: 'string' },
+    remoteJidAlt: { type: 'string' },
     participant: { type: 'string' },
+    participantAlt: { type: 'string' },
+    addressingMode: { type: 'string', enum: ['lid', 'pn'] },
   },
   required: ['id', 'fromMe', 'remoteJid'],
-  ...isNotEmpty('id', 'remoteJid', 'participant'),
+  ...isNotEmpty('id', 'remoteJid'),
 };
 
 export const profilePictureSchema: JSONSchema7 = {
