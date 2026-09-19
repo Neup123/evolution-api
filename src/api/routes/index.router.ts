@@ -14,6 +14,7 @@ import fs from 'fs';
 import mimeTypes from 'mime-types';
 import path from 'path';
 import swaggerUi from 'swagger-ui-express';
+import YAML from 'yaml';
 
 import { BusinessRouter } from './business.router';
 import { CallRouter } from './call.router';
@@ -49,7 +50,23 @@ const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
 
 if (!serverConfig.DISABLE_DOCS) {
   router.get('/docs/openapi.yaml', (_req, res) => {
-    res.type('application/yaml').sendFile(path.join(process.cwd(), 'docs', 'openapi.yaml'));
+    const base = YAML.parse(fs.readFileSync(path.join(process.cwd(), 'docs', 'openapi.yaml'), 'utf8'), {
+      maxAliasCount: -1,
+    });
+    const runtimeRoutes = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'docs', 'runtime-routes.json'), 'utf8'));
+    for (const route of runtimeRoutes) {
+      base.paths[route.path] ??= {};
+      base.paths[route.path][route.method] ??= {
+        tags: [`Evolution API: ${route.path.split('/')[1] || 'root'}`],
+        summary: `${route.method.toUpperCase()} ${route.path}`,
+        description: `Runtime route declared in ${route.source}.`,
+        responses: { default: { description: 'Evolution API response.' } },
+      };
+    }
+    res.type('application/yaml').send(YAML.stringify(base));
+  });
+  router.get('/docs/runtime-routes.json', (_req, res) => {
+    res.type('application/json').sendFile(path.join(process.cwd(), 'docs', 'runtime-routes.json'));
   });
   router.get('/webhooks/asyncapi.yaml', (_req, res) => {
     res.type('application/yaml').sendFile(path.join(process.cwd(), 'docs', 'asyncapi.yaml'));
