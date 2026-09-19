@@ -63,6 +63,8 @@ See the [local-first read-through reference](./local-first-reads.md) and [comple
 
 Automated outbound sends can use the per-instance [automation safety and pacing policy](./outbound-automation-safety.md). It provides content-preserving typing indicators, rolling minute/daily limits, quiet hours, suppression and optional recipient allowlisting, configurable exact/near-duplicate blocking, failure circuits, and persistent audit records. It never rewrites message text or attempts to conceal automation.
 
+Username-only contacts and server-issued LIDs are documented in [WhatsApp username and LID identities](./username-lid-identities.md), including send/moderation examples, validation codes, compatibility, and test commands.
+
 The local `Message` table now distinguishes a provisional API send from WhatsApp server acceptance and recipient delivery, deduplicates future events by WhatsApp message ID, and reconciles PN/LID aliases without rewriting either identity. See [Operational message integrity](./message-archive-integrity.md) for every field, state transition, search response, migration rule, and workflow requirement.
 
 Instance restart/connect behavior and immediate multi-webhook runtime application are documented in [Runtime actions and webhook reloads](./runtime-actions-and-webhooks.md). For teaching and defense, [Defensive detection of automation disguise](./defensive-automation-detection.md) describes typo/cadence evasion signals and countermeasures without providing a production evasion engine.

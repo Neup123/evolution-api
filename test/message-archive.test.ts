@@ -8,7 +8,14 @@ import {
   messageUpdateIdentity,
 } from '../src/api/services/message-archive.service';
 import { getAvailableNumbers } from '../src/utils/jidOptions';
-import { normalizeParticipantIdentity } from '../src/utils/whatsappIdentity';
+import {
+  AuthoritativeLidRegistry,
+  normalizeGroupJoinRequestIdentity,
+  normalizeParticipantIdentity,
+  responseContainsAuthoritativeLid,
+  validateMessageKeyRemoteJid,
+  validateOutboundIdentifier,
+} from '../src/utils/whatsappIdentity';
 
 assert.deepEqual(getAvailableNumbers('12142238715@s.whatsapp.net'), ['12142238715@s.whatsapp.net']);
 assert.deepEqual(getAvailableNumbers('230687726690306@lid'), ['230687726690306@lid']);
@@ -81,5 +88,68 @@ assert.deepEqual(normalizeParticipantIdentity({ id: '987654@lid', username: 'pri
   resolutionReason: 'username_lid_only',
   participantDigits: '987654',
 });
+
+assert.deepEqual(
+  normalizeGroupJoinRequestIdentity({
+    jid: '153081895514146@lid',
+    request_method: 'invite_link',
+    request_time: '1787745115',
+    username: 'ruchamaschuman',
+  }),
+  {
+    jid: '153081895514146@lid',
+    request_method: 'invite_link',
+    request_time: '1787745115',
+    username: 'ruchamaschuman',
+    lid: '153081895514146@lid',
+    phoneNumber: null,
+    canonicalJid: '153081895514146@lid',
+    identifierType: 'lid',
+    identityResolved: true,
+    resolutionReason: 'username_lid_available',
+  },
+);
+
+const authoritativeLids = new AuthoritativeLidRegistry();
+assert.equal(authoritativeLids.has('153081895514146@lid'), false);
+authoritativeLids.observeJoinRequests([
+  {
+    jid: '153081895514146@lid',
+    request_method: 'invite_link',
+    request_time: '1787745115',
+    username: 'ruchamaschuman',
+  },
+]);
+assert.equal(authoritativeLids.has('153081895514146@lid'), true);
+assert.equal(authoritativeLids.has('999999999999999@lid'), false);
+
+const joinRequestResponse = {
+  method: 'groupRequestParticipantsList',
+  result: [
+    {
+      jid: '153081895514146@lid',
+      request_method: 'invite_link',
+      request_time: '1787745115',
+      username: 'ruchamaschuman',
+    },
+  ],
+};
+assert.equal(responseContainsAuthoritativeLid(joinRequestResponse, '153081895514146@lid'), true);
+assert.equal(responseContainsAuthoritativeLid(joinRequestResponse, '999999999999999@lid'), false);
+
+assert.deepEqual(validateOutboundIdentifier('@ruchamaschuman'), {
+  valid: false,
+  code: 'username_resolution_required',
+  message:
+    'A raw WhatsApp username cannot be used as a message destination. Resolve it to an authoritative @lid JID first.',
+});
+assert.deepEqual(validateOutboundIdentifier('153081895514146@lid'), { valid: true });
+assert.deepEqual(validateMessageKeyRemoteJid('cmu6ntvfo000hmy8lj1yo1yy1'), {
+  valid: false,
+  code: 'invalid_whatsapp_jid',
+  message:
+    'remoteJid must be a full WhatsApp JID such as 15551234567@s.whatsapp.net, 153081895514146@lid, or 120363000000000000@g.us.',
+});
+assert.deepEqual(validateMessageKeyRemoteJid('153081895514146@lid'), { valid: true });
 
 console.log('message archive tests passed');

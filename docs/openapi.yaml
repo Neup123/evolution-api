@@ -4273,7 +4273,7 @@ paths:
       tags:
         - Calls & messages
       summary: Send Message
-      description: Send a Baileys message payload directly to a chat or group. Complete the named fields below. Structured fields accept JSON. JSON request bodies remain supported for API clients.
+      description: Send a Baileys message payload directly to a chat or group. An @lid returned by this instance in a join-request record is authoritative and can be used without a phone-number mapping. Complete the named fields below. Structured fields accept JSON. JSON request bodies remain supported for API clients.
       operationId: baileys_sendMessage
       parameters:
         - *a1
@@ -6102,7 +6102,7 @@ paths:
       tags:
         - Groups
       summary: Request Participants List
-      description: List pending requests from people who want to join a group. Complete the named fields below. Structured fields accept JSON. JSON request bodies remain supported for API clients.
+      description: List pending requests with the authoritative participant JID/LID used for moderation and the username used for display when WhatsApp supplies it. Complete the named fields below. Structured fields accept JSON. JSON request bodies remain supported for API clients.
       operationId: baileys_groupRequestParticipantsList
       parameters:
         - *a1
@@ -6180,13 +6180,13 @@ paths:
         - name: participants
           in: query
           required: true
-          description: Participant WhatsApp JIDs, each including the @s.whatsapp.net suffix.
+          description: Authoritative participant JIDs from the join-request list. Both @lid and @s.whatsapp.net identifiers are accepted; a phone number is not required when WhatsApp supplies an @lid.
           schema:
             type: array
             items:
               type: string
               description: string
-            description: Participant WhatsApp JIDs, each including the @s.whatsapp.net suffix.
+            description: Authoritative participant JIDs from the join-request list. Both @lid and @s.whatsapp.net identifiers are accepted; a phone number is not required when WhatsApp supplies an @lid.
           style: form
           explode: true
         - name: action

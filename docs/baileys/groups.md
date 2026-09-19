@@ -376,7 +376,7 @@ Response `result` structure:
 
 ## Request Participants List (`groupRequestParticipantsList`)
 
-List pending requests from people who want to join a group.
+List pending requests with the authoritative participant JID/LID used for moderation and the username used for display when WhatsApp supplies it.
 
 `POST /baileys/groups/groupRequestParticipantsList/{instanceName}`
 
@@ -407,7 +407,7 @@ Approve or reject pending group join requests.
 | Field | Required | Meaning |
 |---|---:|---|
 | `jid` | yes | WhatsApp group JID ending in @g.us. |
-| `participants` | yes | Participant WhatsApp JIDs, each including the @s.whatsapp.net suffix. |
+| `participants` | yes | Authoritative participant JIDs from the join-request list. Both @lid and @s.whatsapp.net identifiers are accepted; a phone number is not required when WhatsApp supplies an @lid. |
 | `action` | yes | Action performed by Group Request Participants Update. |
 
 Response `result` structure:

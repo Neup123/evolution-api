@@ -49,3 +49,91 @@ export function normalizeParticipantIdentity(
     participantDigits: id?.split('@')[0] ?? null,
   };
 }
+
+export function normalizeGroupJoinRequestIdentity(request: Record<string, unknown>) {
+  const jidValue = typeof request.jid === 'string' ? request.jid : null;
+  const username = typeof request.username === 'string' ? request.username : null;
+  const identity = normalizeParticipantIdentity({ id: jidValue, username }, jidValue);
+
+  return {
+    ...request,
+    username,
+    lid: identity.lid,
+    phoneNumber: identity.phoneNumber,
+    canonicalJid: identity.canonicalJid,
+    identifierType: identity.identifierType,
+    identityResolved: Boolean(identity.canonicalJid),
+    resolutionReason: identity.lid
+      ? username
+        ? 'username_lid_available'
+        : 'lid_available'
+      : identity.phoneNumber
+        ? 'phone_number_available'
+        : 'jid_unavailable',
+  };
+}
+
+export class AuthoritativeLidRegistry {
+  private readonly lids = new Set<string>();
+
+  observeJoinRequests(requests: unknown[]): void {
+    for (const request of requests) {
+      if (!request || typeof request !== 'object') continue;
+      const jid = (request as Record<string, unknown>).jid;
+      if (typeof jid === 'string' && jid.endsWith('@lid')) this.lids.add(jid.toLowerCase());
+    }
+  }
+
+  has(jid: string): boolean {
+    return this.lids.has(jid.toLowerCase());
+  }
+}
+
+export function responseContainsAuthoritativeLid(value: unknown, lid: string): boolean {
+  const result =
+    value && typeof value === 'object' && 'result' in (value as Record<string, unknown>)
+      ? (value as Record<string, unknown>).result
+      : value;
+  return (
+    Array.isArray(result) &&
+    result.some(
+      (request) =>
+        request &&
+        typeof request === 'object' &&
+        typeof (request as Record<string, unknown>).jid === 'string' &&
+        ((request as Record<string, unknown>).jid as string).toLowerCase() === lid.toLowerCase(),
+    )
+  );
+}
+
+export type OutboundIdentifierValidation =
+  | { valid: true }
+  | { valid: false; code: 'username_resolution_required'; message: string };
+
+export function validateOutboundIdentifier(value: string): OutboundIdentifierValidation {
+  const trimmed = value.trim();
+  if (trimmed.startsWith('@') && !trimmed.includes('.')) {
+    return {
+      valid: false,
+      code: 'username_resolution_required',
+      message:
+        'A raw WhatsApp username cannot be used as a message destination. Resolve it to an authoritative @lid JID first.',
+    };
+  }
+  return { valid: true };
+}
+
+export type MessageKeyValidation = { valid: true } | { valid: false; code: 'invalid_whatsapp_jid'; message: string };
+
+export function validateMessageKeyRemoteJid(value: string): MessageKeyValidation {
+  const valid =
+    /^(?:\d+@(?:s\.whatsapp\.net|lid)|\d+-\d+@g\.us|status@broadcast)$/.test(value) ||
+    /^[^@\s]+@broadcast$/.test(value);
+  if (valid) return { valid: true };
+  return {
+    valid: false,
+    code: 'invalid_whatsapp_jid',
+    message:
+      'remoteJid must be a full WhatsApp JID such as 15551234567@s.whatsapp.net, 153081895514146@lid, or 120363000000000000@g.us.',
+  };
+}

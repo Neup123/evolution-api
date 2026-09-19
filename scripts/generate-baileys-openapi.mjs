@@ -34,7 +34,8 @@ const methodDescriptions = {
   groupMetadata: 'Get the subject, description, owner, participants, and settings of a group.',
   groupCreate: 'Create a WhatsApp group and add the supplied participants.',
   groupParticipantsUpdate: 'Add, remove, promote, or demote participants in a group.',
-  groupRequestParticipantsList: 'List pending requests from people who want to join a group.',
+  groupRequestParticipantsList:
+    'List pending requests with the authoritative participant JID/LID used for moderation and the username used for display when WhatsApp supplies it.',
   groupRequestParticipantsUpdate: 'Approve or reject pending group join requests.',
   groupFetchAllParticipating:
     'List every group and community in which the connected account participates, optionally omitting participant arrays.',
@@ -42,7 +43,8 @@ const methodDescriptions = {
   newsletterMetadata: 'Get newsletter details using its JID or invite code.',
   newsletterFetchMessages: 'Load messages published by a newsletter.',
   newsletterReactMessage: 'Add or remove an emoji reaction on a newsletter message.',
-  sendMessage: 'Send a Baileys message payload directly to a chat or group.',
+  sendMessage:
+    'Send a Baileys message payload directly to a chat or group. An @lid returned by this instance in a join-request record is authoritative and can be used without a phone-number mapping.',
   readMessages: 'Mark one or more WhatsApp messages as read.',
   sendReceipt: 'Send a delivery, read, played, or other receipt for a message.',
   sendReceipts: 'Send the same receipt for multiple messages.',
@@ -115,6 +117,9 @@ function describeParameter(method, parameter) {
   }
   if (['jid', 'to', 'toJid'].includes(name)) {
     return 'Full WhatsApp JID, for example 15551234567@s.whatsapp.net or 120363000000000000@g.us.';
+  }
+  if (method === 'groupRequestParticipantsUpdate' && name === 'participants') {
+    return 'Authoritative participant JIDs from the join-request list. Both @lid and @s.whatsapp.net identifiers are accepted; a phone number is not required when WhatsApp supplies an @lid.';
   }
   if (/participants?/i.test(name)) return 'Participant WhatsApp JIDs, each including the @s.whatsapp.net suffix.';
   if (/inviteCode|^code$/i.test(name)) return 'Invite code only, without the chat.whatsapp.com URL prefix.';

@@ -22,7 +22,9 @@ const isNotEmpty = (...propertyNames: string[]): JSONSchema7 => {
 
 const numberDefinition: JSONSchema7Definition = {
   type: 'string',
-  description: 'Invalid format',
+  pattern: '^(?!@[^@\\s]+$).+',
+  description:
+    'Use a phone number or full WhatsApp JID. A raw @username must first be resolved to an authoritative @lid JID.',
 };
 
 export const templateMessageSchema: JSONSchema7 = {
