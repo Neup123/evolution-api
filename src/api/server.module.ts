@@ -46,6 +46,7 @@ import { LocalReadService } from './services/local-read.service';
 import { WAMonitoringService } from './services/monitor.service';
 import { ProxyService } from './services/proxy.service';
 import { SettingsService } from './services/settings.service';
+import { SettingsTemplateService } from './services/settings-template.service';
 import { TemplateService } from './services/template.service';
 
 const logger = new Logger('WA MODULE');
@@ -91,6 +92,7 @@ export const proxyController = new ProxyController(proxyService, waMonitor);
 const chatwootService = new ChatwootService(waMonitor, configService, prismaRepository, chatwootCache);
 export const chatwootController = new ChatwootController(chatwootService, configService);
 
+export const settingsTemplateService = new SettingsTemplateService(prismaRepository);
 const settingsService = new SettingsService(waMonitor);
 export const settingsController = new SettingsController(settingsService);
 

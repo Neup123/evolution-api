@@ -69,6 +69,7 @@ import {
 } from '@api/services/message-archive.service';
 import { preserveMessageKey } from '@api/services/message-key.service';
 import { OutboundSafetyService } from '@api/services/outbound-safety.service';
+import { SettingsTemplateService } from '@api/services/settings-template.service';
 import { Events, MessageSubtype, TypeMediaMessage, wa } from '@api/types/wa.types';
 import { CacheEngine } from '@cache/cacheengine';
 import {
@@ -245,6 +246,7 @@ export class BaileysStartupService extends ChannelStartupService {
   private readonly authoritativeLids = new AuthoritativeLidRegistry();
   private messageProcessor = new BaileysMessageProcessor();
   private readonly outboundSafety: OutboundSafetyService;
+  private readonly settingsTemplates: SettingsTemplateService;
 
   constructor(
     public readonly configService: ConfigService,
@@ -257,6 +259,7 @@ export class BaileysStartupService extends ChannelStartupService {
   ) {
     super(configService, eventEmitter, prismaRepository, chatwootCache);
     this.outboundSafety = new OutboundSafetyService(prismaRepository);
+    this.settingsTemplates = new SettingsTemplateService(prismaRepository);
     this.instance.qrcode = { count: 0 };
     this.messageProcessor.mount({
       onMessageReceive: this.messageHandle['messages.upsert'].bind(this), // Bind the method to the current context
@@ -2580,6 +2583,7 @@ export class BaileysStartupService extends ChannelStartupService {
     message: T,
     options?: Options,
     isIntegration = false,
+    settingsTemplateId?: string,
   ) {
     const identifierValidation = validateOutboundIdentifier(number);
     if (identifierValidation.valid === false) {
@@ -2590,17 +2594,15 @@ export class BaileysStartupService extends ChannelStartupService {
       });
     }
     const requestedRecipient = createJid(number).toLowerCase();
-    const preflightBlockCode = this.outboundSafety.preflightBlockCode(
+    const templateSettings = await this.settingsTemplates.resolve(
+      this.instanceId,
       requestedRecipient,
-      this.localSettings.automationSafety,
+      settingsTemplateId,
     );
+    const effectiveSafety = templateSettings?.automationSafety ?? this.localSettings.automationSafety;
+    const preflightBlockCode = this.outboundSafety.preflightBlockCode(requestedRecipient, effectiveSafety);
     if (preflightBlockCode) {
-      const preflight = await this.outboundSafety.begin(
-        this.instanceId,
-        requestedRecipient,
-        message,
-        this.localSettings.automationSafety,
-      );
+      const preflight = await this.outboundSafety.begin(this.instanceId, requestedRecipient, message, effectiveSafety);
       if (preflight.allowed === false) {
         throw new TooManyRequestsException({
           code: preflight.code,
@@ -2618,12 +2620,7 @@ export class BaileysStartupService extends ChannelStartupService {
 
     const sender = isWA.jid.toLowerCase();
 
-    const safety = await this.outboundSafety.begin(
-      this.instanceId,
-      sender,
-      message,
-      this.localSettings.automationSafety,
-    );
+    const safety = await this.outboundSafety.begin(this.instanceId, sender, message, effectiveSafety);
     if (safety.allowed === false) {
       throw new TooManyRequestsException({
         code: safety.code,
@@ -3013,8 +3010,10 @@ export class BaileysStartupService extends ChannelStartupService {
         linkPreview: data?.linkPreview,
         mentionsEveryOne: data?.mentionsEveryOne,
         mentioned: data?.mentioned,
+        settingsTemplateId: data?.settingsTemplateId,
       },
       isIntegration,
+      data.settingsTemplateId,
     );
   }
 
@@ -3029,6 +3028,7 @@ export class BaileysStartupService extends ChannelStartupService {
         linkPreview: data?.linkPreview,
         mentionsEveryOne: data?.mentionsEveryOne,
         mentioned: data?.mentioned,
+        settingsTemplateId: data?.settingsTemplateId,
       },
     );
   }
@@ -3342,6 +3342,7 @@ export class BaileysStartupService extends ChannelStartupService {
         quoted: data?.quoted,
         mentionsEveryOne: data?.mentionsEveryOne,
         mentioned: data?.mentioned,
+        settingsTemplateId: data?.settingsTemplateId,
       },
     );
 
@@ -3364,8 +3365,10 @@ export class BaileysStartupService extends ChannelStartupService {
         quoted: data?.quoted,
         mentionsEveryOne: data?.mentionsEveryOne,
         mentioned: data?.mentioned,
+        settingsTemplateId: data?.settingsTemplateId,
       },
       isIntegration,
+      data.settingsTemplateId,
     );
 
     return mediaSent;
@@ -3380,6 +3383,7 @@ export class BaileysStartupService extends ChannelStartupService {
       quoted: data?.quoted,
       mentionsEveryOne: data?.mentionsEveryOne,
       mentioned: data?.mentioned,
+      settingsTemplateId: data?.settingsTemplateId,
     };
 
     if (file) mediaData.media = file.buffer.toString('base64');
@@ -3395,8 +3399,10 @@ export class BaileysStartupService extends ChannelStartupService {
         quoted: data?.quoted,
         mentionsEveryOne: data?.mentionsEveryOne,
         mentioned: data?.mentioned,
+        settingsTemplateId: data?.settingsTemplateId,
       },
       isIntegration,
+      data.settingsTemplateId,
     );
 
     return mediaSent;
@@ -3613,6 +3619,7 @@ export class BaileysStartupService extends ChannelStartupService {
       },
       { presence: 'recording', delay: data?.delay },
       isIntegration,
+      data.settingsTemplateId,
     );
   }
 
@@ -3727,6 +3734,7 @@ export class BaileysStartupService extends ChannelStartupService {
         quoted: data?.quoted,
         mentionsEveryOne: data?.mentionsEveryOne,
         mentioned: data?.mentioned,
+        settingsTemplateId: data?.settingsTemplateId,
       });
     }
 
@@ -3779,6 +3787,7 @@ export class BaileysStartupService extends ChannelStartupService {
       quoted: data?.quoted,
       mentionsEveryOne: data?.mentionsEveryOne,
       mentioned: data?.mentioned,
+      settingsTemplateId: data?.settingsTemplateId,
     });
   }
 
@@ -3799,6 +3808,7 @@ export class BaileysStartupService extends ChannelStartupService {
         quoted: data?.quoted,
         mentionsEveryOne: data?.mentionsEveryOne,
         mentioned: data?.mentioned,
+        settingsTemplateId: data?.settingsTemplateId,
       },
     );
   }
@@ -3822,6 +3832,7 @@ export class BaileysStartupService extends ChannelStartupService {
         quoted: data?.quoted,
         mentionsEveryOne: data?.mentionsEveryOne,
         mentioned: data?.mentioned,
+        settingsTemplateId: data?.settingsTemplateId,
       },
     );
   }
@@ -3864,7 +3875,11 @@ export class BaileysStartupService extends ChannelStartupService {
       };
     }
 
-    return await this.sendMessageWithTyping(data.number, { ...message }, {});
+    return await this.sendMessageWithTyping(
+      data.number,
+      { ...message },
+      { settingsTemplateId: data.settingsTemplateId },
+    );
   }
 
   public async reactionMessage(data: SendReactionDto) {

@@ -32,6 +32,7 @@ export const templateMessageSchema: JSONSchema7 = {
   type: 'object',
   properties: {
     number: { ...numberDefinition },
+    settingsTemplateId: { type: 'string', minLength: 1 },
     name: { type: 'string' },
     language: { type: 'string' },
     components: { type: 'array' },
@@ -65,6 +66,7 @@ export const offerCallSchema: JSONSchema7 = {
   type: 'object',
   properties: {
     number: { ...numberDefinition },
+    settingsTemplateId: { type: 'string', minLength: 1 },
     isVideo: { type: 'boolean', enum: [true, false] },
     callDuration: { type: 'integer', minimum: 1, maximum: 15 },
   },
@@ -76,6 +78,7 @@ export const textMessageSchema: JSONSchema7 = {
   type: 'object',
   properties: {
     number: { ...numberDefinition },
+    settingsTemplateId: { type: 'string', minLength: 1 },
     text: { type: 'string' },
     linkPreview: { type: 'boolean' },
     delay: {
@@ -103,6 +106,7 @@ export const mediaMessageSchema: JSONSchema7 = {
   type: 'object',
   properties: {
     number: { ...numberDefinition },
+    settingsTemplateId: { type: 'string', minLength: 1 },
     mediatype: { type: 'string', enum: ['image', 'document', 'video', 'audio'] },
     mimetype: { type: 'string' },
     media: { type: 'string' },
@@ -133,6 +137,7 @@ export const ptvMessageSchema: JSONSchema7 = {
   type: 'object',
   properties: {
     number: { ...numberDefinition },
+    settingsTemplateId: { type: 'string', minLength: 1 },
     video: { type: 'string' },
     delay: {
       type: 'integer',
@@ -159,6 +164,7 @@ export const audioMessageSchema: JSONSchema7 = {
   type: 'object',
   properties: {
     number: { ...numberDefinition },
+    settingsTemplateId: { type: 'string', minLength: 1 },
     audio: { type: 'string' },
     delay: {
       type: 'integer',
@@ -209,6 +215,7 @@ export const stickerMessageSchema: JSONSchema7 = {
   type: 'object',
   properties: {
     number: { ...numberDefinition },
+    settingsTemplateId: { type: 'string', minLength: 1 },
     sticker: { type: 'string' },
     delay: {
       type: 'integer',
@@ -235,6 +242,7 @@ export const locationMessageSchema: JSONSchema7 = {
   type: 'object',
   properties: {
     number: { ...numberDefinition },
+    settingsTemplateId: { type: 'string', minLength: 1 },
     latitude: { type: 'number' },
     longitude: { type: 'number' },
     name: { type: 'string' },
@@ -264,6 +272,7 @@ export const contactMessageSchema: JSONSchema7 = {
   type: 'object',
   properties: {
     number: { ...numberDefinition },
+    settingsTemplateId: { type: 'string', minLength: 1 },
     contact: {
       type: 'array',
       items: {
@@ -319,6 +328,7 @@ export const pollMessageSchema: JSONSchema7 = {
   type: 'object',
   properties: {
     number: { ...numberDefinition },
+    settingsTemplateId: { type: 'string', minLength: 1 },
     name: { type: 'string' },
     selectableCount: { type: 'integer', minimum: 0, maximum: 10 },
     values: {
@@ -355,6 +365,7 @@ export const listMessageSchema: JSONSchema7 = {
   type: 'object',
   properties: {
     number: { ...numberDefinition },
+    settingsTemplateId: { type: 'string', minLength: 1 },
     title: { type: 'string' },
     description: { type: 'string' },
     footerText: { type: 'string' },
@@ -412,6 +423,7 @@ export const buttonsMessageSchema: JSONSchema7 = {
   type: 'object',
   properties: {
     number: { ...numberDefinition },
+    settingsTemplateId: { type: 'string', minLength: 1 },
     thumbnailUrl: { type: 'string' },
     title: { type: 'string' },
     description: { type: 'string' },

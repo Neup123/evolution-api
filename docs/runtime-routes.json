@@ -825,6 +825,46 @@
     "source": "src/api/integrations/storage/s3/routes/s3.router.ts"
   },
   {
+    "method": "post",
+    "path": "/settings-template/assign/{instanceName}",
+    "source": "src/api/routes/settingsTemplate.router.ts"
+  },
+  {
+    "method": "get",
+    "path": "/settings-template/bindings/{instanceName}",
+    "source": "src/api/routes/settingsTemplate.router.ts"
+  },
+  {
+    "method": "post",
+    "path": "/settings-template/create",
+    "source": "src/api/routes/settingsTemplate.router.ts"
+  },
+  {
+    "method": "delete",
+    "path": "/settings-template/delete",
+    "source": "src/api/routes/settingsTemplate.router.ts"
+  },
+  {
+    "method": "post",
+    "path": "/settings-template/duplicate",
+    "source": "src/api/routes/settingsTemplate.router.ts"
+  },
+  {
+    "method": "post",
+    "path": "/settings-template/edit",
+    "source": "src/api/routes/settingsTemplate.router.ts"
+  },
+  {
+    "method": "get",
+    "path": "/settings-template/list",
+    "source": "src/api/routes/settingsTemplate.router.ts"
+  },
+  {
+    "method": "delete",
+    "path": "/settings-template/unassign/{instanceName}",
+    "source": "src/api/routes/settingsTemplate.router.ts"
+  },
+  {
     "method": "get",
     "path": "/settings/find/{instanceName}",
     "source": "src/api/routes/settings.router.ts"

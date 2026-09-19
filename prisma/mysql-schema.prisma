@@ -61,22 +61,22 @@ enum DifyBotType {
 }
 
 model Instance {
-  id                      String                   @id @default(cuid())
-  name                    String                   @unique @db.VarChar(255)
-  connectionStatus        InstanceConnectionStatus @default(open)
-  ownerJid                String?                  @db.VarChar(100)
-  profileName             String?                  @db.VarChar(100)
-  profilePicUrl           String?                  @db.VarChar(500)
-  integration             String?                  @db.VarChar(100)
-  number                  String?                  @db.VarChar(100)
-  businessId              String?                  @db.VarChar(100)
-  token                   String?                  @db.VarChar(255)
-  clientName              String?                  @db.VarChar(100)
-  disconnectionReasonCode Int?                     @db.Int
-  disconnectionObject     Json?                    @db.Json
-  disconnectionAt         DateTime?                @db.Timestamp
-  createdAt               DateTime?                @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp
-  updatedAt               DateTime?                @updatedAt @db.Timestamp
+  id                      String                    @id @default(cuid())
+  name                    String                    @unique @db.VarChar(255)
+  connectionStatus        InstanceConnectionStatus  @default(open)
+  ownerJid                String?                   @db.VarChar(100)
+  profileName             String?                   @db.VarChar(100)
+  profilePicUrl           String?                   @db.VarChar(500)
+  integration             String?                   @db.VarChar(100)
+  number                  String?                   @db.VarChar(100)
+  businessId              String?                   @db.VarChar(100)
+  token                   String?                   @db.VarChar(255)
+  clientName              String?                   @db.VarChar(100)
+  disconnectionReasonCode Int?                      @db.Int
+  disconnectionObject     Json?                     @db.Json
+  disconnectionAt         DateTime?                 @db.Timestamp
+  createdAt               DateTime?                 @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp
+  updatedAt               DateTime?                 @updatedAt @db.Timestamp
   Chat                    Chat[]
   Contact                 Contact[]
   Message                 Message[]
@@ -116,6 +116,7 @@ model Instance {
   IsOnWhatsapp            IsOnWhatsapp[]
   OutboundMessageAudit    OutboundMessageAudit[]
   RecipientEngagement     RecipientEngagement[]
+  SettingsTemplateBinding SettingsTemplateBinding[]
 }
 
 model Session {
@@ -319,6 +320,30 @@ model Setting {
   instanceId            String    @unique
 
   @@index([instanceId])
+}
+
+model SettingsTemplate {
+  id        String                    @id @default(cuid())
+  name      String                    @unique @db.VarChar(255)
+  settings  Json                      @db.Json
+  createdAt DateTime                  @default(now()) @db.Timestamp
+  updatedAt DateTime                  @updatedAt @db.Timestamp
+  bindings  SettingsTemplateBinding[]
+}
+
+model SettingsTemplateBinding {
+  id         String           @id @default(cuid())
+  instanceId String
+  templateId String
+  scope      String           @db.VarChar(20)
+  target     String           @default("") @db.VarChar(255)
+  createdAt  DateTime         @default(now()) @db.Timestamp
+  updatedAt  DateTime         @updatedAt @db.Timestamp
+  Instance   Instance         @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  Template   SettingsTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([instanceId, scope, target])
+  @@index([templateId])
 }
 
 model OutboundMessageAudit {

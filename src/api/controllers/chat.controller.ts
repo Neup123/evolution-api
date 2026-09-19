@@ -26,7 +26,10 @@ export class ChatController {
     private readonly localReadService: LocalReadService,
   ) {}
 
-  public async whatsappNumber({ instanceName, live: queryLive }: InstanceDto, data: WhatsAppNumberDto) {
+  public async whatsappNumber(
+    { instanceName, live: queryLive, settingsTemplateId }: InstanceDto,
+    data: WhatsAppNumberDto,
+  ) {
     const { live: bodyLive, ...request } = data;
     const live = forceLiveRead(bodyLive, queryLive);
     return (
@@ -35,6 +38,7 @@ export class ChatController {
         method: 'chat.whatsappNumbers',
         args: [request],
         live,
+        settingsTemplateId,
         callLive: () => this.waMonitor.waInstances[instanceName].whatsappNumber(request, live),
       })
     ).value;
@@ -56,12 +60,13 @@ export class ChatController {
     return await this.waMonitor.waInstances[instanceName].deleteMessage(data);
   }
 
-  public async fetchProfilePicture({ instanceName, live }: InstanceDto, data: NumberDto) {
+  public async fetchProfilePicture({ instanceName, live, settingsTemplateId }: InstanceDto, data: NumberDto) {
     return (
       await this.localReadService.execute({
         instanceName,
         method: 'chat.fetchProfilePictureUrl',
         args: [data.number],
+        settingsTemplateId,
         live: forceLiveRead(data.live, live),
         callLive: () => this.waMonitor.waInstances[instanceName].profilePicture(data.number),
       })
@@ -109,11 +114,12 @@ export class ChatController {
     return await this.waMonitor.waInstances[instanceName].sendPresence(data);
   }
 
-  public async fetchPrivacySettings({ instanceName, live }: InstanceDto) {
+  public async fetchPrivacySettings({ instanceName, live, settingsTemplateId }: InstanceDto) {
     return (
       await this.localReadService.execute({
         instanceName,
         method: 'chat.fetchPrivacySettings',
+        settingsTemplateId,
         live: forceLiveRead(live),
         callLive: () => this.waMonitor.waInstances[instanceName].fetchPrivacySettings(),
       })

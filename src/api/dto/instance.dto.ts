@@ -3,6 +3,8 @@ import { JsonValue } from '@prisma/client/runtime/library';
 import { WAPresence } from 'baileys';
 
 export class InstanceDto extends IntegrationDto {
+  /** Highest-precedence settings template for this request. */
+  settingsTemplateId?: string;
   instanceName: string;
   live?: boolean;
   instanceId?: string;

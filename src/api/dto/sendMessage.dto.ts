@@ -14,6 +14,7 @@ export class Options {
   mentionsEveryOne?: boolean;
   mentioned?: string[];
   webhookUrl?: string;
+  settingsTemplateId?: string;
 }
 
 export class MediaMessage {
@@ -38,6 +39,8 @@ export class StatusMessage {
 
 export class Metadata {
   number: string;
+  /** Highest-precedence Automation Safety & local-read settings template for this request. */
+  settingsTemplateId?: string;
   delay?: number;
   quoted?: Quoted;
   linkPreview?: boolean;

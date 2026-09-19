@@ -264,3 +264,5 @@ Third-party attributions are documented in [NOTICE](./NOTICE).
 <p align="center">
   Made by <a href="https://evolutionfoundation.com.br">Evolution Foundation</a> · © 2026
 </p>
+
+- [Settings templates and precedence](./docs/settings-templates.md)

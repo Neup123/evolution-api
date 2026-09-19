@@ -10,6 +10,7 @@ const routerPrefixes = {
   'src/api/routes/group.router.ts': '/group',
   'src/api/routes/template.router.ts': '/template',
   'src/api/routes/settings.router.ts': '/settings',
+  'src/api/routes/settingsTemplate.router.ts': '/settings-template',
   'src/api/routes/proxy.router.ts': '/proxy',
   'src/api/routes/label.router.ts': '/label',
   'src/api/integrations/event/webhook/webhook.router.ts': '/webhook',

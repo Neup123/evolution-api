@@ -128,3 +128,5 @@ the exact `BLOCKLIST_SET` and `BLOCKLIST_UPDATE` cache semantics, see
 ## Baileys references
 
 This is a REST adapter, not a replacement for Baileys behavior. See [Baileys documentation](https://baileys.wiki/) for JIDs, events, and protocol concepts, and the [Baileys repository](https://github.com/WhiskeySockets/Baileys) for source-level details and migration notes. Baileys is unofficial; use WhatsApp automation responsibly and in line with WhatsApp's terms.
+
+- [Settings templates and precedence](./settings-templates.md)

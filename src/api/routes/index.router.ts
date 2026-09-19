@@ -25,6 +25,7 @@ import { LabelRouter } from './label.router';
 import { ProxyRouter } from './proxy.router';
 import { MessageRouter } from './sendMessage.router';
 import { SettingsRouter } from './settings.router';
+import { SettingsTemplateRouter } from './settingsTemplate.router';
 import { TemplateRouter } from './template.router';
 import { ViewsRouter } from './view.router';
 
@@ -49,24 +50,26 @@ const telemetry = new Telemetry();
 const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
 
 if (!serverConfig.DISABLE_DOCS) {
+  const base = YAML.parse(fs.readFileSync(path.join(process.cwd(), 'docs', 'openapi.yaml'), 'utf8'), {
+    maxAliasCount: -1,
+  });
+  const runtimeRoutes = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'docs', 'runtime-routes.json'), 'utf8'));
+  for (const route of runtimeRoutes) {
+    base.paths[route.path] ??= {};
+    base.paths[route.path][route.method] ??= {
+      tags: [`Evolution API: ${route.path.split('/')[1] || 'root'}`],
+      summary: `${route.method.toUpperCase()} ${route.path}`,
+      description: `Runtime route declared in ${route.source}.`,
+      responses: { default: { description: 'Evolution API response.' } },
+    };
+  }
+  const openApiDocument = YAML.stringify(base);
+
   router.get('/docs/openapi.yaml', (_req, res) => {
-    const base = YAML.parse(fs.readFileSync(path.join(process.cwd(), 'docs', 'openapi.yaml'), 'utf8'), {
-      maxAliasCount: -1,
-    });
-    const runtimeRoutes = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'docs', 'runtime-routes.json'), 'utf8'));
-    for (const route of runtimeRoutes) {
-      base.paths[route.path] ??= {};
-      base.paths[route.path][route.method] ??= {
-        tags: [`Evolution API: ${route.path.split('/')[1] || 'root'}`],
-        summary: `${route.method.toUpperCase()} ${route.path}`,
-        description: `Runtime route declared in ${route.source}.`,
-        responses: { default: { description: 'Evolution API response.' } },
-      };
-    }
-    res.type('application/yaml').send(YAML.stringify(base));
+    res.type('application/yaml').send(openApiDocument);
   });
   router.get('/docs/runtime-routes.json', (_req, res) => {
-    res.type('application/json').sendFile(path.join(process.cwd(), 'docs', 'runtime-routes.json'));
+    res.type('application/json').send(runtimeRoutes);
   });
   router.get('/webhooks/asyncapi.yaml', (_req, res) => {
     res.type('application/yaml').sendFile(path.join(process.cwd(), 'docs', 'asyncapi.yaml'));
@@ -272,6 +275,7 @@ router
   .use('/group', new GroupRouter(...guards).router)
   .use('/template', new TemplateRouter(configService, ...guards).router)
   .use('/settings', new SettingsRouter(...guards).router)
+  .use('/settings-template', new SettingsTemplateRouter(authGuard['apikey']).router)
   .use('/proxy', new ProxyRouter(...guards).router)
   .use('/label', new LabelRouter(...guards).router)
   .use('', new ChannelRouter(configService, ...guards).router)
