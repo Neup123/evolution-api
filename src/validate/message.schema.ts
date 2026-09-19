@@ -45,6 +45,10 @@ const quotedOptionsSchema: JSONSchema7 = {
       properties: {
         id: { type: 'string' },
         remoteJid: { type: 'string' },
+        remoteJidAlt: { type: 'string' },
+        participant: { type: 'string' },
+        participantAlt: { type: 'string' },
+        addressingMode: { type: 'string', enum: ['lid', 'pn'] },
         fromMe: { type: 'boolean', enum: [true, false] },
       },
       required: ['id'],
@@ -294,6 +298,10 @@ export const reactionMessageSchema: JSONSchema7 = {
       properties: {
         id: { type: 'string' },
         remoteJid: { type: 'string' },
+        remoteJidAlt: { type: 'string' },
+        participant: { type: 'string' },
+        participantAlt: { type: 'string' },
+        addressingMode: { type: 'string', enum: ['lid', 'pn'] },
         fromMe: { type: 'boolean', enum: [true, false] },
       },
       required: ['id', 'remoteJid', 'fromMe'],
