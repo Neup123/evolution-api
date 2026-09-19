@@ -23,6 +23,7 @@
     "generate:webhook-docs": "node scripts/generate-webhook-asyncapi.mjs",
     "audit:webhook-docs": "node scripts/audit-webhook-docs.mjs",
     "audit:archive-docs": "node scripts/audit-archive-contract.mjs",
+    "audit:chat-docs": "node scripts/audit-chat-openapi.mjs",
     "audit:live-reads": "node scripts/audit-live-read-methods.mjs",
     "postinstall": "node scripts/patch-libsignal-logging.mjs",
     "commit": "cz",
