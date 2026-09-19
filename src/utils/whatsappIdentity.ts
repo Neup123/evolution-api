@@ -2,12 +2,14 @@ export type ParticipantIdentifierType = 'phone-number' | 'lid' | 'unknown';
 
 export interface NormalizedParticipantIdentity {
   id: string | null;
+  username: string | null;
   lid: string | null;
   phoneNumber: string | null;
   phoneNumberDigits: string | null;
   canonicalJid: string | null;
   identifierType: ParticipantIdentifierType;
   identityResolved: boolean;
+  resolutionReason: 'phone_number_available' | 'username_lid_only' | 'lid_only' | 'unresolved';
   participantDigits: string | null;
 }
 
@@ -21,6 +23,7 @@ export function normalizeParticipantIdentity(
 ): NormalizedParticipantIdentity {
   const sourceId = typeof participant?.id === 'string' ? participant.id : null;
   const id = observedId ?? sourceId;
+  const username = typeof participant?.username === 'string' ? participant.username : null;
   const phoneNumber =
     jid(participant?.phoneNumber, '@s.whatsapp.net') ??
     jid(sourceId, '@s.whatsapp.net') ??
@@ -29,12 +32,20 @@ export function normalizeParticipantIdentity(
 
   return {
     id,
+    username,
     lid,
     phoneNumber,
     phoneNumberDigits: phoneNumber?.split('@')[0] ?? null,
     canonicalJid: phoneNumber ?? lid ?? id,
     identifierType: id?.endsWith('@lid') ? 'lid' : id?.endsWith('@s.whatsapp.net') ? 'phone-number' : 'unknown',
     identityResolved: Boolean(phoneNumber),
+    resolutionReason: phoneNumber
+      ? 'phone_number_available'
+      : username && lid
+        ? 'username_lid_only'
+        : lid
+          ? 'lid_only'
+          : 'unresolved',
     participantDigits: id?.split('@')[0] ?? null,
   };
 }
