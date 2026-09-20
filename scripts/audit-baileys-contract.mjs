@@ -14,7 +14,8 @@ for (const method of methods) {
     continue;
   }
   const operation = route[1].post;
-  if (!operation.description || /^Run (the )?/i.test(operation.description)) failures.push(`${method}: weak description`);
+  if (!operation.description || /^Run (the )?/i.test(operation.description))
+    failures.push(`${method}: weak description`);
   const resultSchema = operation.responses?.[200]?.content?.['application/json']?.schema?.properties?.result;
   if (!resultSchema || Object.keys(resultSchema).length === 0) failures.push(`${method}: response schema missing`);
   const group = route[0].split('/')[2];

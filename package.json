@@ -37,7 +37,8 @@
     "db:migrate:dev": "node runWithProvider.js \"rm -rf ./prisma/migrations && cp -r ./prisma/DATABASE_PROVIDER-migrations ./prisma/migrations && npx prisma migrate dev --schema ./prisma/DATABASE_PROVIDER-schema.prisma && cp -r ./prisma/migrations/* ./prisma/DATABASE_PROVIDER-migrations\"",
     "db:migrate:dev:win": "node runWithProvider.js \"xcopy /E /I prisma\\DATABASE_PROVIDER-migrations prisma\\migrations && npx prisma migrate dev --schema prisma\\DATABASE_PROVIDER-schema.prisma\"",
     "prepare": "husky",
-    "test:settings-templates": "tsx ./test/settings-template-hierarchy.test.ts"
+    "test:settings-templates": "tsx ./test/settings-template-hierarchy.test.ts",
+    "test:review-surfaces": "tsx ./test/review-surfaces.test.ts"
   },
   "repository": {
     "type": "git",
@@ -69,12 +70,8 @@
   },
   "homepage": "https://github.com/EvolutionAPI/evolution-api#readme",
   "lint-staged": {
-    "src/**/*.{ts,js}": [
-      "eslint --fix"
-    ],
-    "src/**/*.ts": [
-      "sh -c 'tsc --noEmit'"
-    ]
+    "src/**/*.{ts,js}": ["eslint --fix"],
+    "src/**/*.ts": ["sh -c 'tsc --noEmit'"]
   },
   "config": {
     "commitizen": {

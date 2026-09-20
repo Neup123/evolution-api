@@ -1,5 +1,10 @@
 import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { runtimeOperation } from './runtime-openapi-conventions.mjs';
+import { applyOverride } from './runtime-openapi-overrides.mjs';
+
+execFileSync('npx', ['tsx', 'scripts/export-validation-schemas.ts'], { stdio: 'inherit' });
+const validationSchemas = JSON.parse(fs.readFileSync('/tmp/evolution-validation-schemas.json', 'utf8'));
 
 const routerPrefixes = {
   'src/api/routes/instance.router.ts': '/instance',
@@ -42,18 +47,40 @@ for (const [file, prefix] of Object.entries(routerPrefixes)) {
   const brokerRoute = /\.(get|post|put|patch|delete)\(this\.routerPath\('([^']+)'(?:,\s*(false))?\)/g;
   while ((match = brokerRoute.exec(source))) {
     const suffix = match[3] ? '' : '/{instanceName}';
-    operations.push({ method: match[1], path: openApiPath(`${prefix}/${match[2]}${suffix}`), source: file });
+    const nextRoute = source.slice(match.index + match[0].length).search(/\.(?:get|post|put|patch|delete)\(/);
+    const block = source.slice(match.index, nextRoute < 0 ? undefined : match.index + match[0].length + nextRoute);
+    const schemaName = block.match(/schema:\s*([A-Za-z0-9_]+)/)?.[1];
+    operations.push({
+      method: match[1],
+      path: openApiPath(`${prefix}/${match[2]}${suffix}`),
+      source: file,
+      schemaName,
+      schema: schemaName ? validationSchemas[schemaName] : undefined,
+      multipart: /upload\.single\(/.test(block),
+      runtimeStatus: block.match(/status\((?:HttpStatus\.)?([A-Z_]+|\d+)\)/)?.[1],
+    });
   }
   const directRoute = /\.(get|post|put|patch|delete)\(\s*['`]([^'`]+)['`]/g;
   while ((match = directRoute.exec(source))) {
-    operations.push({ method: match[1], path: openApiPath(`${prefix}${match[2]}`), source: file });
+    const nextRoute = source.slice(match.index + match[0].length).search(/\.(?:get|post|put|patch|delete)\(/);
+    const block = source.slice(match.index, nextRoute < 0 ? undefined : match.index + match[0].length + nextRoute);
+    const schemaName = block.match(/schema:\s*([A-Za-z0-9_]+)/)?.[1];
+    operations.push({
+      method: match[1],
+      path: openApiPath(`${prefix}${match[2]}`),
+      source: file,
+      schemaName,
+      schema: schemaName ? validationSchemas[schemaName] : undefined,
+      multipart: /upload\.single\(/.test(block),
+      runtimeStatus: block.match(/status\((?:HttpStatus\.)?([A-Z_]+|\d+)\)/)?.[1],
+    });
   }
 }
 const unique = [...new Map(operations.map((item) => [`${item.method} ${item.path}`, item])).values()].sort(
   (left, right) => left.path.localeCompare(right.path) || left.method.localeCompare(right.method),
 );
 const output = `${JSON.stringify(
-  unique.map((route) => ({ ...route, operation: runtimeOperation(route) })),
+  unique.map((route) => ({ ...route, operation: applyOverride(route, runtimeOperation(route)) })),
   null,
   2,
 )}\n`;

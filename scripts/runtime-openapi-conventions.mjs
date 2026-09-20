@@ -36,65 +36,6 @@ const words = (value) =>
     .trim();
 const title = (value) => words(value).replace(/\b\w/g, (letter) => letter.toUpperCase());
 
-const templateSettingsSchema = {
-  type: 'object',
-  additionalProperties: false,
-  properties: {
-    localReadTtlSeconds: { type: ['integer', 'null'], minimum: 0, maximum: 2592000 },
-    localReadTtlOverrides: {
-      type: ['object', 'null'],
-      additionalProperties: { type: 'integer', minimum: 0, maximum: 2592000 },
-    },
-    automationSafety: { type: ['object', 'null'], additionalProperties: true },
-  },
-};
-const templateBody = (action) => {
-  const schemas = {
-    create: {
-      required: ['name', 'settings'],
-      properties: { name: { type: 'string', minLength: 1, maxLength: 255 }, settings: templateSettingsSchema },
-    },
-    edit: {
-      required: ['templateId'],
-      properties: {
-        templateId: { type: 'string', minLength: 1 },
-        name: { type: 'string', minLength: 1, maxLength: 255 },
-        settings: templateSettingsSchema,
-      },
-    },
-    duplicate: {
-      required: ['templateId', 'name'],
-      properties: {
-        templateId: { type: 'string', minLength: 1 },
-        name: { type: 'string', minLength: 1, maxLength: 255 },
-      },
-    },
-    delete: { required: ['templateId'], properties: { templateId: { type: 'string', minLength: 1 } } },
-    assign: {
-      required: ['templateId', 'scope'],
-      properties: {
-        templateId: { type: 'string', minLength: 1 },
-        scope: { type: 'string', enum: ['instance', 'group', 'contact'] },
-        target: {
-          type: 'string',
-          minLength: 3,
-          maxLength: 255,
-          description:
-            'Omit for instance scope. Group targets end in @g.us; contact targets are full non-group WhatsApp identifiers.',
-        },
-      },
-    },
-    unassign: {
-      required: ['scope'],
-      properties: {
-        scope: { type: 'string', enum: ['instance', 'group', 'contact'] },
-        target: { type: 'string', minLength: 3, maxLength: 255 },
-      },
-    },
-  };
-  return schemas[action] ? { type: 'object', additionalProperties: false, ...schemas[action] } : null;
-};
-
 const actionVerb = (method, action) => {
   if (/^(find|fetch|get|list|connection)/i.test(action)) return 'Get';
   if (/^(delete|remove|logout|leave|revoke)/i.test(action)) return 'Delete';
@@ -108,7 +49,7 @@ const actionVerb = (method, action) => {
         ? 'Update'
         : 'Run';
 };
-export const runtimeOperation = ({ method, path, source }) => {
+export const runtimeOperation = ({ method, path, source, schemaName, schema, multipart, runtimeStatus }) => {
   const segments = path.split('/').filter(Boolean);
   const domain = segments[0] || 'root';
   const action = segments.find((s, i) => i > 0 && !s.startsWith('{')) || domain;
@@ -121,6 +62,20 @@ export const runtimeOperation = ({ method, path, source }) => {
   }));
   const bodyMethods = new Set(['post', 'put', 'patch']);
   const summary = `${actionVerb(method, action)} ${words(action)}`;
+  const successCode =
+    { OK: '200', CREATED: '201', NO_CONTENT: '204' }[runtimeStatus] ??
+    (/^2\d\d$/.test(runtimeStatus ?? '') ? runtimeStatus : '200');
+  const errorSchema = {
+    type: 'object',
+    additionalProperties: true,
+    properties: {
+      status: { type: 'integer' },
+      error: { type: 'string' },
+      message: { oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }] },
+    },
+  };
+  const successExample =
+    action === 'list' || /^(find|fetch)/i.test(action) ? [] : { status: 'success', operation: action };
   const operation = {
     tags: [domainNames[domain] || title(domain)],
     summary,
@@ -128,23 +83,127 @@ export const runtimeOperation = ({ method, path, source }) => {
     operationId: `${method}_${[domain, ...segments.slice(1).filter((x) => !x.startsWith('{'))].join('_').replace(/[^A-Za-z0-9_]/g, '_')}`,
     parameters: params,
     responses: {
-      '200': { description: 'Successful response.' },
-      '400': { description: 'Invalid request.' },
-      '401': { description: 'Missing or invalid API key.' },
-      '404': { description: 'Instance or resource not found.' },
+      [successCode]: {
+        description: successCode === '201' ? 'Resource created.' : 'Successful response.',
+        content: {
+          'application/json': {
+            schema: {
+              oneOf: [
+                { type: 'object', additionalProperties: true },
+                { type: 'array', items: { type: 'object', additionalProperties: true } },
+                { type: 'string' },
+              ],
+            },
+            example: successExample,
+          },
+        },
+      },
+      '400': {
+        description: 'Invalid request.',
+        content: {
+          'application/json': {
+            schema: errorSchema,
+            example: { status: 400, error: 'Bad Request', message: 'Invalid request.' },
+          },
+        },
+      },
+      '401': {
+        description: 'Missing or invalid API key.',
+        content: {
+          'application/json': {
+            schema: errorSchema,
+            example: { status: 401, error: 'Unauthorized', message: 'Missing or invalid API key.' },
+          },
+        },
+      },
+      '404': {
+        description: 'Instance or resource not found.',
+        content: {
+          'application/json': {
+            schema: errorSchema,
+            example: { status: 404, error: 'Not Found', message: 'Resource not found.' },
+          },
+        },
+      },
+      '422': {
+        description: 'Request validation failed.',
+        content: {
+          'application/json': {
+            schema: errorSchema,
+            example: { status: 422, error: 'Unprocessable Entity', message: ['A required field is missing.'] },
+          },
+        },
+      },
+      '429': {
+        description: 'Request rate limit exceeded.',
+        content: {
+          'application/json': {
+            schema: errorSchema,
+            example: { status: 429, error: 'Too Many Requests', message: 'Request rate limit exceeded.' },
+          },
+        },
+      },
+      '500': {
+        description: 'Unexpected server error.',
+        content: {
+          'application/json': {
+            schema: errorSchema,
+            example: { status: 500, error: 'Internal Server Error', message: 'Unexpected server error.' },
+          },
+        },
+      },
     },
   };
-  if (method === 'post' && /create|duplicate/i.test(action)) {
-    operation.responses = {
-      '201': operation.responses['200'],
-      ...Object.fromEntries(Object.entries(operation.responses).filter(([k]) => k !== '200')),
-    };
-  }
-  if (bodyMethods.has(method))
+  if (schema && method === 'get' && schemaName !== 'instanceSchema') {
+    operation.parameters.push(
+      ...Object.entries(schema.properties ?? {}).map(([name, property]) => ({
+        name,
+        in: 'query',
+        required: (schema.required ?? []).includes(name),
+        schema: property,
+      })),
+    );
+  } else if (schema && (bodyMethods.has(method) || method === 'delete')) {
+    const contentType = multipart ? 'multipart/form-data' : 'application/json';
+    const requestSchema = multipart
+      ? { ...schema, properties: { ...(schema.properties ?? {}), file: { type: 'string', format: 'binary' } } }
+      : schema;
+    operation.requestBody = { required: true, content: { [contentType]: { schema: requestSchema } } };
+  } else if (bodyMethods.has(method) && path === '/webhook/evolution') {
     operation.requestBody = {
       required: true,
-      content: { 'application/json': { schema: { type: 'object', additionalProperties: true }, example: {} } },
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            required: ['numberId'],
+            properties: { numberId: { type: 'string' } },
+            additionalProperties: true,
+          },
+          example: { numberId: '15551234567', event: 'messages.upsert', data: {} },
+        },
+      },
     };
+  } else if (bodyMethods.has(method) && path === '/webhook/meta') {
+    operation.requestBody = {
+      required: true,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            required: ['object', 'entry'],
+            properties: {
+              object: { type: 'string', enum: ['whatsapp_business_account'] },
+              entry: { type: 'array', items: { type: 'object', additionalProperties: true } },
+            },
+            additionalProperties: true,
+          },
+          example: { object: 'whatsapp_business_account', entry: [] },
+        },
+      },
+    };
+  }
+  if (schemaName) operation['x-validation-schema'] = schemaName;
   if (domain === 'settings-template') {
     const templateSummaries = {
       assign: 'Assign a settings template',
@@ -163,40 +222,6 @@ export const runtimeOperation = ({ method, path, source }) => {
         : action === 'bindings'
           ? 'List the instance default and exact group/contact bindings.'
           : `${summary}. Template edits propagate to every binding without copying settings.`;
-    const schema = templateBody(action);
-    if (schema)
-      operation.requestBody = {
-        required: true,
-        content: {
-          'application/json': {
-            schema,
-            example:
-              action === 'create'
-                ? {
-                    name: 'Careful outreach',
-                    settings: { localReadTtlSeconds: 120, automationSafety: { enabled: true } },
-                  }
-                : undefined,
-          },
-        },
-      };
-    operation.responses = {
-      ...(operation.responses['201']
-        ? { '201': { description: 'Settings template created.' } }
-        : {
-            '200': {
-              description:
-                action === 'list'
-                  ? 'Settings template list.'
-                  : action === 'bindings'
-                    ? 'Template binding list.'
-                    : 'Settings template operation completed.',
-            },
-          }),
-      '400': { description: 'Invalid template, scope, or target.' },
-      '401': { description: 'Missing or invalid API key.' },
-      '404': { description: 'Instance or settings template not found.' },
-    };
   }
   operation['x-source'] = source;
   return operation;
