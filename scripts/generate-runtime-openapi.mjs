@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { runtimeOperation } from './runtime-openapi-conventions.mjs';
 
 const routerPrefixes = {
   'src/api/routes/instance.router.ts': '/instance',
@@ -51,7 +52,11 @@ for (const [file, prefix] of Object.entries(routerPrefixes)) {
 const unique = [...new Map(operations.map((item) => [`${item.method} ${item.path}`, item])).values()].sort(
   (left, right) => left.path.localeCompare(right.path) || left.method.localeCompare(right.method),
 );
-const output = `${JSON.stringify(unique, null, 2)}\n`;
+const output = `${JSON.stringify(
+  unique.map((route) => ({ ...route, operation: runtimeOperation(route) })),
+  null,
+  2,
+)}\n`;
 const target = 'docs/runtime-routes.json';
 if (process.argv.includes('--check')) {
   if (!fs.existsSync(target) || fs.readFileSync(target, 'utf8') !== output) {
