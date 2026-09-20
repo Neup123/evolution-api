@@ -56,7 +56,14 @@ if (!serverConfig.DISABLE_DOCS) {
   const runtimeRoutes = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'docs', 'runtime-routes.json'), 'utf8'));
   for (const route of runtimeRoutes) {
     base.paths[route.path] ??= {};
-    base.paths[route.path][route.method] ??= route.operation;
+    const existing = base.paths[route.path][route.method] ?? {};
+    base.paths[route.path][route.method] = {
+      ...route.operation,
+      ...existing,
+      parameters: route.operation.parameters,
+      ...(route.operation.requestBody ? { requestBody: route.operation.requestBody } : {}),
+      responses: { ...route.operation.responses, ...(existing.responses ?? {}) },
+    };
   }
   const openApiDocument = YAML.stringify(base);
 

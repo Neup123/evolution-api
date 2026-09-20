@@ -32,7 +32,10 @@ const compactGroups = await request(`/baileys/groups/groupFetchAllParticipating/
 });
 const groups = Object.values(compactGroups.value.result ?? {});
 assert.ok(groups.length > 0, 'Connected account returned no participating groups');
-assert.ok(groups.every((group) => !('participants' in group)), 'Compact group response contains participants');
+assert.ok(
+  groups.every((group) => !('participants' in group)),
+  'Compact group response contains participants',
+);
 
 const regular = groups.find((group) => !group.isCommunity && !group.isCommunityAnnounce && !group.linkedParent);
 assert.ok(regular?.id, 'No regular group was available for the read audit');
@@ -64,7 +67,11 @@ if (community?.id) {
   );
 }
 
-const legacyGroups = await request(`/group/fetchAllGroups/${instance}?getParticipants=false&live=true`, undefined, 'GET');
+const legacyGroups = await request(
+  `/group/fetchAllGroups/${instance}?getParticipants=false&live=true`,
+  undefined,
+  'GET',
+);
 assert.ok(Array.isArray(legacyGroups.value) && legacyGroups.value.length > 0);
 assert.ok(legacyGroups.value.every((group) => !('participants' in group)));
 

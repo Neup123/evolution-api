@@ -88,7 +88,10 @@ function describeMethod(method) {
     [/^(send|relay|issue|read|presence|assert|generate)/, 'Send or apply'],
   ];
   const match = actions.find(([pattern]) => pattern.test(concise));
-  const subject = readable.replace(/^(fetch|get|extract|create|add|update|set|modify|remove|delete|clean|send|relay|issue) /, '');
+  const subject = readable.replace(
+    /^(fetch|get|extract|create|add|update|set|modify|remove|delete|clean|send|relay|issue) /,
+    '',
+  );
   if (match) return `${match[1]} ${subject} using the connected WhatsApp account and return the server result.`;
   return `Execute the ${readable} WhatsApp capability and return its typed result.`;
 }
@@ -619,7 +622,8 @@ const instanceSettingsSchema = {
       type: ['integer', 'null'],
       minimum: 0,
       maximum: 2592000,
-      description: 'Instance default lifetime of local read-through snapshots in seconds; null uses environment defaults.',
+      description:
+        'Instance default lifetime of local read-through snapshots in seconds; null uses environment defaults.',
     },
     localReadTtlOverrides: {
       type: ['object', 'null'],
@@ -636,7 +640,12 @@ paths['/settings/find/{instanceName}'] = {
     summary: 'Get instance behavior and local-read TTL settings',
     operationId: 'findInstanceSettings',
     parameters: [instanceParameter],
-    responses: { 200: { description: 'Persisted instance settings.', content: { 'application/json': { schema: instanceSettingsSchema } } } },
+    responses: {
+      200: {
+        description: 'Persisted instance settings.',
+        content: { 'application/json': { schema: instanceSettingsSchema } },
+      },
+    },
   },
 };
 paths['/settings/set/{instanceName}'] = {
@@ -668,11 +677,13 @@ const operationalMessageSchema = {
     id: { type: 'string', description: 'Evolution database row ID. Do not use it as the WhatsApp message identity.' },
     waMessageId: {
       type: ['string', 'null'],
-      description: 'Stable WhatsApp message ID, unique within the instance. Null is possible only for ambiguous legacy rows.',
+      description:
+        'Stable WhatsApp message ID, unique within the instance. Null is possible only for ambiguous legacy rows.',
     },
     key: {
       type: 'object',
-      description: 'Original Baileys message key. Existing integrations may continue reading id, remoteJid, remoteJidAlt, fromMe, and participant here.',
+      description:
+        'Original Baileys message key. Existing integrations may continue reading id, remoteJid, remoteJidAlt, fromMe, and participant here.',
       additionalProperties: true,
     },
     remoteJid: { type: ['string', 'null'], description: 'First observed chat JID for the canonical message.' },
@@ -741,7 +752,10 @@ paths['/chat/findMessages/{instanceName}'] = {
                   messageType: { type: 'string' },
                   messageTimestamp: {
                     type: 'object',
-                    properties: { gte: { type: 'string', format: 'date-time' }, lte: { type: 'string', format: 'date-time' } },
+                    properties: {
+                      gte: { type: 'string', format: 'date-time' },
+                      lte: { type: 'string', format: 'date-time' },
+                    },
                     additionalProperties: false,
                   },
                   key: {
@@ -917,7 +931,10 @@ fs.writeFileSync(openApiPath, YAML.stringify(document, { lineWidth: 0 }));
 
 const docsDirectory = path.join(root, 'docs/baileys');
 fs.mkdirSync(docsDirectory, { recursive: true });
-const mdEscape = (value) => String(value ?? '').replaceAll('|', '\\|').replaceAll('\n', ' ');
+const mdEscape = (value) =>
+  String(value ?? '')
+    .replaceAll('|', '\\|')
+    .replaceAll('\n', ' ');
 const renderSchema = (schema) => `\`\`\`json\n${JSON.stringify(schema, null, 2)}\n\`\`\``;
 const indexLines = [
   '# Baileys method contracts',
