@@ -56,12 +56,7 @@ if (!serverConfig.DISABLE_DOCS) {
   const runtimeRoutes = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'docs', 'runtime-routes.json'), 'utf8'));
   for (const route of runtimeRoutes) {
     base.paths[route.path] ??= {};
-    base.paths[route.path][route.method] ??= {
-      tags: [`Evolution API: ${route.path.split('/')[1] || 'root'}`],
-      summary: `${route.method.toUpperCase()} ${route.path}`,
-      description: `Runtime route declared in ${route.source}.`,
-      responses: { default: { description: 'Evolution API response.' } },
-    };
+    base.paths[route.path][route.method] ??= route.operation;
   }
   const openApiDocument = YAML.stringify(base);
 
