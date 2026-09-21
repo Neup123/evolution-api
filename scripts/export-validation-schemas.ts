@@ -1,5 +1,7 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 async function main() {
   const roots = ['src/validate', 'src/api/integrations'];
@@ -24,11 +26,11 @@ async function main() {
   };
   const out: Record<string, unknown> = {};
   for (const file of files) {
-    const mod = await import(path.resolve(file));
+    const mod = await import(pathToFileURL(path.resolve(file)).href);
     for (const [name, value] of Object.entries(mod))
       if (name.endsWith('Schema') && value && typeof value === 'object') out[name] = clean(value);
   }
-  fs.writeFileSync('/tmp/evolution-validation-schemas.json', JSON.stringify(out));
+  fs.writeFileSync(path.join(os.tmpdir(), 'evolution-validation-schemas.json'), JSON.stringify(out));
 }
 main().catch((error) => {
   console.error(error);

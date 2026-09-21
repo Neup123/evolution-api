@@ -74,8 +74,6 @@ export const runtimeOperation = ({ method, path, source, schemaName, schema, mul
       message: { oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }] },
     },
   };
-  const successExample =
-    action === 'list' || /^(find|fetch)/i.test(action) ? [] : { status: 'success', operation: action };
   const operation = {
     tags: [domainNames[domain] || title(domain)],
     summary,
@@ -84,7 +82,10 @@ export const runtimeOperation = ({ method, path, source, schemaName, schema, mul
     parameters: params,
     responses: {
       [successCode]: {
-        description: successCode === '201' ? 'Resource created.' : 'Successful response.',
+        description:
+          successCode === '201'
+            ? 'Resource created. See the domain documentation for the operation-specific response fields.'
+            : 'Successful response. See the domain documentation for the operation-specific response fields.',
         content: {
           'application/json': {
             schema: {
@@ -94,7 +95,6 @@ export const runtimeOperation = ({ method, path, source, schemaName, schema, mul
                 { type: 'string' },
               ],
             },
-            example: successExample,
           },
         },
       },

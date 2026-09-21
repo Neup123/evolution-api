@@ -34,7 +34,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -54,10 +54,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "backfill"
               }
             }
           }
@@ -370,7 +366,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -390,10 +386,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "calls"
               }
             }
           }
@@ -721,7 +713,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -741,10 +733,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "chats"
               }
             }
           }
@@ -1072,7 +1060,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -1092,10 +1080,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "contacts"
               }
             }
           }
@@ -1431,7 +1415,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -1451,10 +1435,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "events"
               }
             }
           }
@@ -1782,7 +1762,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -1802,10 +1782,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "groups"
               }
             }
           }
@@ -2115,7 +2091,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -2135,10 +2111,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "media"
               }
             }
           }
@@ -2432,7 +2404,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -2452,10 +2424,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "memberships"
               }
             }
           }
@@ -2783,7 +2751,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -2803,10 +2771,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "messages"
               }
             }
           }
@@ -3091,7 +3055,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -3111,10 +3075,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "messages"
               }
             }
           }
@@ -3373,7 +3333,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -3393,10 +3353,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "policies"
               }
             }
           }
@@ -3655,7 +3611,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -3675,10 +3631,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "policies"
               }
             }
           }
@@ -3978,7 +3930,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -3998,10 +3950,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "purges"
               }
             }
           }
@@ -4292,7 +4240,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -4312,10 +4260,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "purges"
               }
             }
           }
@@ -4616,7 +4560,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -4636,10 +4580,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "purges"
               }
             }
           }
@@ -4933,7 +4873,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -4953,10 +4893,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "reactions"
               }
             }
           }
@@ -5250,7 +5186,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -5270,10 +5206,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "receipts"
               }
             }
           }
@@ -5540,7 +5472,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -5560,10 +5492,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "status"
               }
             }
           }
@@ -5857,7 +5785,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -5877,10 +5805,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "sync-gaps"
               }
             }
           }
@@ -6148,7 +6072,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -6168,10 +6092,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "verify"
               }
             }
           }
@@ -6455,7 +6375,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -6475,10 +6395,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "getCatalog"
               }
             }
           }
@@ -6768,7 +6684,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -6788,10 +6704,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "getCollections"
               }
             }
           }
@@ -7100,7 +7012,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -7120,10 +7032,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "offer"
               }
             }
           }
@@ -7509,7 +7417,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -7529,10 +7437,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "archiveChat"
               }
             }
           }
@@ -7949,7 +7853,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -7969,10 +7873,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "deleteMessageForEveryone"
               }
             }
           }
@@ -8312,7 +8212,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -8332,8 +8232,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -8611,7 +8510,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -8631,8 +8530,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -8912,7 +8810,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -8932,8 +8830,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -9231,7 +9128,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -9251,8 +9148,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -9537,7 +9433,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -9557,8 +9453,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -9873,7 +9768,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -9893,8 +9788,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -10273,7 +10167,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -10293,8 +10187,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -10685,7 +10578,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -10705,8 +10598,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -11114,7 +11006,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -11134,8 +11026,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -11475,7 +11366,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -11495,10 +11386,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "getBase64FromMediaMessage"
               }
             }
           }
@@ -11864,7 +11751,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -11884,10 +11771,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "markChatUnread"
               }
             }
           }
@@ -12291,7 +12174,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -12311,10 +12194,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "markMessageAsRead"
               }
             }
           }
@@ -12648,7 +12527,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -12668,10 +12547,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "removeProfilePicture"
               }
             }
           }
@@ -12977,7 +12852,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -12997,10 +12872,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "sendPresence"
               }
             }
           }
@@ -13334,7 +13205,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -13354,10 +13225,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "updateBlockStatus"
               }
             }
           }
@@ -13743,7 +13610,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -13763,10 +13630,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "updateMessage"
               }
             }
           }
@@ -14216,7 +14079,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -14236,10 +14099,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "updatePrivacySettings"
               }
             }
           }
@@ -14633,7 +14492,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -14653,10 +14512,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "updateProfileName"
               }
             }
           }
@@ -14958,7 +14813,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -14978,10 +14833,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "updateProfilePicture"
               }
             }
           }
@@ -15283,7 +15134,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -15303,10 +15154,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "updateProfileStatus"
               }
             }
           }
@@ -15611,7 +15458,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -15631,10 +15478,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "whatsappNumbers"
               }
             }
           }
@@ -16190,7 +16033,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -16210,8 +16053,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -16616,7 +16458,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -16636,10 +16478,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "set"
               }
             }
           }
@@ -17326,7 +17164,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -17346,10 +17184,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "webhook"
               }
             }
           }
@@ -17932,7 +17766,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -17952,10 +17786,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "changeStatus"
               }
             }
           }
@@ -18378,7 +18208,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -18398,10 +18228,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "create"
               }
             }
           }
@@ -19066,7 +18892,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -19086,10 +18912,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "delete"
               }
             }
           }
@@ -19914,7 +19736,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -19934,8 +19756,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -20478,7 +20299,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -20498,8 +20319,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -21033,7 +20853,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -21053,8 +20873,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -21588,7 +21407,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -21608,8 +21427,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -21908,7 +21726,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -21928,10 +21746,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "ignoreJid"
               }
             }
           }
@@ -22360,7 +22174,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -22380,10 +22194,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "settings"
               }
             }
           }
@@ -22896,7 +22706,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -22916,10 +22726,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "update"
               }
             }
           }
@@ -23342,7 +23148,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -23362,10 +23168,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "changeStatus"
               }
             }
           }
@@ -23779,7 +23581,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -23799,10 +23601,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "create"
               }
             }
           }
@@ -24458,7 +24256,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -24478,10 +24276,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "delete"
               }
             }
           }
@@ -25306,7 +25100,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -25326,8 +25120,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -25870,7 +25663,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -25890,8 +25683,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -26425,7 +26217,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -26445,8 +26237,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -26980,7 +26771,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -27000,8 +26791,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -27300,7 +27090,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -27320,10 +27110,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "ignoreJid"
               }
             }
           }
@@ -27752,7 +27538,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -27772,10 +27558,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "settings"
               }
             }
           }
@@ -28279,7 +28061,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -28299,10 +28081,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "update"
               }
             }
           }
@@ -28716,7 +28494,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -28736,10 +28514,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "changeStatus"
               }
             }
           }
@@ -29153,7 +28927,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -29173,10 +28947,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "create"
               }
             }
           }
@@ -29832,7 +29602,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -29852,10 +29622,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "delete"
               }
             }
           }
@@ -30680,7 +30446,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -30700,8 +30466,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -31244,7 +31009,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -31264,8 +31029,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -31799,7 +31563,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -31819,8 +31583,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -32354,7 +32117,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -32374,8 +32137,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -32674,7 +32436,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -32694,10 +32456,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "ignoreJid"
               }
             }
           }
@@ -33126,7 +32884,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -33146,10 +32904,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "settings"
               }
             }
           }
@@ -33653,7 +33407,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -33673,10 +33427,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "update"
               }
             }
           }
@@ -34090,7 +33840,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -34110,10 +33860,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "changeStatus"
               }
             }
           }
@@ -34527,7 +34273,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -34547,10 +34293,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "create"
               }
             }
           }
@@ -35206,7 +34948,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -35226,10 +34968,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "delete"
               }
             }
           }
@@ -36054,7 +35792,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -36074,8 +35812,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -36618,7 +36355,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -36638,8 +36375,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -37173,7 +36909,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -37193,8 +36929,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -37728,7 +37463,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -37748,8 +37483,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -38048,7 +37782,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -38068,10 +37802,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "ignoreJid"
               }
             }
           }
@@ -38488,7 +38218,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -38508,10 +38238,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "settings"
               }
             }
           }
@@ -39003,7 +38729,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -39023,10 +38749,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "update"
               }
             }
           }
@@ -39435,7 +39157,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -39455,10 +39177,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "acceptInviteCode"
               }
             }
           }
@@ -39780,7 +39498,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -39800,10 +39518,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "create"
               }
             }
           }
@@ -40174,7 +39888,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -40194,8 +39908,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -40491,7 +40204,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -40511,8 +40224,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -40808,7 +40520,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -40828,10 +40540,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "inviteCode"
               }
             }
           }
@@ -41128,7 +40836,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -41148,10 +40856,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "inviteInfo"
               }
             }
           }
@@ -41411,7 +41115,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -41431,10 +41135,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "leaveGroup"
               }
             }
           }
@@ -41730,7 +41430,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -41750,10 +41450,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "participants"
               }
             }
           }
@@ -42041,7 +41737,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -42061,10 +41757,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "revokeInviteCode"
               }
             }
           }
@@ -42411,7 +42103,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -42431,10 +42123,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "sendInvite"
               }
             }
           }
@@ -42795,7 +42483,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -42815,10 +42503,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "toggleEphemeral"
               }
             }
           }
@@ -43162,7 +42846,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -43182,10 +42866,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "updateGroupDescription"
               }
             }
           }
@@ -43523,7 +43203,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -43543,10 +43223,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "updateGroupPicture"
               }
             }
           }
@@ -43884,7 +43560,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -43904,10 +43580,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "updateGroupSubject"
               }
             }
           }
@@ -44263,7 +43935,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -44283,10 +43955,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "updateParticipant"
               }
             }
           }
@@ -44648,7 +44316,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -44668,10 +44336,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "updateSetting"
               }
             }
           }
@@ -44988,7 +44652,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -45008,10 +44672,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "connect"
               }
             }
           }
@@ -45272,7 +44932,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -45292,10 +44952,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "connectionState"
               }
             }
           }
@@ -45820,7 +45476,7 @@
       "parameters": [],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -45840,10 +45496,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "create"
               }
             }
           }
@@ -46385,7 +46037,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -46405,10 +46057,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "delete"
               }
             }
           }
@@ -46657,7 +46305,7 @@
       "parameters": [],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -46677,8 +46325,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -46937,7 +46584,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -46957,10 +46604,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "logout"
               }
             }
           }
@@ -47221,7 +46864,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -47241,10 +46884,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "restart"
               }
             }
           }
@@ -47536,7 +47175,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -47556,10 +47195,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "setPresence"
               }
             }
           }
@@ -47835,7 +47470,7 @@
       "parameters": [],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -47855,10 +47490,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "instanceapikey"
               }
             }
           }
@@ -48392,7 +48023,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -48412,8 +48043,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -48768,7 +48398,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -48788,10 +48418,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "set"
               }
             }
           }
@@ -49154,7 +48780,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -49174,8 +48800,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -49484,7 +49109,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -49504,10 +49129,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "handleLabel"
               }
             }
           }
@@ -50010,7 +49631,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -50030,10 +49651,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "sendButtons"
               }
             }
           }
@@ -50556,7 +50173,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -50576,10 +50193,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "sendContact"
               }
             }
           }
@@ -51109,7 +50722,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -51129,10 +50742,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "sendList"
               }
             }
           }
@@ -51706,7 +51315,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -51726,10 +51335,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "sendLocation"
               }
             }
           }
@@ -52229,7 +51834,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -52249,10 +51854,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "sendMedia"
               }
             }
           }
@@ -52760,7 +52361,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -52780,10 +52381,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "sendPoll"
               }
             }
           }
@@ -53268,7 +52865,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -53288,10 +52885,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "sendPtv"
               }
             }
           }
@@ -53734,7 +53327,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -53754,10 +53347,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "sendReaction"
               }
             }
           }
@@ -54144,7 +53733,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -54164,10 +53753,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "sendStatus"
               }
             }
           }
@@ -54587,7 +54172,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -54607,10 +54192,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "sendSticker"
               }
             }
           }
@@ -55012,7 +54593,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -55032,10 +54613,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "sendTemplate"
               }
             }
           }
@@ -55437,7 +55014,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -55457,10 +55034,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "sendText"
               }
             }
           }
@@ -55932,7 +55505,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -55952,10 +55525,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "sendWhatsAppAudio"
               }
             }
           }
@@ -56368,7 +55937,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -56388,10 +55957,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "changeStatus"
               }
             }
           }
@@ -56808,7 +56373,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -56828,10 +56393,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "create"
               }
             }
           }
@@ -57490,7 +57051,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -57510,10 +57071,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "delete"
               }
             }
           }
@@ -58338,7 +57895,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -58358,8 +57915,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -58902,7 +58458,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -58922,8 +58478,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -59457,7 +59012,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -59477,8 +59032,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -60012,7 +59566,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -60032,8 +59586,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -60332,7 +59885,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -60352,10 +59905,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "ignoreJid"
               }
             }
           }
@@ -60784,7 +60333,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -60804,10 +60353,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "settings"
               }
             }
           }
@@ -61314,7 +60859,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -61334,10 +60879,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "update"
               }
             }
           }
@@ -61986,7 +61527,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -62006,8 +61547,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -62362,7 +61902,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -62382,10 +61922,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "set"
               }
             }
           }
@@ -62789,7 +62325,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -62809,10 +62345,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "changeStatus"
               }
             }
           }
@@ -63260,7 +62792,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -63280,10 +62812,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "create"
               }
             }
           }
@@ -63964,7 +63492,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -63984,10 +63512,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "creds"
               }
             }
           }
@@ -64283,7 +63807,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -64303,10 +63827,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "creds"
               }
             }
           }
@@ -64892,7 +64412,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -64912,10 +64432,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "creds"
               }
             }
           }
@@ -65740,7 +65256,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -65760,10 +65276,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "delete"
               }
             }
           }
@@ -66588,7 +66100,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -66608,8 +66120,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -67152,7 +66663,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -67172,8 +66683,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -67707,7 +67217,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -67727,8 +67237,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -68262,7 +67771,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -68282,8 +67791,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -68817,7 +68325,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -68837,10 +68345,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "getModels"
               }
             }
           }
@@ -69140,7 +68644,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -69160,10 +68664,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "ignoreJid"
               }
             }
           }
@@ -69586,7 +69086,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -69606,10 +69106,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "settings"
               }
             }
           }
@@ -70141,7 +69637,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -70161,10 +69657,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "update"
               }
             }
           }
@@ -70845,7 +70337,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -70865,8 +70357,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -71189,7 +70680,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -71209,10 +70700,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "set"
               }
             }
           }
@@ -71816,7 +71303,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -71836,8 +71323,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -72234,7 +71720,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -72254,10 +71740,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "set"
               }
             }
           }
@@ -72935,7 +72417,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -72955,8 +72437,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -73311,7 +72792,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -73331,10 +72812,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "set"
               }
             }
           }
@@ -73736,7 +73213,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -73756,10 +73233,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "getMedia"
               }
             }
           }
@@ -74099,7 +73572,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -74119,10 +73592,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "getMediaUrl"
               }
             }
           }
@@ -74450,7 +73919,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -74470,10 +73939,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "assign"
               }
             }
           }
@@ -74768,7 +74233,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -74788,10 +74253,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "bindings"
               }
             }
           }
@@ -75286,7 +74747,7 @@
       "parameters": [],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -75306,10 +74767,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "create"
               }
             }
           }
@@ -75823,7 +75280,7 @@
       "parameters": [],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -75843,10 +75300,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "delete"
               }
             }
           }
@@ -76136,7 +75589,7 @@
       "parameters": [],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -76156,10 +75609,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "duplicate"
               }
             }
           }
@@ -76683,7 +76132,7 @@
       "parameters": [],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -76703,10 +76152,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "edit"
               }
             }
           }
@@ -77210,7 +76655,7 @@
       "parameters": [],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -77230,8 +76675,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -77512,7 +76956,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -77532,10 +76976,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "unassign"
               }
             }
           }
@@ -77825,7 +77265,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -77845,8 +77285,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -78131,7 +77570,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -78151,10 +77590,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "outbound-audit"
               }
             }
           }
@@ -78715,7 +78150,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -78735,10 +78170,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "set"
               }
             }
           }
@@ -79579,7 +79010,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -79599,8 +79030,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -79955,7 +79385,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -79975,10 +79405,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "set"
               }
             }
           }
@@ -80405,7 +79831,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -80425,10 +79851,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "create"
               }
             }
           }
@@ -80789,7 +80211,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -80809,10 +80231,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "delete"
               }
             }
           }
@@ -81152,7 +80570,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -81172,10 +80590,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "edit"
               }
             }
           }
@@ -81760,7 +81174,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -81780,8 +81194,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -82082,7 +81495,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -82102,10 +81515,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "changeStatus"
               }
             }
           }
@@ -82513,7 +81922,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -82533,10 +81942,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "create"
               }
             }
           }
@@ -83186,7 +82591,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -83206,10 +82611,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "delete"
               }
             }
           }
@@ -84034,7 +83435,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -84054,8 +83455,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -84598,7 +83998,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -84618,8 +84018,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -85153,7 +84552,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -85173,8 +84572,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -85708,7 +85106,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -85728,8 +85126,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -86028,7 +85425,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -86048,10 +85445,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "ignoreJid"
               }
             }
           }
@@ -86444,7 +85837,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -86464,10 +85857,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "settings"
               }
             }
           }
@@ -86865,7 +86254,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -86885,10 +86274,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "start"
               }
             }
           }
@@ -87308,7 +86693,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -87328,10 +86713,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "update"
               }
             }
           }
@@ -87687,7 +87068,7 @@
       "parameters": [],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -87707,10 +87088,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "evolution"
               }
             }
           }
@@ -88268,7 +87645,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -88288,8 +87665,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -88822,7 +88198,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -88842,8 +88218,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -89091,7 +88466,7 @@
       "parameters": [],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -89111,10 +88486,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "meta"
               }
             }
           }
@@ -89363,7 +88734,7 @@
       "parameters": [],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -89383,10 +88754,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "meta"
               }
             }
           }
@@ -89799,7 +89166,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -89819,10 +89186,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "set-many"
               }
             }
           }
@@ -90324,7 +89687,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -90344,10 +89707,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "set"
               }
             }
           }
@@ -91003,7 +90362,7 @@
       ],
       "responses": {
         "200": {
-          "description": "Successful response.",
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -91023,8 +90382,7 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": []
+              }
             }
           }
         },
@@ -91379,7 +90737,7 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created.",
+          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -91399,10 +90757,6 @@
                     "type": "string"
                   }
                 ]
-              },
-              "example": {
-                "status": "success",
-                "operation": "set"
               }
             }
           }

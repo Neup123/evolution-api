@@ -1,10 +1,16 @@
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { runtimeOperation } from './runtime-openapi-conventions.mjs';
 import { applyOverride } from './runtime-openapi-overrides.mjs';
 
-execFileSync('npx', ['tsx', 'scripts/export-validation-schemas.ts'], { stdio: 'inherit' });
-const validationSchemas = JSON.parse(fs.readFileSync('/tmp/evolution-validation-schemas.json', 'utf8'));
+const tsxCli = fileURLToPath(import.meta.resolve('tsx/cli'));
+execFileSync(process.execPath, [tsxCli, 'scripts/export-validation-schemas.ts'], { stdio: 'inherit' });
+const validationSchemas = JSON.parse(
+  fs.readFileSync(path.join(os.tmpdir(), 'evolution-validation-schemas.json'), 'utf8'),
+);
 
 const routerPrefixes = {
   'src/api/routes/instance.router.ts': '/instance',
@@ -86,7 +92,8 @@ const output = `${JSON.stringify(
 )}\n`;
 const target = 'docs/runtime-routes.json';
 if (process.argv.includes('--check')) {
-  if (!fs.existsSync(target) || fs.readFileSync(target, 'utf8') !== output) {
+  const normalizeEol = (value) => value.replace(/\r\n/g, '\n');
+  if (!fs.existsSync(target) || normalizeEol(fs.readFileSync(target, 'utf8')) !== normalizeEol(output)) {
     throw new Error(`${target} is stale. Run npm run generate:runtime-openapi.`);
   }
 } else {
