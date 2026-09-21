@@ -1,3 +1,17 @@
+# 5.3.0 (2026-09-21)
+
+### Features
+
+* Embedded Evolution Manager 2.4.0 with visual settings-template management and instance/group/contact assignments.
+* Added generated, validator-derived request fields for every runtime route in Swagger, while preserving curated operation-specific responses where available.
+* Added guided query, path, header, JSON, and multipart inputs for generated Swagger operations.
+
+### Fixes
+
+* Made runtime OpenAPI generation portable across Windows and Linux and line-ending independent.
+* Added CI gates for generated runtime contracts, chat/Baileys documentation, settings-template behavior, and embedded review surfaces.
+* Removed fabricated success examples from generated fallback responses; operation-specific examples remain in curated domain documentation.
+
 # 5.2.0 (2026-09-16)
 
 ### Features

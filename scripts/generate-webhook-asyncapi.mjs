@@ -317,7 +317,8 @@ const schemas = {
       },
       participantDigits: {
         type: ['string', 'null'],
-        description: 'Compatibility local part of jid. This is explicitly not a verified phone number when jid is a LID.',
+        description:
+          'Compatibility local part of jid. This is explicitly not a verified phone number when jid is a LID.',
       },
       name: { type: 'string' },
       imgUrl: { type: ['string', 'null'], format: 'uri' },
@@ -905,17 +906,19 @@ const events = [
       id: '120363000000000000@g.us',
       participants: ['151672961659093@lid'],
       action: 'add',
-      participantsData: [{
-        jid: '151672961659093@lid',
-        lid: '151672961659093@lid',
-        phoneNumber: '15551234567@s.whatsapp.net',
-        phoneNumberDigits: '15551234567',
-        canonicalJid: '15551234567@s.whatsapp.net',
-        identifierType: 'lid',
-        identityResolved: true,
-        participantDigits: '151672961659093',
-        name: 'Alice',
-      }],
+      participantsData: [
+        {
+          jid: '151672961659093@lid',
+          lid: '151672961659093@lid',
+          phoneNumber: '15551234567@s.whatsapp.net',
+          phoneNumberDigits: '15551234567',
+          canonicalJid: '15551234567@s.whatsapp.net',
+          identifierType: 'lid',
+          identityResolved: true,
+          participantDigits: '151672961659093',
+          name: 'Alice',
+        },
+      ],
     },
   ),
   event(

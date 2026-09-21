@@ -60,6 +60,15 @@ jobs:
     - name: Check archive API documentation
       run: npm run audit:archive-docs
 
+    - name: Check generated runtime OpenAPI contracts
+      run: npm run audit:runtime-openapi
+
+    - name: Check chat and Baileys API documentation
+      run: npm run audit:chat-docs && npm run audit:baileys-docs
+
+    - name: Test settings templates and review surfaces
+      run: npm run test:settings-templates && npm run test:review-surfaces
+
     - name: Generate Prisma client
       run: npm run db:generate
 
