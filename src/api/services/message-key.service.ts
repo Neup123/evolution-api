@@ -24,3 +24,16 @@ export function preserveMessageKey<T extends MessageKeyLike>(key: T): T {
     ...(key.addressingMode ? { addressingMode: key.addressingMode } : {}),
   };
 }
+
+/**
+ * Rebuild a protocol key from the authoritative key stored with the original message.
+ *
+ * API clients often retain only id/fromMe/remoteJid/participant. Group deletes also
+ * need the original participant alternate and addressing mode when WhatsApp used LID
+ * addressing. The stored key wins for protocol fields; the requested id is retained
+ * so a mismatched database record can never redirect the operation.
+ */
+export function hydrateMessageKey<T extends MessageKeyLike>(requested: T, stored?: MessageKeyLike | null): T {
+  if (!stored || typeof stored !== 'object') return preserveMessageKey(requested);
+  return preserveMessageKey({ ...requested, ...stored, id: requested.id } as T);
+}

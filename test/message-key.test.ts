@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { preserveMessageKey } from '../src/api/services/message-key.service';
+import { hydrateMessageKey, preserveMessageKey } from '../src/api/services/message-key.service';
 
 const groupLidKey = {
   id: '3EB0A_MESSAGE',
@@ -28,3 +28,19 @@ const directLidKey = {
 assert.deepEqual(preserveMessageKey(directLidKey), directLidKey);
 
 console.log('message key tests passed');
+
+
+const partialGroupDelete = {
+  id: '3EB0A_MESSAGE',
+  fromMe: false,
+  remoteJid: '120363000000000000@g.us',
+  participant: '230687726690306@lid',
+};
+const hydrated = hydrateMessageKey(partialGroupDelete, groupLidKey);
+assert.equal(hydrated.id, partialGroupDelete.id);
+assert.equal(hydrated.remoteJid, groupLidKey.remoteJid);
+assert.equal(hydrated.participant, groupLidKey.participant);
+assert.equal(hydrated.participantAlt, groupLidKey.participantAlt);
+assert.equal(hydrated.addressingMode, groupLidKey.addressingMode);
+assert.equal(hydrated.fromMe, groupLidKey.fromMe);
+assert.deepEqual(hydrateMessageKey(partialGroupDelete), partialGroupDelete);
