@@ -4280,13 +4280,29 @@ export class BaileysStartupService extends ChannelStartupService {
 
       const revokeMessageId = generateMessageIDV2(this.client.user?.id);
       let acknowledgedStatus: number | undefined;
-      const waitForServerAcknowledgement = bindWaitForEvent(this.client.ev, 'messages.update');
-      const acknowledgement = waitForServerAcknowledgement(async (updates) => {
-        const matchingUpdate = updates.find(({ key }) => key.id === revokeMessageId);
-        if (!matchingUpdate?.update.status) return false;
-        acknowledgedStatus = matchingUpdate.update.status;
-        return matchingUpdate.update.status >= WAMessageStatus.SERVER_ACK;
-      }, 10_000).then(
+      const waitForMessageUpdate = bindWaitForEvent(this.client.ev, 'messages.update');
+      const waitForMessageUpsert = bindWaitForEvent(this.client.ev, 'messages.upsert');
+      const waitForMessageReceipt = bindWaitForEvent(this.client.ev, 'message-receipt.update');
+      const acknowledgement = Promise.race([
+        waitForMessageUpdate(async (updates) => {
+          const matchingUpdate = updates.find(({ key }) => key.id === revokeMessageId);
+          if (!matchingUpdate?.update.status) return false;
+          acknowledgedStatus = matchingUpdate.update.status;
+          return matchingUpdate.update.status >= WAMessageStatus.SERVER_ACK;
+        }, 10_000),
+        waitForMessageUpsert(async ({ messages }) => {
+          const matchingMessage = messages.find(({ key }) => key.id === revokeMessageId);
+          if (!matchingMessage?.status || matchingMessage.status < WAMessageStatus.SERVER_ACK) return false;
+          acknowledgedStatus = matchingMessage.status;
+          return true;
+        }, 10_000),
+        waitForMessageReceipt(async (receipts) => {
+          const matchingReceipt = receipts.some(({ key }) => key.id === revokeMessageId);
+          if (!matchingReceipt) return false;
+          acknowledgedStatus = WAMessageStatus.DELIVERY_ACK;
+          return true;
+        }, 10_000),
+      ]).then(
         () => ({ acknowledged: true as const }),
         (error) => ({ acknowledged: false as const, error }),
       );
