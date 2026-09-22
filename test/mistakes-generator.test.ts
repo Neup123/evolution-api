@@ -10,9 +10,20 @@ assert.equal([...changed].filter((c, i) => c !== [...'hello'][i]).length, 2);
 const protectedDestinations = generateNaturalMistakes('Visit wikipedia.com and https://example.org/a?q=1', { ...settings, minLetters: 20, maxLetters: 20 }, () => 0);
 assert(protectedDestinations.includes('wikipedia.com'));
 assert(protectedDestinations.includes('https://example.org/a?q=1'));
-assert.equal(generateNaturalMistakes('Email me@example.com or call +972 55 123 4567', { ...settings, minLetters: 20, maxLetters: 20 }, () => 0).includes('me@example.com'), true);
+const protectedIdentifiers = generateNaturalMistakes(
+  'Email me@example.com, mention @Support_Team, or call +972 55 123 4567',
+  { ...settings, minLetters: 20, maxLetters: 20 },
+  () => 0,
+);
+assert(protectedIdentifiers.includes('me@example.com'));
+assert(protectedIdentifiers.includes('@Support_Team'));
+assert(protectedIdentifiers.includes('+972 55 123 4567'));
 assert.notEqual(generateNaturalMistakes('שלום', { ...settings, minLetters: 1, maxLetters: 1 }, () => 0), 'שלום');
 assert.notEqual(generateNaturalMistakes('Привет', { ...settings, minLetters: 1, maxLetters: 1 }, () => 0), 'Привет');
+assert.notEqual(generateNaturalMistakes('مرحبا', { ...settings, minLetters: 1, maxLetters: 1 }, () => 0), 'مرحبا');
+const uppercase = generateNaturalMistakes('HELLO', { ...settings, minLetters: 1, maxLetters: 1 }, () => 0);
+assert.match(uppercase, /^[A-Z]+$/);
+assert.equal(generateNaturalMistakes('https://wikipedia.com', { ...settings, minLetters: 20, maxLetters: 20 }, () => 0), 'https://wikipedia.com');
 const message = { conversation: 'Hello world', contextInfo: { mentionedJid: ['1@s.whatsapp.net'] } };
 const transformed = applyMistakesToMessage(message, { ...settings, minLetters: 1, maxLetters: 1 });
 assert.deepEqual(transformed.contextInfo, message.contextInfo);
