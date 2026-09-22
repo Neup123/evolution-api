@@ -67,7 +67,11 @@ import {
   messageArchiveStateFromStatus,
   messageUpdateIdentity,
 } from '@api/services/message-archive.service';
-import { hydrateMessageKey, preserveMessageKey } from '@api/services/message-key.service';
+import {
+  buildDeleteMessageKey,
+  preserveMessageKey,
+  resolveDeleteMessageOwnership,
+} from '@api/services/message-key.service';
 import { applyMistakesToMessage } from '@api/services/mistakes-generator.service';
 import { OutboundSafetyService } from '@api/services/outbound-safety.service';
 import { SettingsTemplateService } from '@api/services/settings-template.service';
@@ -89,6 +93,8 @@ import {
 } from '@config/env.config';
 import {
   BadRequestException,
+  ForbiddenException,
+  GatewayTimeoutException,
   InternalServerErrorException,
   NotFoundException,
   TooManyRequestsException,
@@ -117,6 +123,7 @@ import {
 import axios from 'axios';
 import makeWASocket, {
   AnyMessageContent,
+  bindWaitForEvent,
   BufferedEventData,
   BufferJSON,
   CacheStore,
@@ -129,6 +136,7 @@ import makeWASocket, {
   DisconnectReason,
   downloadContentFromMessage,
   downloadMediaMessage,
+  generateMessageIDV2,
   generateWAMessageFromContent,
   getAggregateVotesInPollMessage,
   GetCatalogOptions,
@@ -153,6 +161,7 @@ import makeWASocket, {
   WAMediaUpload,
   WAMessage,
   WAMessageKey,
+  WAMessageStatus,
   WAPresence,
   WASocket,
 } from 'baileys';
@@ -4180,24 +4189,123 @@ export class BaileysStartupService extends ChannelStartupService {
           remoteJid: del.remoteJid,
         });
       }
-      const storedMessage = await this.prismaRepository.message.findFirst({
-        where: {
-          instanceId: this.instanceId,
-          key: { path: ['id'], equals: del.id },
-          OR: [
-            { key: { path: ['remoteJid'], equals: del.remoteJid } },
-            { key: { path: ['remoteJidAlt'], equals: del.remoteJid } },
-            { remoteJid: del.remoteJid },
-            { remoteJidAlt: del.remoteJid },
-          ],
-        },
+      let storedMessage = await this.prismaRepository.message.findUnique({
+        where: { instanceId_waMessageId: { instanceId: this.instanceId, waMessageId: del.id } },
       });
+      if (!storedMessage) {
+        const jsonPath = this.configService.get<Database>('DATABASE').PROVIDER === 'mysql' ? '$.id' : ['id'];
+        storedMessage = await this.prismaRepository.message.findFirst({
+          where: {
+            instanceId: this.instanceId,
+            key: { path: jsonPath, equals: del.id } as any,
+          },
+        });
+      }
       const storedKey =
         storedMessage?.key && typeof storedMessage.key === 'object' && !Array.isArray(storedMessage.key)
-          ? storedMessage.key
+          ? (storedMessage.key as Record<string, unknown>)
           : null;
-      const deleteKey = hydrateMessageKey(del, storedKey);
-      const response = await this.client.sendMessage(deleteKey.remoteJid, { delete: deleteKey });
+      if (storedMessage) {
+        const storedJids = [
+          storedMessage.remoteJid,
+          storedMessage.remoteJidAlt,
+          storedKey?.remoteJid,
+          storedKey?.remoteJidAlt,
+        ].filter(Boolean);
+        if (!storedJids.includes(del.remoteJid)) {
+          throw new BadRequestException({
+            code: 'MESSAGE_CHAT_MISMATCH',
+            message: 'The message ID does not belong to the supplied remoteJid.',
+            remoteJid: del.remoteJid,
+            id: del.id,
+          });
+        }
+      }
+
+      const ownership = resolveDeleteMessageOwnership(del, storedKey, storedMessage?.participant);
+      const detectedFromMe = ownership.fromMe;
+      const ownershipSource = ownership.source;
+      const deleteKey = buildDeleteMessageKey(
+        { ...del, fromMe: detectedFromMe },
+        storedKey ? { ...storedKey, fromMe: detectedFromMe } : null,
+        storedMessage?.participant,
+      );
+      if (!deleteKey.remoteJid) {
+        throw new BadRequestException({
+          code: 'DELETE_REMOTE_JID_REQUIRED',
+          message: 'The original WhatsApp chat JID is required to delete a message.',
+        });
+      }
+      const deletingAnotherUsersMessage = deleteKey.fromMe === false;
+      if (deletingAnotherUsersMessage && !isJidGroup(deleteKey.remoteJid)) {
+        throw new BadRequestException({
+          code: 'CANNOT_REVOKE_INCOMING_DIRECT_MESSAGE',
+          message:
+            'WhatsApp does not allow deleting another user’s direct message for everyone. Use deleteMessageForEveryone only for messages sent by this account, or for group messages when this account is an admin.',
+        });
+      }
+      if (deletingAnotherUsersMessage && !deleteKey.participant) {
+        throw new BadRequestException({
+          code: 'GROUP_DELETE_PARTICIPANT_REQUIRED',
+          message:
+            'Deleting another participant’s group message requires the original participant JID. Enable message storage or send participant from the webhook message key.',
+        });
+      }
+      if (deletingAnotherUsersMessage) {
+        try {
+          const metadata = await this.client.groupMetadata(deleteKey.remoteJid);
+          const ownJids = [this.instance.wuid, this.client.user?.id, this.client.user?.lid]
+            .filter(Boolean)
+            .map((jid) => jidNormalizedUser(jid));
+          const ownParticipant = metadata.participants.find((candidate) =>
+            [candidate.id, candidate.lid, candidate.phoneNumber]
+              .filter(Boolean)
+              .map((jid) => jidNormalizedUser(jid))
+              .some((jid) => ownJids.includes(jid)),
+          );
+          if (ownParticipant && !ownParticipant.isAdmin && !ownParticipant.isSuperAdmin && !ownParticipant.admin) {
+            throw new ForbiddenException({
+              code: 'GROUP_ADMIN_REQUIRED',
+              message: 'The connected WhatsApp account must be a group admin to delete another participant’s message.',
+              remoteJid: deleteKey.remoteJid,
+            });
+          }
+        } catch (error) {
+          if (error?.status) throw error;
+          this.logger.warn(
+            `Could not verify group-admin permissions before deleting message ${del.id}: ${error?.message ?? error}`,
+          );
+        }
+      }
+
+      const revokeMessageId = generateMessageIDV2(this.client.user?.id);
+      let acknowledgedStatus: number | undefined;
+      const waitForServerAcknowledgement = bindWaitForEvent(this.client.ev, 'messages.update');
+      const acknowledgement = waitForServerAcknowledgement(async (updates) => {
+        const matchingUpdate = updates.find(({ key }) => key.id === revokeMessageId);
+        if (!matchingUpdate?.update.status) return false;
+        acknowledgedStatus = matchingUpdate.update.status;
+        return matchingUpdate.update.status >= WAMessageStatus.SERVER_ACK;
+      }, 10_000).then(
+        () => ({ acknowledged: true as const }),
+        (error) => ({ acknowledged: false as const, error }),
+      );
+
+      const response = await this.client.sendMessage(
+        deleteKey.remoteJid,
+        { delete: deleteKey },
+        { messageId: revokeMessageId },
+      );
+      const acknowledgementResult = await acknowledgement;
+      if (!acknowledgementResult.acknowledged) {
+        throw new GatewayTimeoutException({
+          code: 'DELETE_NOT_ACKNOWLEDGED',
+          message:
+            'WhatsApp did not acknowledge the revoke request within 10 seconds. The local message was not marked as deleted.',
+          id: del.id,
+          remoteJid: del.remoteJid,
+        });
+      }
       if (response) {
         const messageId = deleteKey.id;
         if (messageId) {
@@ -4241,8 +4349,20 @@ export class BaileysStartupService extends ChannelStartupService {
         }
       }
 
-      return response;
+      return {
+        ...response,
+        status: acknowledgedStatus ?? WAMessageStatus.SERVER_ACK,
+        deletion: {
+          requestedMessageId: del.id,
+          target: detectedFromMe ? 'CONNECTED_ACCOUNT_MESSAGE' : 'GROUP_PARTICIPANT_MESSAGE',
+          ownershipSource,
+          submitted: true,
+          serverAcknowledged: true,
+          status: status[acknowledgedStatus ?? WAMessageStatus.SERVER_ACK],
+        },
+      };
     } catch (error) {
+      if (error?.status) throw error;
       throw new InternalServerErrorException('Error while deleting message for everyone', error?.toString());
     }
   }

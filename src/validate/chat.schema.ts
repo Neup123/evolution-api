@@ -123,18 +123,29 @@ export const deleteMessageSchema: JSONSchema7 = {
   type: 'object',
   properties: {
     id: { type: 'string' },
-    fromMe: { type: 'boolean', enum: [true, false] },
+    fromMe: {
+      type: 'boolean',
+      enum: [true, false],
+      description:
+        'Optional ownership override. Omit it to detect ownership from the archived original message. True means the connected account sent it; false selects admin deletion for another participant’s group message.',
+    },
     remoteJid: {
       type: 'string',
       pattern: '^(?:\\d+@(?:s\\.whatsapp\\.net|lid)|\\d+-\\d+@g\\.us|status@broadcast|[^@\\s]+@broadcast)$',
       description: 'remoteJid must be a full WhatsApp JID, not an internal database row ID.',
     },
     remoteJidAlt: { type: 'string' },
-    participant: { type: 'string' },
-    participantAlt: { type: 'string' },
+    participant: {
+      type: 'string',
+      description: 'Original group participant JID from the webhook message key. Required for admin deletion.',
+    },
+    participantAlt: {
+      type: 'string',
+      description: 'Alternate participant JID from the webhook message key, used as a fallback for LID/PN resolution.',
+    },
     addressingMode: { type: 'string', enum: ['lid', 'pn'] },
   },
-  required: ['id', 'fromMe', 'remoteJid'],
+  required: ['id', 'remoteJid'],
   ...isNotEmpty('id', 'remoteJid'),
 };
 

@@ -6,6 +6,42 @@ export type MessageKeyLike = proto.IMessageKey & {
   addressingMode?: string | null;
 };
 
+export type DeleteOwnershipSource =
+  | 'ARCHIVED_MESSAGE_KEY'
+  | 'REQUEST_OVERRIDE'
+  | 'INFERRED_CONNECTED_ACCOUNT'
+  | 'INFERRED_GROUP_PARTICIPANT';
+
+export function resolveDeleteMessageOwnership(
+  requested: MessageKeyLike,
+  stored?: MessageKeyLike | null,
+  storedParticipant?: string | null,
+): { fromMe: boolean; participant?: string; source: DeleteOwnershipSource } {
+  const participant =
+    stored?.participant ??
+    storedParticipant ??
+    requested.participant ??
+    stored?.participantAlt ??
+    requested.participantAlt ??
+    undefined;
+  const storedFromMe = typeof stored?.fromMe === 'boolean' ? stored.fromMe : undefined;
+  const fromMe =
+    storedFromMe ??
+    (typeof requested.fromMe === 'boolean'
+      ? requested.fromMe
+      : !(requested.remoteJid?.endsWith('@g.us') && Boolean(participant)));
+  const source: DeleteOwnershipSource =
+    storedFromMe !== undefined
+      ? 'ARCHIVED_MESSAGE_KEY'
+      : typeof requested.fromMe === 'boolean'
+        ? 'REQUEST_OVERRIDE'
+        : fromMe
+          ? 'INFERRED_CONNECTED_ACCOUNT'
+          : 'INFERRED_GROUP_PARTICIPANT';
+
+  return { fromMe, ...(participant ? { participant } : {}), source };
+}
+
 /**
  * Return a copy of a WhatsApp message key without normalising PN/LID addresses.
  *
@@ -36,4 +72,34 @@ export function preserveMessageKey<T extends MessageKeyLike>(key: T): T {
 export function hydrateMessageKey<T extends MessageKeyLike>(requested: T, stored?: MessageKeyLike | null): T {
   if (!stored || typeof stored !== 'object') return preserveMessageKey(requested);
   return preserveMessageKey({ ...requested, ...stored, id: requested.id } as T);
+}
+
+/**
+ * Build the key that Baileys actually serializes inside a revoke protocol message.
+ *
+ * WhatsApp's protobuf MessageKey contains only remoteJid, fromMe, id and
+ * participant. Fields such as participantAlt and addressingMode are useful for
+ * identity resolution, but forwarding them does not put them on the wire.
+ */
+export function buildDeleteMessageKey(
+  requested: MessageKeyLike,
+  stored?: MessageKeyLike | null,
+  storedParticipant?: string | null,
+): proto.IMessageKey {
+  const authoritative = stored && typeof stored === 'object' ? stored : requested;
+  const remoteJid = authoritative.remoteJid ?? requested.remoteJid;
+  const fromMe = typeof authoritative.fromMe === 'boolean' ? authoritative.fromMe : requested.fromMe;
+  const participant =
+    authoritative.participant ??
+    storedParticipant ??
+    requested.participant ??
+    authoritative.participantAlt ??
+    requested.participantAlt;
+
+  return {
+    remoteJid,
+    fromMe,
+    id: requested.id,
+    ...(participant ? { participant } : {}),
+  };
 }

@@ -3,10 +3,6 @@ FROM node:24-alpine AS builder
 RUN apk update && \
     apk add --no-cache git ffmpeg wget curl bash openssl
 
-LABEL version="2.3.1" description="Api to control whatsapp features through http requests." 
-LABEL maintainer="Davidson Gomes" git="https://github.com/DavidsonGomes"
-LABEL contact="contato@evolution-api.com"
-
 WORKDIR /evolution
 
 COPY ./package*.json ./
@@ -34,11 +30,19 @@ RUN npm run build
 
 FROM node:24-alpine AS final
 
+ARG APP_VERSION=development
+ARG SOURCE_REVISION=unknown
+
+LABEL org.opencontainers.image.version="$APP_VERSION"
+LABEL org.opencontainers.image.revision="$SOURCE_REVISION"
+
 RUN apk update && \
     apk add tzdata ffmpeg bash openssl
 
 ENV TZ=America/Sao_Paulo
 ENV DOCKER_ENV=true
+ENV APP_VERSION="$APP_VERSION"
+ENV SOURCE_REVISION="$SOURCE_REVISION"
 
 WORKDIR /evolution
 

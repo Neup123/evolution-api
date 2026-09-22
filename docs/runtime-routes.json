@@ -7781,7 +7781,8 @@
           "enum": [
             true,
             false
-          ]
+          ],
+          "description": "Optional ownership override. Omit it to detect ownership from the archived original message. True means the connected account sent it; false selects admin deletion for another participant’s group message."
         },
         "remoteJid": {
           "type": "string",
@@ -7792,10 +7793,12 @@
           "type": "string"
         },
         "participant": {
-          "type": "string"
+          "type": "string",
+          "description": "Original group participant JID from the webhook message key. Required for admin deletion."
         },
         "participantAlt": {
-          "type": "string"
+          "type": "string",
+          "description": "Alternate participant JID from the webhook message key, used as a fallback for LID/PN resolution."
         },
         "addressingMode": {
           "type": "string",
@@ -7807,7 +7810,6 @@
       },
       "required": [
         "id",
-        "fromMe",
         "remoteJid"
       ],
       "if": {
@@ -7832,7 +7834,7 @@
       }
     },
     "multipart": false,
-    "runtimeStatus": "CREATED",
+    "runtimeStatus": "OK",
     "operation": {
       "tags": [
         "Chats"
@@ -7852,8 +7854,8 @@
         }
       ],
       "responses": {
-        "201": {
-          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
+        "200": {
+          "description": "Successful response. See the domain documentation for the operation-specific response fields.",
           "content": {
             "application/json": {
               "schema": {
@@ -8117,7 +8119,8 @@
                   "enum": [
                     true,
                     false
-                  ]
+                  ],
+                  "description": "Optional ownership override. Omit it to detect ownership from the archived original message. True means the connected account sent it; false selects admin deletion for another participant’s group message."
                 },
                 "remoteJid": {
                   "type": "string",
@@ -8128,10 +8131,12 @@
                   "type": "string"
                 },
                 "participant": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "Original group participant JID from the webhook message key. Required for admin deletion."
                 },
                 "participantAlt": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "Alternate participant JID from the webhook message key, used as a fallback for LID/PN resolution."
                 },
                 "addressingMode": {
                   "type": "string",
@@ -8143,7 +8148,6 @@
               },
               "required": [
                 "id",
-                "fromMe",
                 "remoteJid"
               ],
               "if": {
