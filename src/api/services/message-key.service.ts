@@ -12,6 +12,35 @@ export type DeleteOwnershipSource =
   | 'INFERRED_CONNECTED_ACCOUNT'
   | 'INFERRED_GROUP_PARTICIPANT';
 
+export type ResolvedDeleteScope = 'EVERYONE' | 'ME';
+
+export type DeleteScopeResolution = {
+  scope: ResolvedDeleteScope;
+  fallbackReason?:
+    | 'INCOMING_DIRECT_MESSAGE'
+    | 'GROUP_ADMIN_REQUIRED'
+    | 'GROUP_PARTICIPANT_REQUIRED'
+    | 'EVERYONE_NOT_CONFIRMED';
+};
+
+/**
+ * Select the strongest delete scope that WhatsApp permits for the original
+ * message. An unknown group-admin state intentionally keeps the revoke path:
+ * the caller can try it and require a real server acknowledgement.
+ */
+export function resolveMaximumDeleteScope(
+  fromMe: boolean,
+  isGroup: boolean,
+  connectedAccountIsGroupAdmin?: boolean,
+): DeleteScopeResolution {
+  if (fromMe) return { scope: 'EVERYONE' };
+  if (!isGroup) return { scope: 'ME', fallbackReason: 'INCOMING_DIRECT_MESSAGE' };
+  if (connectedAccountIsGroupAdmin === false) {
+    return { scope: 'ME', fallbackReason: 'GROUP_ADMIN_REQUIRED' };
+  }
+  return { scope: 'EVERYONE' };
+}
+
 export function resolveDeleteMessageOwnership(
   requested: MessageKeyLike,
   stored?: MessageKeyLike | null,

@@ -35,6 +35,14 @@ const words = (value) =>
     .replace(/[-_]/g, ' ')
     .trim();
 const title = (value) => words(value).replace(/\b\w/g, (letter) => letter.toUpperCase());
+const guidedBodyContent = (schema) => ({
+  'application/x-www-form-urlencoded': {
+    schema,
+  },
+  'application/json': {
+    schema,
+  },
+});
 
 const actionVerb = (method, action) => {
   if (/^(find|fetch|get|list|connection)/i.test(action)) return 'Get';
@@ -168,7 +176,17 @@ export const runtimeOperation = ({ method, path, source, schemaName, schema, mul
     const requestSchema = multipart
       ? { ...schema, properties: { ...(schema.properties ?? {}), file: { type: 'string', format: 'binary' } } }
       : schema;
-    operation.requestBody = { required: true, content: { [contentType]: { schema: requestSchema } } };
+    operation.requestBody = {
+      required: true,
+      description:
+        contentType === 'application/json'
+          ? 'Use the guided form fields, or select application/json for the raw JSON editor.'
+          : undefined,
+      content:
+        contentType === 'application/json'
+          ? guidedBodyContent(requestSchema)
+          : { [contentType]: { schema: requestSchema } },
+    };
   } else if (bodyMethods.has(method) && path === '/webhook/evolution') {
     operation.requestBody = {
       required: true,

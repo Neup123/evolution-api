@@ -102,7 +102,10 @@ export class PrivacySettingDto {
   groupadd: WAPrivacyGroupAddValue;
 }
 
-export class DeleteMessage extends Key {}
+export class DeleteMessage extends Key {
+  messageTimestamp?: number;
+  deleteMedia?: boolean;
+}
 export class Options {
   delay?: number;
   presence?: WAPresence;

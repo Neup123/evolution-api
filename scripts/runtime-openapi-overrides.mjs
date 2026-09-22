@@ -8,9 +8,19 @@ const params = (properties, required = []) =>
     required: required.includes(name),
     schema,
   }));
+const bodySchema = (properties, required = []) => ({
+  type: 'object',
+  additionalProperties: false,
+  properties,
+  required,
+});
 const body = (properties, required = []) => ({
   required: true,
-  content: { 'application/json': { schema: { type: 'object', additionalProperties: false, properties, required } } },
+  description: 'Use the guided form fields, or select application/json for the raw JSON editor.',
+  content: {
+    'application/x-www-form-urlencoded': { schema: bodySchema(properties, required) },
+    'application/json': { schema: bodySchema(properties, required) },
+  },
 });
 const limit = { ...integer, minimum: 1, maximum: 1000 };
 const eventsQuery = {
@@ -94,6 +104,11 @@ export const overrides = {
       },
       ['message'],
     ),
+  },
+  'delete /chat/deleteMessageForEveryone/{instanceName}': {
+    summary: 'Delete message with maximum permitted scope',
+    description:
+      'Automatically deletes for everyone when WhatsApp permits it and otherwise deletes for the connected account. The response identifies the applied EVERYONE or ME scope.',
   },
   'get /chat/findChatByRemoteJid/{instanceName}': { parameters: params({ remoteJid: string }, ['remoteJid']) },
   'post /instance/restart/{instanceName}': { requestBody: body({}) },
