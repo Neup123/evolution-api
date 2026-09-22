@@ -66,7 +66,7 @@ export class ProfilePictureDto {
 
 class Key {
   id: string;
-  fromMe: boolean;
+  fromMe?: boolean;
   remoteJid: string;
   remoteJidAlt?: string;
   participant?: string;

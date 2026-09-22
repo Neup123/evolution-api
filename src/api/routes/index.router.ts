@@ -37,6 +37,7 @@ enum HttpStatus {
   BAD_REQUEST = 400,
   UNAUTHORIZED = 401,
   INTERNAL_SERVER_ERROR = 500,
+  GATEWAY_TIMEOUT = 504,
   TOO_MANY_REQUESTS = 429,
 }
 
@@ -250,6 +251,7 @@ router
       status: HttpStatus.OK,
       message: 'Welcome to the Evolution API, it is working!',
       version: packageJson.version,
+      sourceRevision: process.env.SOURCE_REVISION || undefined,
       clientName: databaseConfig.CONNECTION.CLIENT_NAME,
       manager: !serverConfig.DISABLE_MANAGER ? `${req.protocol}://${req.get('host')}/manager` : undefined,
       swagger: `${req.protocol}://${req.get('host')}/docs`,

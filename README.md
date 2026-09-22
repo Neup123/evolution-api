@@ -204,6 +204,7 @@ Local storage or S3/MinIO. Automatic media download from WhatsApp. Optional audi
 | WhatsApp archive | [`docs/archive.md`](./docs/archive.md) |
 | Local-first reads | [`docs/local-first-reads.md`](./docs/local-first-reads.md) |
 | Every instance setting | [`docs/settings.md`](./docs/settings.md) |
+| Delete messages for everyone | [`docs/delete-message.md`](./docs/delete-message.md) |
 | Community | [evolutionfoundation.com.br/community](https://evolutionfoundation.com.br/community) |
 | Docker Hub | [evoapicloud/evolution-api](https://hub.docker.com/r/evoapicloud/evolution-api) |
 | Changelog | [CHANGELOG.md](./CHANGELOG.md) |

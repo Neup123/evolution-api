@@ -67,6 +67,8 @@ Username-only contacts and server-issued LIDs are documented in [WhatsApp userna
 
 The local `Message` table now distinguishes a provisional API send from WhatsApp server acceptance and recipient delivery, deduplicates future events by WhatsApp message ID, and reconciles PN/LID aliases without rewriting either identity. See [Operational message integrity](./message-archive-integrity.md) for every field, state transition, search response, migration rule, and workflow requirement.
 
+Message revocation automatically detects connected-account messages versus group-participant messages, uses admin deletion when permitted, and waits for WhatsApp acknowledgement before reporting success. See [Delete a message for everyone](./delete-message.md) for ownership rules, permissions, request examples, response fields, and n8n mappings.
+
 Instance restart/connect behavior and immediate multi-webhook runtime application are documented in [Runtime actions and webhook reloads](./runtime-actions-and-webhooks.md). For teaching and defense, [Defensive detection of automation disguise](./defensive-automation-detection.md) describes typo/cadence evasion signals and countermeasures without providing a production evasion engine.
 
 Configure global defaults with `DATABASE_READ_THROUGH_ENABLED`, `DATABASE_READ_THROUGH_TTL_SECONDS`, and `DATABASE_READ_THROUGH_TTL_OVERRIDES`. Configure each instance's TTL and method overrides under **Manager → Instance → Settings → Local data cache**. A live refresh failure is returned to the caller; stale data is never substituted silently.
