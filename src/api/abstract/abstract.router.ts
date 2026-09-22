@@ -4,6 +4,7 @@ import { GetParticipant, GroupInvite } from '@api/dto/group.dto';
 import { InstanceDto } from '@api/dto/instance.dto';
 import { Logger } from '@config/logger.config';
 import { BadRequestException } from '@exceptions';
+import { coerceFormValue } from '@utils/coerceFormBody';
 import { Request } from 'express';
 import { JSONSchema7 } from 'json-schema';
 import { validate } from 'jsonschema';
@@ -30,7 +31,7 @@ export abstract class RouterBroker {
     const { request, schema, ClassRef, execute } = args;
 
     const ref = new ClassRef();
-    const body = request.body;
+    const body = request.is('application/x-www-form-urlencoded') ? coerceFormValue(request.body, schema) : request.body;
     const instance = request.params as unknown as InstanceDto;
 
     if (request?.query && Object.keys(request.query).length > 0) {

@@ -1,80 +1,99 @@
-# Delete a message for everyone
+# Delete a message
 
-Use `DELETE /chat/deleteMessageForEveryone/{instanceName}` to revoke a message from WhatsApp. The route detects whether the original message belongs to the connected account or to another group participant, chooses the strongest valid WhatsApp revoke mode, and waits for a server acknowledgement before reporting success.
+Use `DELETE /chat/deleteMessageForEveryone/{instanceName}` to delete one WhatsApp message with the strongest permission available. The route name is retained for compatibility, but callers do not choose the scope:
 
-## Ownership detection
+1. A message sent by the connected account is deleted for everyone.
+2. Another participant's group message is deleted for everyone when the connected account is a group admin.
+3. Another person's direct message is deleted for the connected account only.
+4. Another participant's group message is deleted for the connected account only when the account is not a group admin.
+5. If a delete-for-everyone submission is not confirmed, the route falls back to delete-for-me.
 
-The API resolves the operation in this order:
+The response always states the applied `deletion.scope`. `EVERYONE` means WhatsApp acknowledged the revoke. `ME` means WhatsApp accepted the app-state patch used to remove the message from the connected account and its linked devices.
 
-1. If the original message exists in the instance-scoped `Message` table, its stored `key.fromMe`, chat JID, and participant JID are authoritative.
-2. Otherwise, an explicit `fromMe` value is used as a compatibility override.
-3. Otherwise, a group request with `participant` is treated as another participant's message and uses group-admin deletion.
-4. Otherwise, the message is treated as one sent by the connected account.
+## Request fields
 
-The response reports the selected `deletion.target` and `deletion.ownershipSource`. Clients normally should omit `fromMe` and let the API detect the correct mode.
+| Field | Required | Meaning |
+| --- | --- | --- |
+| `id` | Yes | Original `data.key.id`. |
+| `remoteJid` | Yes | Original `data.key.remoteJid`. For groups this is the **group JID**, never the participant JID. |
+| `participant` | Recommended for groups | Original `data.key.participant`, commonly an LID. |
+| `participantAlt` | Optional | Original `data.key.participantAlt`, commonly the phone-number JID. |
+| `messageTimestamp` | Fallback | Original `data.messageTimestamp` in Unix seconds. It is required for delete-for-me only when Evolution cannot find the stored message. |
+| `deleteMedia` | No | Whether delete-for-me also removes locally stored media. Defaults to `true`. |
+| `fromMe` | Compatibility only | Normally omit it. The archived message key remains authoritative. |
 
-## Permissions and limitations
-
-- A message sent by the connected account can be revoked in a direct chat or group, subject to WhatsApp's deletion window and server policy.
-- Another participant's group message can be revoked only when the connected account is a group admin. The original participant JID is required.
-- WhatsApp does not permit revoking another person's incoming direct message for everyone. The API returns `CANNOT_REVOKE_INCOMING_DIRECT_MESSAGE` instead of a misleading pending success.
-- The API cannot elevate a non-admin account. When group metadata identifies the connected account as a non-admin, the request returns `GROUP_ADMIN_REQUIRED`.
-
-## Recommended request
-
-When message storage is enabled, only the message ID and chat JID are needed:
-
-```http
-DELETE /chat/deleteMessageForEveryone/chabad-info
-apikey: YOUR_GLOBAL_API_KEY
-Content-Type: application/json
-
-{
-  "id": "3A222167F7B463F69944",
-  "remoteJid": "120363043342036080@g.us"
-}
-```
-
-When the original message is not stored, copy the participant identities from the `MESSAGES_UPSERT` webhook key:
+Example for a group message:
 
 ```json
 {
-  "id": "3A222167F7B463F69944",
-  "remoteJid": "120363043342036080@g.us",
-  "participant": "184353602666626@lid",
-  "participantAlt": "972559128260@s.whatsapp.net"
+  "id": "3EB0154DD79F8A3DFF054D",
+  "remoteJid": "120363410369941696@g.us",
+  "participant": "151672961659093@lid",
+  "participantAlt": "972553049308@s.whatsapp.net",
+  "messageTimestamp": 1790062631,
+  "deleteMedia": true
 }
 ```
 
-`participantAlt` helps identity resolution, but the WhatsApp revoke protobuf itself contains only `remoteJid`, `fromMe`, `id`, and `participant`. This is why retaining extra LID metadata alone did not fix incomplete revoke keys in earlier releases.
+Do not put `participant`, `participantAlt`, the Evolution database row ID, or the webhook envelope's `sender` in `remoteJid`.
 
-## Confirmed response
-
-The route no longer treats Baileys's immediate `PENDING` object as proof of deletion. It listens for the outgoing revoke message's WhatsApp server acknowledgement. Only then does it update the local message state, emit `MESSAGES_DELETE`, and return success:
+## Response: deleted for everyone
 
 ```json
 {
-  "status": "SERVER_ACK",
+  "status": 2,
   "deletion": {
-    "requestedMessageId": "3A222167F7B463F69944",
-    "target": "GROUP_PARTICIPANT_MESSAGE",
+    "requestedMessageId": "3EB0154DD79F8A3DFF054D",
+    "scope": "EVERYONE",
+    "target": "OTHER_PARTICIPANT_MESSAGE",
     "ownershipSource": "ARCHIVED_MESSAGE_KEY",
     "submitted": true,
+    "appStatePatchAccepted": false,
     "serverAcknowledged": true,
+    "everyoneAttempted": true,
+    "everyoneConfirmed": true,
     "status": "SERVER_ACK"
   }
 }
 ```
 
-If no acknowledgement arrives within ten seconds, the API returns `DELETE_NOT_ACKNOWLEDGED` and does not mark the local message as deleted.
+## Response: deleted for me
 
-## n8n node
+```json
+{
+  "status": "APP_STATE_PATCH_ACCEPTED",
+  "deletion": {
+    "requestedMessageId": "3EB0154DD79F8A3DFF054D",
+    "scope": "ME",
+    "target": "OTHER_PARTICIPANT_MESSAGE",
+    "ownershipSource": "ARCHIVED_MESSAGE_KEY",
+    "fallbackReason": "INCOMING_DIRECT_MESSAGE",
+    "submitted": true,
+    "appStatePatchAccepted": true,
+    "serverAcknowledged": false,
+    "everyoneAttempted": false,
+    "everyoneConfirmed": false,
+    "status": "APP_STATE_PATCH_ACCEPTED"
+  }
+}
+```
 
-In `n8n-nodes-evolution-api-en` 4.3.1 or newer, choose **Auto Detect** for **Message Ownership**. For a group message, map these webhook values when available:
+Possible fallback reasons are `INCOMING_DIRECT_MESSAGE`, `GROUP_ADMIN_REQUIRED`, `GROUP_PARTICIPANT_REQUIRED`, and `EVERYONE_NOT_CONFIRMED`.
 
-- **Contact**: `{{$json.data.key.remoteJid}}`
-- **Message ID**: `{{$json.data.key.id}}`
-- **Original Participant JID**: `{{$json.data.key.participant}}`
-- **Participant Alternate JID**: `{{$json.data.key.participantAlt}}`
+Delete-for-me uses Baileys `chatModify({ deleteForMe })`. Unlike a revoke, this app-state operation does not create an outgoing protocol message with a message-status acknowledgement. The API therefore reports `appStatePatchAccepted` separately instead of pretending it received `SERVER_ACK`.
 
-The node throws an error for an unconfirmed `PENDING` response instead of returning `success: true`.
+## n8n mapping
+
+When an n8n Webhook node provides the standard `body` wrapper, use:
+
+- **Chat JID (Contact or Group)**: `{{ $json.body.data.key.remoteJid }}`
+- **Message ID**: `{{ $json.body.data.key.id }}`
+- **Original Participant JID**: `{{ $json.body.data.key.participant }}`
+- **Participant Alternate JID**: `{{ $json.body.data.key.participantAlt }}`
+- **Message Timestamp**: `{{ $json.body.data.messageTimestamp }}`
+
+If a previous node has already unwrapped `body`, remove `.body` from those expressions.
+
+## Swagger
+
+Swagger presents the request schema as individual guided fields through `application/x-www-form-urlencoded`. Select `application/json` from the request content-type menu only when you want the advanced raw JSON editor. Both modes use the same validation schema.

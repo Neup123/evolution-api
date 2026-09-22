@@ -63,6 +63,9 @@ jobs:
     - name: Check generated runtime OpenAPI contracts
       run: npm run audit:runtime-openapi
 
+    - name: Test automatic message deletion and guided forms
+      run: npm run test:delete-message
+
     - name: Check chat and Baileys API documentation
       run: npm run audit:chat-docs && npm run audit:baileys-docs
 

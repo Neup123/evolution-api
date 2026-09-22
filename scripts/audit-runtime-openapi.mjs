@@ -80,6 +80,13 @@ for (const route of routes) {
   const operation = paths[route.path][route.method];
   if (['post', 'put', 'patch'].includes(route.method) && !operation.requestBody)
     contractFailures.push(`${route.method} ${route.path}: missing exact request body`);
+  if (route.schema && route.method !== 'get' && !route.multipart) {
+    const content = operation.requestBody?.content ?? {};
+    if (!content['application/x-www-form-urlencoded']?.schema)
+      contractFailures.push(`${route.method} ${route.path}: missing guided form body`);
+    if (!content['application/json']?.schema)
+      contractFailures.push(`${route.method} ${route.path}: missing raw JSON fallback`);
+  }
   for (const code of ['400', '401', '404', '422', '429', '500'])
     if (!operation.responses?.[code]?.content)
       contractFailures.push(`${route.method} ${route.path}: missing ${code} error schema/example`);

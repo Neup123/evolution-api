@@ -4,8 +4,10 @@ import {
   buildDeleteMessageKey,
   hydrateMessageKey,
   preserveMessageKey,
+  resolveMaximumDeleteScope,
   resolveDeleteMessageOwnership,
 } from '../src/api/services/message-key.service';
+import { coerceFormValue } from '../src/utils/coerceFormBody';
 
 const groupLidKey = {
   id: '3EB0A_MESSAGE',
@@ -31,8 +33,6 @@ const directLidKey = {
   remoteJidAlt: '12142238715@s.whatsapp.net',
 };
 assert.deepEqual(preserveMessageKey(directLidKey), directLidKey);
-
-console.log('message key tests passed');
 
 const partialGroupDelete = {
   id: '3EB0A_MESSAGE',
@@ -85,3 +85,51 @@ assert.equal(
   ).source,
   'ARCHIVED_MESSAGE_KEY',
 );
+
+assert.deepEqual(resolveMaximumDeleteScope(false, false), {
+  scope: 'ME',
+  fallbackReason: 'INCOMING_DIRECT_MESSAGE',
+});
+assert.deepEqual(resolveMaximumDeleteScope(false, true, true), { scope: 'EVERYONE' });
+assert.deepEqual(resolveMaximumDeleteScope(false, true, false), {
+  scope: 'ME',
+  fallbackReason: 'GROUP_ADMIN_REQUIRED',
+});
+assert.deepEqual(resolveMaximumDeleteScope(true, false), { scope: 'EVERYONE' });
+
+assert.deepEqual(
+  coerceFormValue(
+    {
+      id: 'message-id',
+      enabled: 'false',
+      timestamp: '1790062631',
+      tags: ['1', '2'],
+      nested: '{"count":"2.5","active":"true"}',
+      optional: '',
+    },
+    {
+      type: 'object',
+      required: ['id'],
+      properties: {
+        id: { type: 'string' },
+        enabled: { type: 'boolean' },
+        timestamp: { type: 'integer' },
+        tags: { type: 'array', items: { type: 'integer' } },
+        nested: {
+          type: 'object',
+          properties: { count: { type: 'number' }, active: { type: 'boolean' } },
+        },
+        optional: { type: 'string' },
+      },
+    },
+  ),
+  {
+    id: 'message-id',
+    enabled: false,
+    timestamp: 1790062631,
+    tags: [1, 2],
+    nested: { count: 2.5, active: true },
+  },
+);
+
+console.log('message deletion and guided form tests passed');

@@ -123,27 +123,32 @@ export const deleteMessageSchema: JSONSchema7 = {
   type: 'object',
   properties: {
     id: { type: 'string' },
-    fromMe: {
-      type: 'boolean',
-      enum: [true, false],
-      description:
-        'Optional ownership override. Omit it to detect ownership from the archived original message. True means the connected account sent it; false selects admin deletion for another participant’s group message.',
-    },
     remoteJid: {
       type: 'string',
       pattern: '^(?:\\d+@(?:s\\.whatsapp\\.net|lid)|\\d+-\\d+@g\\.us|status@broadcast|[^@\\s]+@broadcast)$',
-      description: 'remoteJid must be a full WhatsApp JID, not an internal database row ID.',
+      description:
+        'Exact remoteJid from the original message key. For group messages this must be the group JID ending in @g.us, not participant, participantAlt, sender, or an internal database row ID.',
     },
-    remoteJidAlt: { type: 'string' },
     participant: {
       type: 'string',
-      description: 'Original group participant JID from the webhook message key. Required for admin deletion.',
+      description:
+        'Original group participant JID from the webhook message key. It enables delete-for-everyone for another participant’s group message; when unavailable the operation falls back to delete-for-me.',
     },
     participantAlt: {
       type: 'string',
       description: 'Alternate participant JID from the webhook message key, used as a fallback for LID/PN resolution.',
     },
-    addressingMode: { type: 'string', enum: ['lid', 'pn'] },
+    messageTimestamp: {
+      type: 'integer',
+      minimum: 1,
+      description:
+        'Original Unix timestamp in seconds. Required for delete-for-me only when the original message is unavailable in Evolution message storage.',
+    },
+    deleteMedia: {
+      type: 'boolean',
+      default: true,
+      description: 'Also remove locally stored message media when the selected scope is delete-for-me.',
+    },
   },
   required: ['id', 'remoteJid'],
   ...isNotEmpty('id', 'remoteJid'),
