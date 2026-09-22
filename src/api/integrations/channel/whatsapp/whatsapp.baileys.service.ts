@@ -67,7 +67,7 @@ import {
   messageArchiveStateFromStatus,
   messageUpdateIdentity,
 } from '@api/services/message-archive.service';
-import { preserveMessageKey } from '@api/services/message-key.service';
+import { hydrateMessageKey, preserveMessageKey } from '@api/services/message-key.service';
 import { applyMistakesToMessage } from '@api/services/mistakes-generator.service';
 import { OutboundSafetyService } from '@api/services/outbound-safety.service';
 import { SettingsTemplateService } from '@api/services/settings-template.service';
@@ -4180,15 +4180,29 @@ export class BaileysStartupService extends ChannelStartupService {
           remoteJid: del.remoteJid,
         });
       }
-      const deleteKey = preserveMessageKey(del);
+      const storedMessage = await this.prismaRepository.message.findFirst({
+        where: {
+          instanceId: this.instanceId,
+          key: { path: ['id'], equals: del.id },
+          OR: [
+            { key: { path: ['remoteJid'], equals: del.remoteJid } },
+            { key: { path: ['remoteJidAlt'], equals: del.remoteJid } },
+            { remoteJid: del.remoteJid },
+            { remoteJidAlt: del.remoteJid },
+          ],
+        },
+      });
+      const storedKey =
+        storedMessage?.key && typeof storedMessage.key === 'object' && !Array.isArray(storedMessage.key)
+          ? storedMessage.key
+          : null;
+      const deleteKey = hydrateMessageKey(del, storedKey);
       const response = await this.client.sendMessage(deleteKey.remoteJid, { delete: deleteKey });
       if (response) {
         const messageId = deleteKey.id;
         if (messageId) {
           const isLogicalDeleted = configService.get<Database>('DATABASE').DELETE_DATA.LOGICAL_MESSAGE_DELETE;
-          let message = await this.prismaRepository.message.findFirst({
-            where: { instanceId: this.instanceId, key: { path: ['id'], equals: messageId } },
-          });
+          let message = storedMessage;
           if (isLogicalDeleted) {
             if (!message) return response;
             const existingKey = typeof message?.key === 'object' && message.key !== null ? message.key : {};
