@@ -4,7 +4,7 @@ const html = fs.readFileSync('manager/dist/index.html', 'utf8');
 const asset = html.match(/src="([^"]+\.js)"/)?.[1];
 assert(asset, 'Manager JavaScript asset is referenced');
 const js = fs.readFileSync(`manager/dist${asset.startsWith('/') ? asset : `/${asset}`}`, 'utf8');
-for (const text of ['Settings templates', 'New template', 'Automation safety & pacing'])
+for (const text of ['Settings templates', 'New template', 'Automation safety & pacing', 'Mistakes generator', 'Minimum letters', 'Chance (%)'])
   assert(js.includes(text), `embedded Manager contains ${text}`);
 const routes = JSON.parse(fs.readFileSync('docs/runtime-routes.json', 'utf8'));
 assert.equal(routes.length, 202);

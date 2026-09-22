@@ -7,6 +7,11 @@ import { resolveSettingsTemplate } from './settings-template-resolution';
 export class SettingsTemplateService {
   constructor(private readonly prisma: PrismaRepository) {}
 
+  private validate(settings?: TemplateSettings) {
+    if (settings?.mistakesGenerator && settings.mistakesGenerator.minLetters > settings.mistakesGenerator.maxLetters)
+      throw new BadRequestException('mistakesGenerator.minLetters must not exceed maxLetters.');
+  }
+
   private async instanceId(instanceName: string) {
     const instance = await this.prisma.instance.findUnique({ where: { name: instanceName }, select: { id: true } });
     if (!instance) throw new NotFoundException(`Instance ${instanceName} not found`);
@@ -28,9 +33,11 @@ export class SettingsTemplateService {
   }
 
   async create(name: string, settings: TemplateSettings) {
+    this.validate(settings);
     return this.prisma.settingsTemplate.create({ data: { name: name.trim(), settings: settings as any } });
   }
   async edit(templateId: string, name?: string, settings?: TemplateSettings) {
+    this.validate(settings);
     await this.get(templateId);
     return this.prisma.settingsTemplate.update({
       where: { id: templateId },

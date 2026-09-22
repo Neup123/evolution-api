@@ -1,9 +1,10 @@
-import { AutomationSafetySettings } from './settings.dto';
+import { AutomationSafetySettings, MistakesGeneratorSettings } from './settings.dto';
 
 export type TemplateSettings = {
   localReadTtlSeconds?: number | null;
   localReadTtlOverrides?: Record<string, number> | null;
   automationSafety?: AutomationSafetySettings | null;
+  mistakesGenerator?: MistakesGeneratorSettings | null;
 };
 
 export class SettingsTemplateCreateDto {

@@ -37,6 +37,17 @@ export const settingsSchema: JSONSchema7 = {
       type: ['object', 'null'],
       additionalProperties: { type: 'integer', minimum: 0, maximum: 2592000 },
     },
+    mistakesGenerator: {
+      type: ['object', 'null'],
+      additionalProperties: false,
+      properties: {
+        enabled: { type: 'boolean' },
+        minLetters: { type: 'integer', minimum: 0, maximum: 1000 },
+        maxLetters: { type: 'integer', minimum: 0, maximum: 1000 },
+        probability: { type: 'integer', minimum: 0, maximum: 100 },
+      },
+      required: ['enabled', 'minLetters', 'maxLetters', 'probability'],
+    },
     automationSafety: {
       type: ['object', 'null'],
       additionalProperties: false,

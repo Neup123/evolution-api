@@ -46,3 +46,7 @@ Example:
   }
 }
 ```
+
+### Mistakes generator
+
+Templates may include `mistakesGenerator` with `enabled`, `minLetters`, `maxLetters`, and `probability` (0-100). When present, it overrides the instance Mistakes Generator for sends resolved through that template. Protected URL/domain, email, mention, and phone-like tokens are never changed. See [instance settings](./settings.md#mistakes-generator).
