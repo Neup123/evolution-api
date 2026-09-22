@@ -7,9 +7,13 @@ assert.equal(generateNaturalMistakes('hello', { ...settings, probability: 0 }, (
 assert.equal(generateNaturalMistakes('hello', { ...settings, enabled: false }, () => 0), 'hello');
 const changed = generateNaturalMistakes('hello', settings, sequence(0, 0, 0, 0, 0, 0));
 assert.equal([...changed].filter((c, i) => c !== [...'hello'][i]).length, 2);
-const protectedDestinations = generateNaturalMistakes('Visit wikipedia.com and https://example.org/a?q=1', { ...settings, minLetters: 20, maxLetters: 20 }, () => 0);
-assert(protectedDestinations.includes('wikipedia.com'));
-assert(protectedDestinations.includes('https://example.org/a?q=1'));
+const protectedDestinations = generateNaturalMistakes(
+  'Visit wikipedia.com and https://example.org/a?q=1',
+  { ...settings, minLetters: 20, maxLetters: 20 },
+  () => 0,
+).split(' ');
+assert.equal(protectedDestinations[1], 'wikipedia.com');
+assert.equal(protectedDestinations[3], 'https://example.org/a?q=1');
 const protectedIdentifiers = generateNaturalMistakes(
   'Email me@example.com, mention @Support_Team, or call +972 55 123 4567',
   { ...settings, minLetters: 20, maxLetters: 20 },
