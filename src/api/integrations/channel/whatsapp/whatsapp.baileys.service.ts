@@ -68,6 +68,7 @@ import {
   messageUpdateIdentity,
 } from '@api/services/message-archive.service';
 import { preserveMessageKey } from '@api/services/message-key.service';
+import { applyMistakesToMessage } from '@api/services/mistakes-generator.service';
 import { OutboundSafetyService } from '@api/services/outbound-safety.service';
 import { SettingsTemplateService } from '@api/services/settings-template.service';
 import { Events, MessageSubtype, TypeMediaMessage, wa } from '@api/types/wa.types';
@@ -2600,6 +2601,7 @@ export class BaileysStartupService extends ChannelStartupService {
       settingsTemplateId,
     );
     const effectiveSafety = templateSettings?.automationSafety ?? this.localSettings.automationSafety;
+    const effectiveMistakes = templateSettings?.mistakesGenerator ?? this.localSettings.mistakesGenerator;
     const preflightBlockCode = this.outboundSafety.preflightBlockCode(requestedRecipient, effectiveSafety);
     if (preflightBlockCode) {
       const preflight = await this.outboundSafety.begin(this.instanceId, requestedRecipient, message, effectiveSafety);
@@ -2628,6 +2630,7 @@ export class BaileysStartupService extends ChannelStartupService {
         message: 'Outbound message blocked by the instance automation safety policy.',
       });
     }
+    message = applyMistakesToMessage(message, effectiveMistakes);
     const pacingDelay = Math.max(options?.delay ?? 0, safety.delayMs);
     const pacingPresence = options?.presence ?? safety.presence;
     let deliveryRecorded = false;

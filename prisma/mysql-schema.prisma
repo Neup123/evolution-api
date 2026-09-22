@@ -314,6 +314,7 @@ model Setting {
   localReadTtlSeconds   Int?
   localReadTtlOverrides Json?
   automationSafety      Json?
+  mistakesGenerator     Json?
   createdAt             DateTime? @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp
   updatedAt             DateTime  @updatedAt @db.Timestamp
   Instance              Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)

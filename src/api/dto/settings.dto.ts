@@ -13,6 +13,8 @@ export class SettingsDto {
   localReadTtlOverrides?: Record<string, number> | null;
   /** Per-instance outbound automation safeguards and user-experience pacing. */
   automationSafety?: AutomationSafetySettings | null;
+  /** Optional natural typo generation for outbound human-readable text. */
+  mistakesGenerator?: MistakesGeneratorSettings | null;
 }
 
 export type AutomationSafetySettings = {
@@ -65,4 +67,11 @@ export type AutomationSafetySettings = {
   audit?: {
     retentionDays?: number;
   };
+};
+
+export type MistakesGeneratorSettings = {
+  enabled: boolean;
+  minLetters: number;
+  maxLetters: number;
+  probability: number;
 };

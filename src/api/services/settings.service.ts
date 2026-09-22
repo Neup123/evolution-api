@@ -1,6 +1,7 @@
 import { InstanceDto } from '@api/dto/instance.dto';
 import { SettingsDto } from '@api/dto/settings.dto';
 import { Logger } from '@config/logger.config';
+import { BadRequestException } from '@exceptions';
 
 import { WAMonitoringService } from './monitor.service';
 
@@ -10,6 +11,8 @@ export class SettingsService {
   private readonly logger = new Logger('SettingsService');
 
   public async create(instance: InstanceDto, data: SettingsDto) {
+    if (data.mistakesGenerator && data.mistakesGenerator.minLetters > data.mistakesGenerator.maxLetters)
+      throw new BadRequestException('mistakesGenerator.minLetters must not exceed maxLetters.');
     await this.waMonitor.waInstances[instance.instanceName].setSettings(data);
 
     return { settings: { ...instance, settings: data } };

@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import { applyMistakesToMessage, generateNaturalMistakes } from '../src/api/services/mistakes-generator.service';
+
+const settings = { enabled: true, minLetters: 2, maxLetters: 2, probability: 100 };
+const sequence = (...values: number[]) => { let i = 0; return () => values[i++] ?? 0; };
+assert.equal(generateNaturalMistakes('hello', { ...settings, probability: 0 }, () => 0), 'hello');
+assert.equal(generateNaturalMistakes('hello', { ...settings, enabled: false }, () => 0), 'hello');
+const changed = generateNaturalMistakes('hello', settings, sequence(0, 0, 0, 0, 0, 0));
+assert.equal([...changed].filter((c, i) => c !== [...'hello'][i]).length, 2);
+const protectedDestinations = generateNaturalMistakes('Visit wikipedia.com and https://example.org/a?q=1', { ...settings, minLetters: 20, maxLetters: 20 }, () => 0);
+assert(protectedDestinations.includes('wikipedia.com'));
+assert(protectedDestinations.includes('https://example.org/a?q=1'));
+assert.equal(generateNaturalMistakes('Email me@example.com or call +972 55 123 4567', { ...settings, minLetters: 20, maxLetters: 20 }, () => 0).includes('me@example.com'), true);
+assert.notEqual(generateNaturalMistakes('שלום', { ...settings, minLetters: 1, maxLetters: 1 }, () => 0), 'שלום');
+assert.notEqual(generateNaturalMistakes('Привет', { ...settings, minLetters: 1, maxLetters: 1 }, () => 0), 'Привет');
+const message = { conversation: 'Hello world', contextInfo: { mentionedJid: ['1@s.whatsapp.net'] } };
+const transformed = applyMistakesToMessage(message, { ...settings, minLetters: 1, maxLetters: 1 });
+assert.deepEqual(transformed.contextInfo, message.contextInfo);
+assert.deepEqual(message, { conversation: 'Hello world', contextInfo: { mentionedJid: ['1@s.whatsapp.net'] } });
+console.log('mistakes generator tests passed');

@@ -38,7 +38,8 @@
     "db:migrate:dev:win": "node runWithProvider.js \"xcopy /E /I prisma\\DATABASE_PROVIDER-migrations prisma\\migrations && npx prisma migrate dev --schema prisma\\DATABASE_PROVIDER-schema.prisma\"",
     "prepare": "husky",
     "test:settings-templates": "tsx ./test/settings-template-hierarchy.test.ts",
-    "test:review-surfaces": "tsx ./test/review-surfaces.test.ts"
+    "test:review-surfaces": "tsx ./test/review-surfaces.test.ts",
+    "test:mistakes-generator": "tsx ./test/mistakes-generator.test.ts"
   },
   "repository": {
     "type": "git",

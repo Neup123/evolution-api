@@ -10,6 +10,7 @@ const templateSettings: JSONSchema7 = {
     localReadTtlSeconds: settingsSchema.properties.localReadTtlSeconds,
     localReadTtlOverrides: settingsSchema.properties.localReadTtlOverrides,
     automationSafety: settingsSchema.properties.automationSafety,
+    mistakesGenerator: settingsSchema.properties.mistakesGenerator,
   },
 };
 export const settingsTemplateCreateSchema: JSONSchema7 = {

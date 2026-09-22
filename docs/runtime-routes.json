@@ -74726,6 +74726,39 @@
                   }
                 }
               }
+            },
+            "mistakesGenerator": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "minLetters": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000
+                },
+                "maxLetters": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000
+                },
+                "probability": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              },
+              "required": [
+                "enabled",
+                "minLetters",
+                "maxLetters",
+                "probability"
+              ]
             }
           }
         }
@@ -75235,6 +75268,39 @@
                           }
                         }
                       }
+                    },
+                    "mistakesGenerator": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "minLetters": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 1000
+                        },
+                        "maxLetters": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 1000
+                        },
+                        "probability": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 100
+                        }
+                      },
+                      "required": [
+                        "enabled",
+                        "minLetters",
+                        "maxLetters",
+                        "probability"
+                      ]
                     }
                   }
                 }
@@ -76112,6 +76178,39 @@
                   }
                 }
               }
+            },
+            "mistakesGenerator": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "minLetters": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000
+                },
+                "maxLetters": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000
+                },
+                "probability": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              },
+              "required": [
+                "enabled",
+                "minLetters",
+                "maxLetters",
+                "probability"
+              ]
             }
           }
         }
@@ -76624,6 +76723,39 @@
                           }
                         }
                       }
+                    },
+                    "mistakesGenerator": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "minLetters": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 1000
+                        },
+                        "maxLetters": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 1000
+                        },
+                        "probability": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 100
+                        }
+                      },
+                      "required": [
+                        "enabled",
+                        "minLetters",
+                        "maxLetters",
+                        "probability"
+                      ]
                     }
                   }
                 }
@@ -77874,6 +78006,39 @@
             "maximum": 2592000
           }
         },
+        "mistakesGenerator": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "minLetters": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000
+            },
+            "maxLetters": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000
+            },
+            "probability": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            }
+          },
+          "required": [
+            "enabled",
+            "minLetters",
+            "maxLetters",
+            "probability"
+          ]
+        },
         "automationSafety": {
           "type": [
             "object",
@@ -78448,6 +78613,39 @@
                     "minimum": 0,
                     "maximum": 2592000
                   }
+                },
+                "mistakesGenerator": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "minLetters": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 1000
+                    },
+                    "maxLetters": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 1000
+                    },
+                    "probability": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "minLetters",
+                    "maxLetters",
+                    "probability"
+                  ]
                 },
                 "automationSafety": {
                   "type": [

@@ -21,3 +21,24 @@ The local-read precedence order is method override for this instance, instance d
 Archive capture and purge settings are separate because they require `ARCHIVE_API_KEY`. They appear lower on the same manager page and are fully documented in [the archive reference](./archive.md).
 
 The Manager exposes every `automationSafety` field under **Instance → Settings → Automation safety & pacing**, including the separate unique new/dormant-recipient quota and its inactivity window. See the [full policy reference](./outbound-automation-safety.md), including defaults, relationship semantics, bounds, response behavior, and examples.
+
+## Mistakes generator
+
+`mistakesGenerator` is an optional outbound-text transformation. It is disabled by default.
+
+```json
+{
+  "mistakesGenerator": {
+    "enabled": true,
+    "minLetters": 1,
+    "maxLetters": 2,
+    "probability": 35
+  }
+}
+```
+
+For each eligible send, `probability` is the integer percentage (0-100) that the transformation runs. It changes a random count between `minLetters` and `maxLetters`, capped by the safe eligible letters in the message. Replacements come from adjacent keys in the detected Latin, Hebrew, Cyrillic, or Arabic keyboard row and preserve uppercase letters.
+
+URLs, bare domains such as `wikipedia.com`, email addresses, mentions, and phone-like identifiers are protected as whole tokens. Quoted keys, mentions, link-preview options, and other message metadata are not changed. Messages with no safe eligible letters are sent unchanged.
+
+Settings Templates may provide the same object. Explicit request template, contact/group binding, and instance binding follow the normal template hierarchy; without a template value, the instance setting is used.

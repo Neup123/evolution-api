@@ -163,6 +163,7 @@ export class ChannelStartupService {
     this.localSettings.syncFullHistory = data?.syncFullHistory;
     this.localSettings.wavoipToken = data?.wavoipToken;
     this.localSettings.automationSafety = data?.automationSafety as wa.LocalSettings['automationSafety'];
+    this.localSettings.mistakesGenerator = data?.mistakesGenerator as wa.LocalSettings['mistakesGenerator'];
   }
 
   public async setSettings(data: SettingsDto) {
@@ -182,6 +183,7 @@ export class ChannelStartupService {
         localReadTtlSeconds: data.localReadTtlSeconds,
         localReadTtlOverrides: data.localReadTtlOverrides,
         automationSafety: data.automationSafety,
+        mistakesGenerator: data.mistakesGenerator,
       },
       create: {
         rejectCall: data.rejectCall,
@@ -195,6 +197,7 @@ export class ChannelStartupService {
         localReadTtlSeconds: data.localReadTtlSeconds,
         localReadTtlOverrides: data.localReadTtlOverrides,
         automationSafety: data.automationSafety,
+        mistakesGenerator: data.mistakesGenerator,
         instanceId: this.instanceId,
       },
     });
@@ -208,6 +211,7 @@ export class ChannelStartupService {
     this.localSettings.syncFullHistory = data?.syncFullHistory;
     this.localSettings.wavoipToken = data?.wavoipToken;
     this.localSettings.automationSafety = data?.automationSafety;
+    this.localSettings.mistakesGenerator = data?.mistakesGenerator;
 
     if (this.localSettings.wavoipToken && this.localSettings.wavoipToken.length > 0) {
       this.client.ws.close();
@@ -238,6 +242,7 @@ export class ChannelStartupService {
       localReadTtlSeconds: data.localReadTtlSeconds,
       localReadTtlOverrides: data.localReadTtlOverrides as Record<string, number> | null,
       automationSafety: data.automationSafety as wa.LocalSettings['automationSafety'],
+      mistakesGenerator: data.mistakesGenerator as wa.LocalSettings['mistakesGenerator'],
     };
   }
 
