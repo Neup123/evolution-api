@@ -77,6 +77,7 @@ import { applyMistakesToMessage } from '@api/services/mistakes-generator.service
 import {
   OutboundMessageQueueService,
   OutboundQueueCapacityError,
+  OutboundQueueWaitTooLongError,
   QUEUEABLE_OUTBOUND_SAFETY_CODES,
 } from '@api/services/outbound-message-queue.service';
 import { OutboundSafetyService } from '@api/services/outbound-safety.service';
@@ -274,7 +275,10 @@ export class BaileysStartupService extends ChannelStartupService {
   ) {
     super(configService, eventEmitter, prismaRepository, chatwootCache);
     this.outboundSafety = new OutboundSafetyService(prismaRepository);
-    this.outboundMessageQueue = new OutboundMessageQueueService(prismaRepository);
+    this.outboundMessageQueue = new OutboundMessageQueueService(
+      prismaRepository,
+      this.configService.get('OUTBOUND_QUEUE').MAX_TAIL_GAP_SECONDS * 1000,
+    );
     this.settingsTemplates = new SettingsTemplateService(prismaRepository);
     this.instance.qrcode = { count: 0 };
     this.messageProcessor.mount({
@@ -3063,11 +3067,12 @@ export class BaileysStartupService extends ChannelStartupService {
         this.startOutboundQueueWorker();
         return queued;
       } catch (queueError) {
-        if (queueError instanceof OutboundQueueCapacityError) {
+        if (queueError instanceof OutboundQueueCapacityError || queueError instanceof OutboundQueueWaitTooLongError) {
           throw new TooManyRequestsException({
             code: queueError.code,
             retryAfterSeconds: queueError.retryAfterSeconds,
             message: queueError.message,
+            ...queueError.details,
           });
         }
         throw queueError;
@@ -3124,10 +3129,12 @@ export class BaileysStartupService extends ChannelStartupService {
     try {
       const queued = await this.outboundMessageQueue.claimNext(this.instanceId);
       if (!queued) return;
+      this.logger.info(`Processing outbound queue item ${queued.id} (attempt ${queued.attempts})`);
       try {
         const payload = queued.payload as unknown as { data?: SendTextDto; isIntegration?: boolean } & SendTextDto;
         await this.textMessage(payload.data ?? payload, payload.isIntegration ?? false, true);
         await this.outboundMessageQueue.complete(queued.id);
+        this.logger.info(`Delivered outbound queue item ${queued.id}`);
       } catch (error) {
         const safetyError = this.parseOutboundSafetyError(error);
         if (safetyError && QUEUEABLE_OUTBOUND_SAFETY_CODES.has(safetyError.code)) {
@@ -3137,8 +3144,12 @@ export class BaileysStartupService extends ChannelStartupService {
             safetyError.retryAfterSeconds,
             JSON.stringify(error),
           );
+          this.logger.info(
+            `Rescheduled outbound queue item ${queued.id} after ${safetyError.code} for ${safetyError.retryAfterSeconds}s`,
+          );
         } else {
           await this.outboundMessageQueue.fail(queued.id, error?.message ?? error?.toString() ?? 'Queue send failed');
+          this.logger.error([`Outbound queue item ${queued.id} failed`, error?.message ?? error]);
         }
       }
     } catch (error) {

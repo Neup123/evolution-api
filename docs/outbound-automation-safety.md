@@ -70,7 +70,11 @@ The database is the durable source of truth. The worker runs inside Evolution AP
 
 Unlike the hash-only audit table, the queue must retain the complete `sendText` request and its integration-routing context so it can deliver it later with the same behavior. Successful and cleared rows are deleted immediately. Failed rows remain visible for diagnosis and are removed after the configured `audit.retentionDays` period during subsequent queue activity.
 
-Queue admission counts recent `SENT` audit rows together with pending/processing queue rows. A request returns `outbound_queue_instance_capacity` only when that total reaches `rateLimit.instancePerDay`, or `outbound_queue_recipient_capacity` when the recipient total reaches `rateLimit.recipientPerDay`. In-flight immediate sends remain protected by the ordinary safety reservation and concurrency checks.
+Queue admission counts recent `SENT` audit rows together with pending/processing queue rows. It rejects the new request when that combined total reaches any configured finite capacity: instance per minute/day, recipient per minute/day, or unique new/dormant outreach recipients per day. Pacing controls such as typing delay and `minimumIntervalMs` schedule work but do not reduce queue capacity. In-flight immediate sends remain protected by the ordinary safety reservation and concurrency checks.
+
+Capacity errors return HTTP `429` with a specific code (`outbound_queue_instance_minute_capacity`, `outbound_queue_instance_daily_capacity`, `outbound_queue_recipient_minute_capacity`, `outbound_queue_recipient_daily_capacity`, or `outbound_queue_outreach_daily_capacity`) and include `scope`, `window`, `limit`, `sent`, `queued`, `total`, and an expiry-based `retryAfterSeconds` value.
+
+The queue also has a bounded scheduling horizon. If the calculated send time for a new item is more than `OUTBOUND_QUEUE_MAX_TAIL_GAP_SECONDS` after the current queue tail, the API rejects it with HTTP `429` and code `outbound_queue_wait_too_long`. The response includes `queueTailAt`, `requestedSendAt`, `gapSeconds`, and `maxGapSeconds`. The default maximum gap is 120 seconds. This guard is not applied when the queue is empty.
 
 ### Inspect the queue
 
