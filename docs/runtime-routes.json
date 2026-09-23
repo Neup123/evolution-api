@@ -54672,6 +54672,638 @@
     }
   },
   {
+    "method": "delete",
+    "path": "/message/outboundQueue/{instanceName}",
+    "source": "src/api/routes/sendMessage.router.ts",
+    "schemaName": "null",
+    "multipart": false,
+    "runtimeStatus": "OK",
+    "operation": {
+      "tags": [
+        "Messages"
+      ],
+      "summary": "Clear the outbound text-message queue",
+      "description": "Deletes queued messages that have not been delivered. A message already handed to WhatsApp cannot be recalled.",
+      "operationId": "delete_message_outboundQueue",
+      "parameters": [
+        {
+          "name": "instanceName",
+          "in": "path",
+          "required": true,
+          "description": "Evolution API instance name.",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Queue clear result.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "cleared": {
+                    "type": "boolean"
+                  },
+                  "deletedCount": {
+                    "type": "integer"
+                  },
+                  "processingAtClearTime": {
+                    "type": "integer"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "cleared",
+                  "deletedCount",
+                  "processingAtClearTime",
+                  "note"
+                ]
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Invalid request.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "status": {
+                    "type": "integer"
+                  },
+                  "error": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "status": 400,
+                "error": "Bad Request",
+                "message": "Invalid request."
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Missing or invalid API key.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "status": {
+                    "type": "integer"
+                  },
+                  "error": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "status": 401,
+                "error": "Unauthorized",
+                "message": "Missing or invalid API key."
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Instance or resource not found.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "status": {
+                    "type": "integer"
+                  },
+                  "error": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "status": 404,
+                "error": "Not Found",
+                "message": "Resource not found."
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Request validation failed.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "status": {
+                    "type": "integer"
+                  },
+                  "error": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "status": 422,
+                "error": "Unprocessable Entity",
+                "message": [
+                  "A required field is missing."
+                ]
+              }
+            }
+          }
+        },
+        "429": {
+          "description": "Request rate limit exceeded.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "status": {
+                    "type": "integer"
+                  },
+                  "error": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "status": 429,
+                "error": "Too Many Requests",
+                "message": "Request rate limit exceeded."
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Unexpected server error.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "status": {
+                    "type": "integer"
+                  },
+                  "error": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "status": 500,
+                "error": "Internal Server Error",
+                "message": "Unexpected server error."
+              }
+            }
+          }
+        }
+      },
+      "x-validation-schema": "null",
+      "x-source": "src/api/routes/sendMessage.router.ts"
+    }
+  },
+  {
+    "method": "get",
+    "path": "/message/outboundQueue/{instanceName}",
+    "source": "src/api/routes/sendMessage.router.ts",
+    "schemaName": "null",
+    "multipart": false,
+    "runtimeStatus": "OK",
+    "operation": {
+      "tags": [
+        "Messages"
+      ],
+      "summary": "Inspect the outbound text-message queue",
+      "description": "Returns complete queue counts, the next estimated send time, the estimated empty time, and scheduled entries. Every message is checked against the current safety policy again before delivery.",
+      "operationId": "get_message_outboundQueue",
+      "parameters": [
+        {
+          "name": "instanceName",
+          "in": "path",
+          "required": true,
+          "description": "Evolution API instance name.",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Current outbound text-message queue state.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "pendingCount": {
+                    "type": "integer"
+                  },
+                  "processingCount": {
+                    "type": "integer"
+                  },
+                  "failedCount": {
+                    "type": "integer"
+                  },
+                  "nextSendAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  },
+                  "estimatedEmptyAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  },
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "recipient": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "PENDING",
+                            "PROCESSING",
+                            "FAILED"
+                          ]
+                        },
+                        "reason": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "attempts": {
+                          "type": "integer"
+                        },
+                        "requestedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "scheduledAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "lastError": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": []
+                    }
+                  }
+                },
+                "required": [
+                  "pendingCount",
+                  "processingCount",
+                  "failedCount",
+                  "items"
+                ]
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Invalid request.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "status": {
+                    "type": "integer"
+                  },
+                  "error": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "status": 400,
+                "error": "Bad Request",
+                "message": "Invalid request."
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Missing or invalid API key.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "status": {
+                    "type": "integer"
+                  },
+                  "error": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "status": 401,
+                "error": "Unauthorized",
+                "message": "Missing or invalid API key."
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Instance or resource not found.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "status": {
+                    "type": "integer"
+                  },
+                  "error": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "status": 404,
+                "error": "Not Found",
+                "message": "Resource not found."
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Request validation failed.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "status": {
+                    "type": "integer"
+                  },
+                  "error": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "status": 422,
+                "error": "Unprocessable Entity",
+                "message": [
+                  "A required field is missing."
+                ]
+              }
+            }
+          }
+        },
+        "429": {
+          "description": "Request rate limit exceeded.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "status": {
+                    "type": "integer"
+                  },
+                  "error": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "status": 429,
+                "error": "Too Many Requests",
+                "message": "Request rate limit exceeded."
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Unexpected server error.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "status": {
+                    "type": "integer"
+                  },
+                  "error": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "status": 500,
+                "error": "Internal Server Error",
+                "message": "Unexpected server error."
+              }
+            }
+          }
+        }
+      },
+      "x-validation-schema": "null",
+      "x-source": "src/api/routes/sendMessage.router.ts"
+    }
+  },
+  {
     "method": "post",
     "path": "/message/sendButtons/{instanceName}",
     "source": "src/api/routes/sendMessage.router.ts",
@@ -61051,8 +61683,8 @@
       "tags": [
         "Messages"
       ],
-      "summary": "Create send Text",
-      "description": "Create send Text for Messages.",
+      "summary": "Send or queue a text message",
+      "description": "Sends immediately when Automation Safety permits it. A transient cooldown returns a queued result instead of HTTP 429; permanent policy decisions still fail.",
       "operationId": "post_message_sendText",
       "parameters": [
         {
@@ -61067,24 +61699,58 @@
       ],
       "responses": {
         "201": {
-          "description": "Resource created. See the domain documentation for the operation-specific response fields.",
+          "description": "Message sent or accepted into the durable outbound queue.",
           "content": {
             "application/json": {
               "schema": {
                 "oneOf": [
                   {
                     "type": "object",
-                    "additionalProperties": true
+                    "additionalProperties": true,
+                    "description": "WhatsApp message result after immediate send."
                   },
                   {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  },
-                  {
-                    "type": "string"
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "queued": {
+                        "type": "boolean",
+                        "enum": [
+                          true
+                        ]
+                      },
+                      "queueId": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "PENDING"
+                        ]
+                      },
+                      "reason": {
+                        "type": "string"
+                      },
+                      "position": {
+                        "type": "integer"
+                      },
+                      "scheduledAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "retryAfterSeconds": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "queued",
+                      "queueId",
+                      "status",
+                      "reason",
+                      "position",
+                      "scheduledAt",
+                      "retryAfterSeconds"
+                    ]
                   }
                 ]
               }

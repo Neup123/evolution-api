@@ -74,6 +74,11 @@ import {
   resolveMaximumDeleteScope,
 } from '@api/services/message-key.service';
 import { applyMistakesToMessage } from '@api/services/mistakes-generator.service';
+import {
+  OutboundMessageQueueService,
+  OutboundQueueCapacityError,
+  QUEUEABLE_OUTBOUND_SAFETY_CODES,
+} from '@api/services/outbound-message-queue.service';
 import { OutboundSafetyService } from '@api/services/outbound-safety.service';
 import { SettingsTemplateService } from '@api/services/settings-template.service';
 import { Events, MessageSubtype, TypeMediaMessage, wa } from '@api/types/wa.types';
@@ -255,6 +260,7 @@ export class BaileysStartupService extends ChannelStartupService {
   private readonly authoritativeLids = new AuthoritativeLidRegistry();
   private messageProcessor = new BaileysMessageProcessor();
   private readonly outboundSafety: OutboundSafetyService;
+  private readonly outboundMessageQueue: OutboundMessageQueueService;
   private readonly settingsTemplates: SettingsTemplateService;
 
   constructor(
@@ -268,6 +274,7 @@ export class BaileysStartupService extends ChannelStartupService {
   ) {
     super(configService, eventEmitter, prismaRepository, chatwootCache);
     this.outboundSafety = new OutboundSafetyService(prismaRepository);
+    this.outboundMessageQueue = new OutboundMessageQueueService(prismaRepository);
     this.settingsTemplates = new SettingsTemplateService(prismaRepository);
     this.instance.qrcode = { count: 0 };
     this.messageProcessor.mount({
@@ -283,6 +290,8 @@ export class BaileysStartupService extends ChannelStartupService {
   private endSession = false;
   private logBaileys = this.configService.get<Log>('LOG').BAILEYS;
   private eventProcessingQueue: Promise<void> = Promise.resolve();
+  private outboundQueueTimer?: NodeJS.Timeout;
+  private outboundQueueProcessing = false;
 
   // Cache TTL constants (in seconds)
   private readonly MESSAGE_CACHE_TTL_SECONDS = 5 * 60; // 5 minutes - avoid duplicate message processing
@@ -297,6 +306,7 @@ export class BaileysStartupService extends ChannelStartupService {
   }
 
   public async logoutInstance() {
+    this.stopOutboundQueueWorker();
     this.messageProcessor.onDestroy();
     await this.client?.logout('Log out instance: ' + this.instanceName);
 
@@ -456,6 +466,7 @@ export class BaileysStartupService extends ChannelStartupService {
     }
 
     if (connection === 'close') {
+      this.stopOutboundQueueWorker();
       const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
       const codesToNotReconnect = [DisconnectReason.loggedOut, DisconnectReason.forbidden, 402, 406];
       const shouldReconnect = !codesToNotReconnect.includes(statusCode);
@@ -497,6 +508,7 @@ export class BaileysStartupService extends ChannelStartupService {
     }
 
     if (connection === 'open') {
+      this.startOutboundQueueWorker();
       this.instance.wuid = this.client.user.id.replace(/:\d+/, '');
       try {
         const profilePic = await this.profilePicture(this.instance.wuid);
@@ -3004,28 +3016,142 @@ export class BaileysStartupService extends ChannelStartupService {
   }
 
   // Send Message Controller
-  public async textMessage(data: SendTextDto, isIntegration = false) {
+  public async textMessage(data: SendTextDto, isIntegration = false, fromQueue = false) {
     const text = data.text;
 
     if (!text || text.trim().length === 0) {
       throw new BadRequestException('Text is required');
     }
 
-    return await this.sendMessageWithTyping(
-      data.number,
-      { conversation: data.text },
-      {
-        delay: data?.delay,
-        presence: 'composing',
-        quoted: data?.quoted,
-        linkPreview: data?.linkPreview,
-        mentionsEveryOne: data?.mentionsEveryOne,
-        mentioned: data?.mentioned,
-        settingsTemplateId: data?.settingsTemplateId,
-      },
-      isIntegration,
-      data.settingsTemplateId,
-    );
+    try {
+      return await this.sendMessageWithTyping(
+        data.number,
+        { conversation: data.text },
+        {
+          delay: data?.delay,
+          presence: 'composing',
+          quoted: data?.quoted,
+          linkPreview: data?.linkPreview,
+          mentionsEveryOne: data?.mentionsEveryOne,
+          mentioned: data?.mentioned,
+          settingsTemplateId: data?.settingsTemplateId,
+        },
+        isIntegration,
+        data.settingsTemplateId,
+      );
+    } catch (error) {
+      const safetyError = this.parseOutboundSafetyError(error);
+      if (fromQueue || !safetyError || !QUEUEABLE_OUTBOUND_SAFETY_CODES.has(safetyError.code)) throw error;
+
+      const recipient = createJid(data.number).toLowerCase();
+      const templateSettings = await this.settingsTemplates.resolve(
+        this.instanceId,
+        recipient,
+        data.settingsTemplateId,
+      );
+      const effectiveSafety = templateSettings?.automationSafety ?? this.localSettings.automationSafety;
+      try {
+        const queued = await this.outboundMessageQueue.enqueueText(
+          this.instanceId,
+          recipient,
+          data,
+          safetyError.code,
+          safetyError.retryAfterSeconds,
+          effectiveSafety,
+          isIntegration,
+        );
+        this.startOutboundQueueWorker();
+        return queued;
+      } catch (queueError) {
+        if (queueError instanceof OutboundQueueCapacityError) {
+          throw new TooManyRequestsException({
+            code: queueError.code,
+            retryAfterSeconds: queueError.retryAfterSeconds,
+            message: queueError.message,
+          });
+        }
+        throw queueError;
+      }
+    }
+  }
+
+  public async outboundQueueStatus(limit = 100) {
+    return this.outboundMessageQueue.snapshot(this.instanceId, limit);
+  }
+
+  public async clearOutboundQueue() {
+    return this.outboundMessageQueue.clear(this.instanceId);
+  }
+
+  private parseOutboundSafetyError(error: any): { code: string; retryAfterSeconds: number } | null {
+    if (Number(error?.status) !== 429) return null;
+    const details = Array.isArray(error?.message) ? error.message[0] : error?.message;
+    if (!details?.code) return null;
+    return {
+      code: String(details.code),
+      retryAfterSeconds: Math.max(1, Number(details.retryAfterSeconds) || 1),
+    };
+  }
+
+  private startOutboundQueueWorker() {
+    if (this.outboundQueueTimer) clearTimeout(this.outboundQueueTimer);
+    this.outboundQueueTimer = setTimeout(() => {
+      this.outboundQueueTimer = undefined;
+      void this.processOutboundQueue();
+    }, 0);
+    this.outboundQueueTimer.unref?.();
+  }
+
+  private stopOutboundQueueWorker() {
+    if (this.outboundQueueTimer) clearTimeout(this.outboundQueueTimer);
+    this.outboundQueueTimer = undefined;
+  }
+
+  private scheduleNextOutboundQueueRun(nextSendAt: Date | null) {
+    if (!nextSendAt || this.stateConnection.state !== 'open') return;
+    const delayMs = Math.min(60_000, Math.max(1000, nextSendAt.getTime() - Date.now()));
+    if (this.outboundQueueTimer) clearTimeout(this.outboundQueueTimer);
+    this.outboundQueueTimer = setTimeout(() => {
+      this.outboundQueueTimer = undefined;
+      void this.processOutboundQueue();
+    }, delayMs);
+    this.outboundQueueTimer.unref?.();
+  }
+
+  private async processOutboundQueue() {
+    if (this.outboundQueueProcessing || this.stateConnection.state !== 'open') return;
+    this.outboundQueueProcessing = true;
+    try {
+      const queued = await this.outboundMessageQueue.claimNext(this.instanceId);
+      if (!queued) return;
+      try {
+        const payload = queued.payload as unknown as { data?: SendTextDto; isIntegration?: boolean } & SendTextDto;
+        await this.textMessage(payload.data ?? payload, payload.isIntegration ?? false, true);
+        await this.outboundMessageQueue.complete(queued.id);
+      } catch (error) {
+        const safetyError = this.parseOutboundSafetyError(error);
+        if (safetyError && QUEUEABLE_OUTBOUND_SAFETY_CODES.has(safetyError.code)) {
+          await this.outboundMessageQueue.reschedule(
+            queued.id,
+            safetyError.code,
+            safetyError.retryAfterSeconds,
+            JSON.stringify(error),
+          );
+        } else {
+          await this.outboundMessageQueue.fail(queued.id, error?.message ?? error?.toString() ?? 'Queue send failed');
+        }
+      }
+    } catch (error) {
+      this.logger.error(['Outbound queue worker failed', error?.message ?? error]);
+    } finally {
+      this.outboundQueueProcessing = false;
+      try {
+        const snapshot = await this.outboundMessageQueue.snapshot(this.instanceId, 1);
+        this.scheduleNextOutboundQueueRun(snapshot.nextSendAt);
+      } catch (error) {
+        this.logger.warn(['Could not schedule the next outbound queue run', error?.message ?? error]);
+      }
+    }
   }
 
   public async pollMessage(data: SendPollDto) {

@@ -22,6 +22,10 @@ const body = (properties, required = []) => ({
     'application/json': { schema: bodySchema(properties, required) },
   },
 });
+const jsonResponse = (description, schema, example) => ({
+  description,
+  content: { 'application/json': { schema, ...(example ? { example } : {}) } },
+});
 const limit = { ...integer, minimum: 1, maximum: 1000 };
 const eventsQuery = {
   limit,
@@ -96,6 +100,83 @@ export const overrides = {
   'get /settings/outbound-audit/{instanceName}': {
     parameters: params({ limit: { ...integer, minimum: 1 }, recipient: string, status: string }),
   },
+  'get /message/outboundQueue/{instanceName}': {
+    summary: 'Inspect the outbound text-message queue',
+    description:
+      'Returns complete queue counts, the next estimated send time, the estimated empty time, and scheduled entries. Every message is checked against the current safety policy again before delivery.',
+    parameters: params({ limit: { ...integer, minimum: 1, maximum: 500 } }),
+    responses: {
+      200: jsonResponse(
+        'Current outbound text-message queue state.',
+        bodySchema(
+          {
+            pendingCount: integer,
+            processingCount: integer,
+            failedCount: integer,
+            nextSendAt: { ...string, format: 'date-time', nullable: true },
+            estimatedEmptyAt: { ...string, format: 'date-time', nullable: true },
+            items: {
+              type: 'array',
+              items: bodySchema({
+                id: string,
+                recipient: string,
+                status: { type: 'string', enum: ['PENDING', 'PROCESSING', 'FAILED'] },
+                reason: { ...string, nullable: true },
+                attempts: integer,
+                requestedAt: { ...string, format: 'date-time' },
+                scheduledAt: { ...string, format: 'date-time' },
+                lastError: { ...string, nullable: true },
+              }),
+            },
+          },
+          ['pendingCount', 'processingCount', 'failedCount', 'items'],
+        ),
+      ),
+    },
+  },
+  'post /message/sendText/{instanceName}': {
+    summary: 'Send or queue a text message',
+    description:
+      'Sends immediately when Automation Safety permits it. A transient cooldown returns a queued result instead of HTTP 429; permanent policy decisions still fail.',
+    responses: {
+      201: jsonResponse('Message sent or accepted into the durable outbound queue.', {
+        oneOf: [
+          { type: 'object', additionalProperties: true, description: 'WhatsApp message result after immediate send.' },
+          bodySchema(
+            {
+              queued: { type: 'boolean', enum: [true] },
+              queueId: string,
+              status: { type: 'string', enum: ['PENDING'] },
+              reason: string,
+              position: integer,
+              scheduledAt: { ...string, format: 'date-time' },
+              retryAfterSeconds: integer,
+            },
+            ['queued', 'queueId', 'status', 'reason', 'position', 'scheduledAt', 'retryAfterSeconds'],
+          ),
+        ],
+      }),
+    },
+  },
+  'delete /message/outboundQueue/{instanceName}': {
+    summary: 'Clear the outbound text-message queue',
+    description:
+      'Deletes queued messages that have not been delivered. A message already handed to WhatsApp cannot be recalled.',
+    responses: {
+      200: jsonResponse(
+        'Queue clear result.',
+        bodySchema(
+          {
+            cleared: boolean,
+            deletedCount: integer,
+            processingAtClearTime: integer,
+            note: string,
+          },
+          ['cleared', 'deletedCount', 'processingAtClearTime', 'note'],
+        ),
+      ),
+    },
+  },
   'post /chat/getBase64FromMediaMessage/{instanceName}': {
     requestBody: body(
       {
@@ -118,6 +199,11 @@ export const applyOverride = (route, operation) => {
   let x = overrides[`${route.method} ${route.path}`];
   if (route.path.startsWith('/archive/')) x = withArchiveHeader(x ?? {});
   return Object.keys(x ?? {}).length
-    ? { ...operation, ...x, parameters: [...(operation.parameters ?? []), ...(x.parameters ?? [])] }
+    ? {
+        ...operation,
+        ...x,
+        parameters: [...(operation.parameters ?? []), ...(x.parameters ?? [])],
+        responses: { ...(operation.responses ?? {}), ...(x.responses ?? {}) },
+      }
     : operation;
 };

@@ -115,6 +115,7 @@ model Instance {
   LocalReadSnapshot       LocalReadSnapshot[]
   IsOnWhatsapp            IsOnWhatsapp[]
   OutboundMessageAudit    OutboundMessageAudit[]
+  OutboundMessageQueue    OutboundMessageQueue[]
   RecipientEngagement     RecipientEngagement[]
   SettingsTemplateBinding SettingsTemplateBinding[]
 }
@@ -365,6 +366,26 @@ model OutboundMessageAudit {
   @@index([instanceId, requestedAt])
   @@index([instanceId, recipient, requestedAt])
   @@index([instanceId, recipient, messageHash, requestedAt])
+}
+
+model OutboundMessageQueue {
+  id                 String    @id @default(cuid())
+  instanceId         String
+  recipient          String    @db.VarChar(100)
+  payload            Json      @db.Json
+  settingsTemplateId String?   @db.VarChar(100)
+  status             String    @default("PENDING") @db.VarChar(30)
+  reason             String?   @db.VarChar(100)
+  attempts           Int       @default(0) @db.Int
+  scheduledAt        DateTime  @db.DateTime(3)
+  requestedAt        DateTime  @default(now()) @db.DateTime(3)
+  lockedAt           DateTime? @db.DateTime(3)
+  lastError          String?   @db.Text
+  updatedAt          DateTime  @updatedAt @db.DateTime(3)
+  Instance           Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@index([instanceId, status, scheduledAt])
+  @@index([instanceId, recipient, status])
 }
 
 model RecipientEngagement {

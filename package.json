@@ -1,6 +1,6 @@
 {
   "name": "evolution-api",
-  "version": "5.4.3",
+  "version": "5.5.0",
   "description": "Rest api for communication with WhatsApp",
   "main": "./dist/main.js",
   "type": "commonjs",
@@ -15,6 +15,8 @@
     "test:archive": "tsx ./test/archive.test.ts",
     "test:message-archive": "tsx ./test/message-archive.test.ts",
     "test:outbound-safety": "tsx ./test/outbound-safety.test.ts",
+    "test:outbound-queue": "tsx ./test/outbound-message-queue.test.ts",
+    "test:outbound-queue:postgres": "tsx ./test/outbound-message-queue.postgres.test.ts",
     "test:outbound-safety:postgres": "tsx ./test/outbound-safety.postgres.test.ts",
     "test:delete-message": "tsx ./test/message-key.test.ts",
     "lint": "eslint --fix --ext .ts src",

@@ -1,4 +1,5 @@
 import { RouterBroker } from '@api/abstract/abstract.router';
+import { InstanceDto } from '@api/dto/instance.dto';
 import {
   SendAudioDto,
   SendButtonsDto,
@@ -60,6 +61,26 @@ export class MessageRouter extends RouterBroker {
         });
 
         return res.status(HttpStatus.CREATED).json(response);
+      })
+      .get(this.routerPath('outboundQueue'), ...guards, async (req, res) => {
+        const response = await this.dataValidate<InstanceDto>({
+          request: req,
+          schema: null,
+          ClassRef: InstanceDto,
+          execute: (instance) => sendMessageController.outboundQueue(instance, Number(req.query.limit) || undefined),
+        });
+
+        return res.status(HttpStatus.OK).json(response);
+      })
+      .delete(this.routerPath('outboundQueue'), ...guards, async (req, res) => {
+        const response = await this.dataValidate<InstanceDto>({
+          request: req,
+          schema: null,
+          ClassRef: InstanceDto,
+          execute: (instance) => sendMessageController.clearOutboundQueue(instance),
+        });
+
+        return res.status(HttpStatus.OK).json(response);
       })
       .post(this.routerPath('sendMedia'), ...guards, upload.single('file'), async (req, res) => {
         const bodyData = req.body;

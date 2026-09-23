@@ -78,6 +78,9 @@ jobs:
     - name: Apply PostgreSQL migrations
       run: npm run db:deploy
 
+    - name: Test durable outbound queue
+      run: npm run test:outbound-queue && npm run test:outbound-queue:postgres
+
     - name: Test archive lifecycle
       run: npm run test:archive
 
