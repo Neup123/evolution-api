@@ -129,6 +129,10 @@ async function main() {
     { enabled: true, rateLimit: { instancePerDay: 10, recipientPerDay: 5, minimumIntervalMs: 1000 } },
   );
   assert.equal(first.queued, true);
+  assert.equal(first.accepted, true);
+  assert.equal(first.messageWasSent, false);
+  assert.equal(first.deliveryStatus, 'PENDING');
+  assert.equal(first.final, false);
   assert.equal(first.position, 1);
 
   const second = await service.enqueueText(
@@ -228,8 +232,14 @@ async function main() {
       error.details.gapSeconds > 120,
   );
 
+  assert.equal(await service.claimNext('instance-1'), null, 'future work should not be claimed early');
+  rows[0].scheduledAt = new Date(Date.now() - 1000);
   const claimed = await service.claimNext('instance-1');
-  assert.equal(claimed, null, 'future work should not be claimed early');
+  assert.equal(claimed?.id, first.queueId);
+  const rejectedRetry = await service.rescheduleOrReject(first.queueId, 'outreach_recipient_limit', 300);
+  assert.equal(rejectedRetry.rescheduled, false);
+  assert.equal(rows[0].status, 'FAILED');
+  assert.equal(rows[0].reason, 'outbound_queue_wait_too_long');
 
   const cleared = await service.clear('instance-1');
   assert.equal(cleared.deletedCount, 2);

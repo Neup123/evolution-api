@@ -56,7 +56,11 @@ An accepted queued response looks like this:
 
 ```json
 {
+  "accepted": true,
   "queued": true,
+  "messageWasSent": false,
+  "deliveryStatus": "PENDING",
+  "final": false,
   "queueId": "cm...",
   "status": "PENDING",
   "reason": "outreach_recipient_limit",
@@ -65,6 +69,8 @@ An accepted queued response looks like this:
   "retryAfterSeconds": 86400
 }
 ```
+
+HTTP acceptance is not delivery confirmation. Callers and n8n workflows must use `messageWasSent`, not HTTP success alone. A queued response always has `messageWasSent: false`, `deliveryStatus: "PENDING"`, and `final: false`.
 
 The database is the durable source of truth. The worker runs inside Evolution API and therefore works with or without RabbitMQ. A restart or temporary WhatsApp disconnect does not discard pending rows; processing resumes after the instance reconnects.
 
@@ -75,6 +81,8 @@ Queue admission counts recent `SENT` audit rows together with pending/processing
 Capacity errors return HTTP `429` with a specific code (`outbound_queue_instance_minute_capacity`, `outbound_queue_instance_daily_capacity`, `outbound_queue_recipient_minute_capacity`, `outbound_queue_recipient_daily_capacity`, or `outbound_queue_outreach_daily_capacity`) and include `scope`, `window`, `limit`, `sent`, `queued`, `total`, and an expiry-based `retryAfterSeconds` value.
 
 The queue also has a bounded scheduling horizon. If the calculated send time for a new item is more than `OUTBOUND_QUEUE_MAX_TAIL_GAP_SECONDS` after the current queue tail, the API rejects it with HTTP `429` and code `outbound_queue_wait_too_long`. The response includes `queueTailAt`, `requestedSendAt`, `gapSeconds`, and `maxGapSeconds`. The default maximum gap is 120 seconds. This guard is not applied when the queue is empty.
+
+Immediately before actual delivery, Evolution resolves the current settings template again and re-runs every safety rule. This includes changes caused by direct sends using an override template while the item was waiting. A temporary block is returned to `PENDING` only when its recalculated schedule remains inside the configured queue horizon. If the wait is too long, or a permanent rule now rejects the message, the item becomes `FAILED` with the policy code and diagnostic details; it is not treated as sent.
 
 ### Inspect the queue
 

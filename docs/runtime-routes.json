@@ -61713,10 +61713,34 @@
                     "type": "object",
                     "additionalProperties": false,
                     "properties": {
+                      "accepted": {
+                        "type": "boolean",
+                        "enum": [
+                          true
+                        ]
+                      },
                       "queued": {
                         "type": "boolean",
                         "enum": [
                           true
+                        ]
+                      },
+                      "messageWasSent": {
+                        "type": "boolean",
+                        "enum": [
+                          false
+                        ]
+                      },
+                      "deliveryStatus": {
+                        "type": "string",
+                        "enum": [
+                          "PENDING"
+                        ]
+                      },
+                      "final": {
+                        "type": "boolean",
+                        "enum": [
+                          false
                         ]
                       },
                       "queueId": {
@@ -61743,7 +61767,11 @@
                       }
                     },
                     "required": [
+                      "accepted",
                       "queued",
+                      "messageWasSent",
+                      "deliveryStatus",
+                      "final",
                       "queueId",
                       "status",
                       "reason",
