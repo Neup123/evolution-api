@@ -22,6 +22,9 @@ async function main() {
       },
     );
     assert.equal(queued.queued, true);
+    assert.equal(queued.messageWasSent, false);
+    assert.equal(queued.deliveryStatus, 'PENDING');
+    assert.equal(queued.final, false);
 
     const stored = await prisma.outboundMessageQueue.findUnique({ where: { id: queued.queueId } });
     assert.deepEqual(stored?.payload, {
@@ -38,7 +41,8 @@ async function main() {
     assert.equal(claimed?.status, 'PROCESSING');
     assert.equal(claimed?.attempts, 1);
 
-    await service.reschedule(queued.queueId, 'minimum_interval', 30);
+    const retry = await service.rescheduleOrReject(queued.queueId, 'minimum_interval', 30);
+    assert.equal(retry.rescheduled, true);
     assert.equal((await service.snapshot(instance.id)).pendingCount, 1);
 
     const cleared = await service.clear(instance.id);

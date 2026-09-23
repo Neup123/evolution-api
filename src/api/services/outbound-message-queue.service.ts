@@ -267,7 +267,11 @@ export class OutboundMessageQueueService {
       })) || 1;
 
     return {
+      accepted: true,
       queued: true,
+      messageWasSent: false,
+      deliveryStatus: 'PENDING',
+      final: false,
       queueId: item.id,
       status: item.status,
       reason,
@@ -362,23 +366,65 @@ export class OutboundMessageQueueService {
     await this.repository.outboundMessageQueue.deleteMany({ where: { id } });
   }
 
-  public async reschedule(id: string, reason: string, retryAfterSeconds: number, lastError?: string): Promise<void> {
+  public async rescheduleOrReject(
+    id: string,
+    reason: string,
+    retryAfterSeconds: number,
+    lastError?: string,
+  ): Promise<{ rescheduled: boolean; scheduledAt?: Date; rejection?: OutboundQueueWaitTooLongError }> {
+    const now = new Date();
+    const requestedSendAt = new Date(now.getTime() + Math.max(1, retryAfterSeconds) * 1000);
+    const item = await this.repository.outboundMessageQueue.findUnique({
+      where: { id },
+      select: { instanceId: true },
+    });
+    if (!item) throw new Error(`Outbound queue item ${id} was not found.`);
+    const queueTail = await this.repository.outboundMessageQueue.findFirst({
+      where: { instanceId: item.instanceId, status: 'PENDING' },
+      orderBy: { scheduledAt: 'desc' },
+      select: { scheduledAt: true },
+    });
+    const anchor = queueTail?.scheduledAt && queueTail.scheduledAt > now ? queueTail.scheduledAt : now;
+    const gapMs = requestedSendAt.getTime() - anchor.getTime();
+
+    if (gapMs > this.maxTailGapMs) {
+      const rejection = new OutboundQueueWaitTooLongError(Math.max(1, Math.ceil(gapMs / 1000)), {
+        queueTailAt: anchor,
+        requestedSendAt,
+        gapSeconds: Math.ceil(gapMs / 1000),
+        maxGapSeconds: Math.floor(this.maxTailGapMs / 1000),
+      });
+      await this.fail(
+        id,
+        JSON.stringify({
+          code: rejection.code,
+          message: rejection.message,
+          ...rejection.details,
+          policyReason: reason,
+          policyError: lastError,
+        }),
+        rejection.code,
+      );
+      return { rescheduled: false, rejection };
+    }
+
     await this.repository.outboundMessageQueue.updateMany({
       where: { id },
       data: {
         status: 'PENDING',
         reason,
-        scheduledAt: new Date(Date.now() + Math.max(1, retryAfterSeconds) * 1000),
+        scheduledAt: requestedSendAt,
         lockedAt: null,
         lastError: lastError?.slice(0, 4000) ?? null,
       },
     });
+    return { rescheduled: true, scheduledAt: requestedSendAt };
   }
 
-  public async fail(id: string, error: string): Promise<void> {
+  public async fail(id: string, error: string, reason?: string): Promise<void> {
     await this.repository.outboundMessageQueue.updateMany({
       where: { id },
-      data: { status: 'FAILED', lockedAt: null, lastError: error.slice(0, 4000) },
+      data: { status: 'FAILED', reason, lockedAt: null, lastError: error.slice(0, 4000) },
     });
   }
 }

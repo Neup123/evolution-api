@@ -3138,17 +3138,27 @@ export class BaileysStartupService extends ChannelStartupService {
       } catch (error) {
         const safetyError = this.parseOutboundSafetyError(error);
         if (safetyError && QUEUEABLE_OUTBOUND_SAFETY_CODES.has(safetyError.code)) {
-          await this.outboundMessageQueue.reschedule(
+          const retry = await this.outboundMessageQueue.rescheduleOrReject(
             queued.id,
             safetyError.code,
             safetyError.retryAfterSeconds,
             JSON.stringify(error),
           );
-          this.logger.info(
-            `Rescheduled outbound queue item ${queued.id} after ${safetyError.code} for ${safetyError.retryAfterSeconds}s`,
-          );
+          if (retry.rescheduled) {
+            this.logger.info(
+              `Rescheduled outbound queue item ${queued.id} after ${safetyError.code} for ${safetyError.retryAfterSeconds}s`,
+            );
+          } else {
+            this.logger.warn(
+              `Rejected outbound queue item ${queued.id} after policy recheck: ${retry.rejection?.message}`,
+            );
+          }
         } else {
-          await this.outboundMessageQueue.fail(queued.id, error?.message ?? error?.toString() ?? 'Queue send failed');
+          await this.outboundMessageQueue.fail(
+            queued.id,
+            error?.message ?? error?.toString() ?? 'Queue send failed',
+            safetyError?.code ?? 'delivery_failed',
+          );
           this.logger.error([`Outbound queue item ${queued.id} failed`, error?.message ?? error]);
         }
       }
