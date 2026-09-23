@@ -15,8 +15,11 @@ This feature is for traffic safety, recipient protection, and predictable user e
 7. Calculate a bounded typing-indicator duration from visible text or caption length. A request's explicit `delay` remains authoritative when it is longer.
 8. Send the message without changing its content.
 9. Mark the audit row `SENT` or `FAILED`.
+10. For `sendText`, persist transiently blocked work in the internal queue instead of requiring the caller to retry.
 
-Rejected requests return HTTP `429` with a machine-readable policy code and, when meaningful, `retryAfterSeconds`. Quiet-hour requests are rejected rather than silently held, so callers retain control of scheduling and idempotency.
+For `POST /message/sendText/{instanceName}`, transient cooldown decisions return a successful queued response. The queue stores the original text request, survives restarts, and re-runs the current safety policy immediately before delivery. Other send methods continue to return HTTP `429` when blocked.
+
+Permanent decisions still return HTTP `429`. These include invalid destinations, suppression, allowlist rejection, quiet hours, and deliberate duplicate blocking. The API never queues a request that policy says must not be sent.
 
 ```json
 {
@@ -35,6 +38,82 @@ Rejected requests return HTTP `429` with a machine-readable policy code and, whe
 ```
 
 `retryAfterSeconds` is omitted for permanent decisions such as suppression or a missing allowlist entry. The API does not return a `Retry-After` HTTP header; automation should read the JSON field.
+
+## Internal text-message queue
+
+The queue is used for these transient block codes:
+
+- `concurrency_limit`
+- `failure_circuit_open`
+- `instance_rate_limit`
+- `instance_daily_limit`
+- `recipient_rate_limit`
+- `recipient_daily_limit`
+- `outreach_recipient_limit`
+- `minimum_interval`
+
+An accepted queued response looks like this:
+
+```json
+{
+  "queued": true,
+  "queueId": "cm...",
+  "status": "PENDING",
+  "reason": "outreach_recipient_limit",
+  "position": 1,
+  "scheduledAt": "2026-09-24T11:00:00.000Z",
+  "retryAfterSeconds": 86400
+}
+```
+
+The database is the durable source of truth. The worker runs inside Evolution API and therefore works with or without RabbitMQ. A restart or temporary WhatsApp disconnect does not discard pending rows; processing resumes after the instance reconnects.
+
+Unlike the hash-only audit table, the queue must retain the complete `sendText` request and its integration-routing context so it can deliver it later with the same behavior. Successful and cleared rows are deleted immediately. Failed rows remain visible for diagnosis and are removed after the configured `audit.retentionDays` period during subsequent queue activity.
+
+Queue admission counts recent `SENT` audit rows together with pending/processing queue rows. A request returns `outbound_queue_instance_capacity` only when that total reaches `rateLimit.instancePerDay`, or `outbound_queue_recipient_capacity` when the recipient total reaches `rateLimit.recipientPerDay`. In-flight immediate sends remain protected by the ordinary safety reservation and concurrency checks.
+
+### Inspect the queue
+
+`GET /message/outboundQueue/{instanceName}?limit=100`
+
+```json
+{
+  "pendingCount": 2,
+  "processingCount": 0,
+  "failedCount": 0,
+  "nextSendAt": "2026-09-24T11:00:00.000Z",
+  "estimatedEmptyAt": "2026-09-24T11:00:01.000Z",
+  "items": [
+    {
+      "id": "cm...",
+      "recipient": "15551234567@s.whatsapp.net",
+      "status": "PENDING",
+      "reason": "outreach_recipient_limit",
+      "attempts": 0,
+      "requestedAt": "2026-09-23T11:00:00.000Z",
+      "scheduledAt": "2026-09-24T11:00:00.000Z",
+      "lastError": null
+    }
+  ]
+}
+```
+
+`nextSendAt` and `estimatedEmptyAt` are estimates. They can move when policy settings, recipient history, failures, or additional queued work change.
+
+### Clear the queue
+
+`DELETE /message/outboundQueue/{instanceName}`
+
+```json
+{
+  "cleared": true,
+  "deletedCount": 2,
+  "processingAtClearTime": 0,
+  "note": "All queued messages were deleted before delivery."
+}
+```
+
+Clear removes pending and failed entries immediately. If `processingAtClearTime` is non-zero, a request already handed to WhatsApp may complete and cannot be recalled.
 
 Use `GET /settings/outbound-audit/{instanceName}?limit=100&status=BLOCKED&recipient=...` to inspect the newest audit rows. `limit` is capped at 500 and filters are optional.
 
@@ -154,6 +233,6 @@ Policy block codes are `recipient_suppressed`, `recipient_not_allowed`, `quiet_h
 - Rolling limits and duplicate/failure checks use PostgreSQL or MySQL audit rows and therefore survive restarts. The concurrency count is process-local; use conservative rolling limits when running multiple API replicas.
 - Similarity comparison normalizes Unicode compatibility forms, letter case, and repeated whitespace, then compares a 64-bit character-trigram SimHash. The displayed percentage is an approximate fingerprint similarity, not an edit-distance guarantee. Exact SHA-256 equality is always blocked regardless of the configured percentage.
 - Audit rows created before the similarity migration have no similarity fingerprint. They still participate in exact matching, but near-duplicate matching starts with sends recorded after the upgrade.
-- Automatic retries are intentionally not performed after an uncertain WhatsApp send because retrying without a confirmed idempotency key can duplicate a message. Workflow callers should retry only clearly rejected pre-send requests.
+- The internal queue retries only messages rejected before WhatsApp delivery by a queueable safety decision. It does not automatically retry an uncertain transport send, because doing so without a confirmed idempotency key can duplicate a message.
 - The settings migration is automatic during normal Evolution API startup. Back up the database before every application upgrade as usual.
 - See [Defensive detection of automation disguise](./defensive-automation-detection.md) for safe teaching examples and detection guidance.

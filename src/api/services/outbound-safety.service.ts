@@ -351,46 +351,76 @@ export class OutboundSafetyService {
       }
     }
     if (instanceMinute >= policy.rateLimit.instancePerMinute) {
+      const oldest = await this.repository.outboundMessageAudit.findFirst({
+        where: { instanceId, requestedAt: { gte: minuteAgo }, status: countable },
+        orderBy: { requestedAt: 'asc' },
+        select: { requestedAt: true },
+      });
       return this.block(
         instanceId,
         normalizedRecipient,
         messageHash,
         messageType,
         'instance_rate_limit',
-        60,
+        this.retryAfterWindow(oldest?.requestedAt, 60_000, now),
         recipientCategory,
       );
     }
     if (instanceDay >= policy.rateLimit.instancePerDay) {
+      const oldest = await this.repository.outboundMessageAudit.findFirst({
+        where: { instanceId, requestedAt: { gte: dayAgo }, status: countable },
+        orderBy: { requestedAt: 'asc' },
+        select: { requestedAt: true },
+      });
       return this.block(
         instanceId,
         normalizedRecipient,
         messageHash,
         messageType,
         'instance_daily_limit',
-        86400,
+        this.retryAfterWindow(oldest?.requestedAt, 86_400_000, now),
         recipientCategory,
       );
     }
     if (recipientMinute >= policy.rateLimit.recipientPerMinute) {
+      const oldest = await this.repository.outboundMessageAudit.findFirst({
+        where: {
+          instanceId,
+          recipient: normalizedRecipient,
+          requestedAt: { gte: minuteAgo },
+          status: countable,
+        },
+        orderBy: { requestedAt: 'asc' },
+        select: { requestedAt: true },
+      });
       return this.block(
         instanceId,
         normalizedRecipient,
         messageHash,
         messageType,
         'recipient_rate_limit',
-        60,
+        this.retryAfterWindow(oldest?.requestedAt, 60_000, now),
         recipientCategory,
       );
     }
     if (recipientDay >= policy.rateLimit.recipientPerDay) {
+      const oldest = await this.repository.outboundMessageAudit.findFirst({
+        where: {
+          instanceId,
+          recipient: normalizedRecipient,
+          requestedAt: { gte: dayAgo },
+          status: countable,
+        },
+        orderBy: { requestedAt: 'asc' },
+        select: { requestedAt: true },
+      });
       return this.block(
         instanceId,
         normalizedRecipient,
         messageHash,
         messageType,
         'recipient_daily_limit',
-        86400,
+        this.retryAfterWindow(oldest?.requestedAt, 86_400_000, now),
         recipientCategory,
       );
     }
@@ -437,13 +467,18 @@ export class OutboundSafetyService {
           where: { instanceId, lastOutreachAt: { gte: dayAgo } },
         });
         if (outreachCount >= policy.outreach.newOrDormantRecipientsPerDay) {
+          const oldest = await this.repository.recipientEngagement.findFirst({
+            where: { instanceId, lastOutreachAt: { gte: dayAgo } },
+            orderBy: { lastOutreachAt: 'asc' },
+            select: { lastOutreachAt: true },
+          });
           return this.block(
             instanceId,
             normalizedRecipient,
             messageHash,
             messageType,
             'outreach_recipient_limit',
-            86400,
+            this.retryAfterWindow(oldest?.lastOutreachAt, 86_400_000, now),
             recipientCategory,
           );
         }
@@ -505,6 +540,11 @@ export class OutboundSafetyService {
     const active = inFlightByInstance.get(instanceId) ?? 0;
     if (active <= 1) inFlightByInstance.delete(instanceId);
     else inFlightByInstance.set(instanceId, active - 1);
+  }
+
+  private retryAfterWindow(oldest: Date | null | undefined, windowMs: number, now: Date): number {
+    if (!oldest) return Math.ceil(windowMs / 1000);
+    return Math.max(1, Math.ceil((oldest.getTime() + windowMs - now.getTime()) / 1000));
   }
 
   private async block(

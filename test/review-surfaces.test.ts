@@ -7,7 +7,7 @@ const js = fs.readFileSync(`manager/dist${asset.startsWith('/') ? asset : `/${as
 for (const text of ['Settings templates', 'New template', 'Automation safety & pacing', 'Mistakes generator', 'Minimum letters', 'Chance (%)'])
   assert(js.includes(text), `embedded Manager contains ${text}`);
 const routes = JSON.parse(fs.readFileSync('docs/runtime-routes.json', 'utf8'));
-assert.equal(routes.length, 202);
+assert.equal(routes.length, 204);
 const sendText = routes.find((route: any) => route.path === '/message/sendText/{instanceName}');
 assert.deepEqual(Object.keys(sendText.operation.requestBody.content['application/json'].schema.properties), [
   'number',

@@ -39,6 +39,14 @@ export class SendMessageController {
     return await this.waMonitor.waInstances[instanceName].textMessage(data);
   }
 
+  public async outboundQueue({ instanceName }: InstanceDto, limit?: number) {
+    return await this.waMonitor.waInstances[instanceName].outboundQueueStatus(limit);
+  }
+
+  public async clearOutboundQueue({ instanceName }: InstanceDto) {
+    return await this.waMonitor.waInstances[instanceName].clearOutboundQueue();
+  }
+
   public async sendMedia({ instanceName }: InstanceDto, data: SendMediaDto, file?: any) {
     if (isBase64(data?.media) && !data?.fileName && data?.mediatype === 'document') {
       throw new BadRequestException('For base64 the file name must be informed.');
