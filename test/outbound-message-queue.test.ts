@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   OutboundMessageQueueService,
   OutboundQueueCapacityError,
+  OutboundQueueWaitTooLongError,
   QUEUEABLE_OUTBOUND_SAFETY_CODES,
 } from '../src/api/services/outbound-message-queue.service';
 
@@ -10,9 +11,20 @@ async function main() {
   const rows: any[] = [];
   let recentInstanceMessages = 2;
   let recentRecipientMessages = 1;
+  let recentOutreachRecipients = 0;
   const repository = {
     outboundMessageAudit: {
-      count: async ({ where }: any) => (where.recipient ? recentRecipientMessages : recentInstanceMessages),
+      findMany: async ({ where }: any) =>
+        Array.from({ length: where.recipient ? recentRecipientMessages : recentInstanceMessages }, (_, index) => ({
+          requestedAt: new Date(Date.now() - 30_000 + index),
+        })),
+    },
+    recipientEngagement: {
+      findMany: async () =>
+        Array.from({ length: recentOutreachRecipients }, (_, index) => ({
+          recipient: `outreach-${index}@s.whatsapp.net`,
+          lastOutreachAt: new Date(Date.now() - 30_000 + index),
+        })),
     },
     outboundMessageQueue: {
       count: async ({ where }: any) =>
@@ -41,11 +53,22 @@ async function main() {
             : left.scheduledAt.getTime() - right.scheduledAt.getTime(),
         )[0] ?? null;
       },
-      findMany: async ({ where, take }: any) =>
-        rows
+      findMany: async ({ where, take, distinct, select }: any) => {
+        let matches = rows
           .filter((row) => where.status.in.includes(row.status))
-          .sort((left, right) => left.scheduledAt.getTime() - right.scheduledAt.getTime())
-          .slice(0, take),
+          .filter((row) => !where.reason || row.reason === where.reason)
+          .sort((left, right) => left.scheduledAt.getTime() - right.scheduledAt.getTime());
+        if (distinct?.includes('recipient')) {
+          matches = matches.filter(
+            (row, index) => matches.findIndex((candidate) => candidate.recipient === row.recipient) === index,
+          );
+        }
+        if (take) matches = matches.slice(0, take);
+        if (select?.recipient && Object.keys(select).length === 1) {
+          return matches.map((row) => ({ recipient: row.recipient }));
+        }
+        return matches;
+      },
       create: async ({ data }: any) => {
         const row = {
           id: `queue-${rows.length + 1}`,
@@ -136,10 +159,74 @@ async function main() {
         60,
         { enabled: true, rateLimit: { instancePerDay: 10, recipientPerDay: 5 } },
       ),
-    (error: any) => error instanceof OutboundQueueCapacityError && error.code === 'outbound_queue_instance_capacity',
+    (error: any) =>
+      error instanceof OutboundQueueCapacityError && error.code === 'outbound_queue_instance_daily_capacity',
   );
   recentInstanceMessages = 2;
   recentRecipientMessages = 1;
+
+  await assert.rejects(
+    () =>
+      service.enqueueText(
+        'instance-1',
+        '15550000000@s.whatsapp.net',
+        { number: '15550000000', text: 'Over minute capacity' },
+        'instance_rate_limit',
+        30,
+        {
+          enabled: true,
+          rateLimit: { instancePerMinute: 2, instancePerDay: 100, recipientPerMinute: 10, recipientPerDay: 50 },
+        },
+      ),
+    (error: any) =>
+      error instanceof OutboundQueueCapacityError &&
+      error.code === 'outbound_queue_instance_minute_capacity' &&
+      error.details.sent === 2 &&
+      error.details.queued === 2 &&
+      error.details.limit === 2,
+  );
+
+  recentInstanceMessages = 0;
+  recentRecipientMessages = 0;
+  recentOutreachRecipients = 3;
+  await assert.rejects(
+    () =>
+      service.enqueueText(
+        'instance-1',
+        '15551112222@s.whatsapp.net',
+        { number: '15551112222', text: 'Over outreach capacity' },
+        'outreach_recipient_limit',
+        30,
+        {
+          enabled: true,
+          rateLimit: { instancePerMinute: 20, instancePerDay: 100, recipientPerMinute: 10, recipientPerDay: 50 },
+          outreach: { enabled: true, newOrDormantRecipientsPerDay: 3 },
+        },
+      ),
+    (error: any) =>
+      error instanceof OutboundQueueCapacityError && error.code === 'outbound_queue_outreach_daily_capacity',
+  );
+  recentOutreachRecipients = 0;
+
+  await assert.rejects(
+    () =>
+      service.enqueueText(
+        'instance-1',
+        '15553334444@s.whatsapp.net',
+        { number: '15553334444', text: 'Too far beyond the queue tail' },
+        'instance_rate_limit',
+        300,
+        {
+          enabled: true,
+          rateLimit: { instancePerMinute: 20, instancePerDay: 100, recipientPerMinute: 10, recipientPerDay: 50 },
+        },
+      ),
+    (error: any) =>
+      error instanceof OutboundQueueWaitTooLongError &&
+      error.code === 'outbound_queue_wait_too_long' &&
+      error.details.maxGapSeconds === 120 &&
+      error.details.gapSeconds > 120,
+  );
 
   const claimed = await service.claimNext('instance-1');
   assert.equal(claimed, null, 'future work should not be claimed early');

@@ -75,6 +75,10 @@ export type Archive = {
   S3_PREFIX: string;
 };
 
+export type OutboundQueue = {
+  MAX_TAIL_GAP_SECONDS: number;
+};
+
 export type DeleteData = {
   LOGICAL_MESSAGE_DELETE: boolean;
 };
@@ -452,6 +456,7 @@ export interface Env {
   PROVIDER: ProviderSession;
   DATABASE: Database;
   ARCHIVE: Archive;
+  OUTBOUND_QUEUE: OutboundQueue;
   RABBITMQ: Rabbitmq;
   NATS: Nats;
   SQS: Sqs;
@@ -604,6 +609,9 @@ export class ConfigService {
         })(),
         CONFIRM_TTL_SECONDS: parseNonNegativeInteger(process.env?.ARCHIVE_CONFIRM_TTL_SECONDS, 900),
         S3_PREFIX: process.env?.ARCHIVE_S3_PREFIX || 'whatsapp-archive',
+      },
+      OUTBOUND_QUEUE: {
+        MAX_TAIL_GAP_SECONDS: parseNonNegativeInteger(process.env?.OUTBOUND_QUEUE_MAX_TAIL_GAP_SECONDS, 120),
       },
       RABBITMQ: {
         ENABLED: process.env?.RABBITMQ_ENABLED === 'true',

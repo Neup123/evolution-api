@@ -35,15 +35,53 @@ export type OutboundQueueSnapshot = {
 
 export class OutboundQueueCapacityError extends Error {
   constructor(
-    public readonly code: 'outbound_queue_instance_capacity' | 'outbound_queue_recipient_capacity',
+    public readonly code:
+      | 'outbound_queue_instance_minute_capacity'
+      | 'outbound_queue_instance_daily_capacity'
+      | 'outbound_queue_recipient_minute_capacity'
+      | 'outbound_queue_recipient_daily_capacity'
+      | 'outbound_queue_outreach_daily_capacity',
     public readonly retryAfterSeconds: number,
+    public readonly details: {
+      scope: 'instance' | 'recipient' | 'outreach';
+      window: 'minute' | 'day';
+      limit: number;
+      sent: number;
+      queued: number;
+      total: number;
+    },
   ) {
-    super('Outbound queue plus recently sent messages reached the configured daily limit.');
+    super(
+      `Outbound queue capacity reached for ${details.scope} ${details.window} limit ` +
+        `(${details.sent} sent + ${details.queued} queued = ${details.total}; limit ${details.limit}).`,
+    );
+  }
+}
+
+export class OutboundQueueWaitTooLongError extends Error {
+  public readonly code = 'outbound_queue_wait_too_long';
+
+  constructor(
+    public readonly retryAfterSeconds: number,
+    public readonly details: {
+      queueTailAt: Date;
+      requestedSendAt: Date;
+      gapSeconds: number;
+      maxGapSeconds: number;
+    },
+  ) {
+    super(
+      `Outbound message was not queued because its send time would be ${details.gapSeconds}s after the queue tail; ` +
+        `the configured maximum is ${details.maxGapSeconds}s.`,
+    );
   }
 }
 
 export class OutboundMessageQueueService {
-  constructor(private readonly repository: PrismaRepository) {}
+  constructor(
+    private readonly repository: PrismaRepository,
+    private readonly maxTailGapMs = 120_000,
+  ) {}
 
   public async enqueueText(
     instanceId: string,
@@ -56,6 +94,7 @@ export class OutboundMessageQueueService {
   ) {
     const policy = normalizeAutomationSafety(rawPolicy);
     const now = new Date();
+    const minuteAgo = new Date(now.getTime() - 60_000);
     const dayAgo = new Date(now.getTime() - 86_400_000);
     const queuedStatuses = ['PENDING', 'PROCESSING'];
 
@@ -67,35 +106,127 @@ export class OutboundMessageQueueService {
       },
     });
 
-    const [recentInstanceMessages, recentRecipientMessages, queuedInstance, queuedRecipient, lastQueued] =
-      await Promise.all([
-        this.repository.outboundMessageAudit.count({
-          where: { instanceId, requestedAt: { gte: dayAgo }, status: 'SENT' },
-        }),
-        this.repository.outboundMessageAudit.count({
-          where: {
-            instanceId,
-            recipient,
-            requestedAt: { gte: dayAgo },
-            status: 'SENT',
-          },
-        }),
-        this.repository.outboundMessageQueue.count({ where: { instanceId, status: { in: queuedStatuses } } }),
-        this.repository.outboundMessageQueue.count({
-          where: { instanceId, recipient, status: { in: queuedStatuses } },
-        }),
-        this.repository.outboundMessageQueue.findFirst({
-          where: { instanceId, status: { in: queuedStatuses } },
-          orderBy: { scheduledAt: 'desc' },
-          select: { scheduledAt: true },
-        }),
-      ]);
+    const [
+      instanceMinuteRows,
+      instanceDayRows,
+      recipientMinuteRows,
+      recipientDayRows,
+      queuedInstance,
+      queuedRecipient,
+      queuedOutreachRecipients,
+      recentOutreachRecipients,
+      lastQueued,
+    ] = await Promise.all([
+      this.repository.outboundMessageAudit.findMany({
+        where: { instanceId, requestedAt: { gte: minuteAgo }, status: 'SENT' },
+        orderBy: { requestedAt: 'asc' },
+        select: { requestedAt: true },
+      }),
+      this.repository.outboundMessageAudit.findMany({
+        where: { instanceId, requestedAt: { gte: dayAgo }, status: 'SENT' },
+        orderBy: { requestedAt: 'asc' },
+        select: { requestedAt: true },
+      }),
+      this.repository.outboundMessageAudit.findMany({
+        where: { instanceId, recipient, requestedAt: { gte: minuteAgo }, status: 'SENT' },
+        orderBy: { requestedAt: 'asc' },
+        select: { requestedAt: true },
+      }),
+      this.repository.outboundMessageAudit.findMany({
+        where: { instanceId, recipient, requestedAt: { gte: dayAgo }, status: 'SENT' },
+        orderBy: { requestedAt: 'asc' },
+        select: { requestedAt: true },
+      }),
+      this.repository.outboundMessageQueue.count({ where: { instanceId, status: { in: queuedStatuses } } }),
+      this.repository.outboundMessageQueue.count({
+        where: { instanceId, recipient, status: { in: queuedStatuses } },
+      }),
+      this.repository.outboundMessageQueue.findMany({
+        where: { instanceId, status: { in: queuedStatuses }, reason: 'outreach_recipient_limit' },
+        distinct: ['recipient'],
+        select: { recipient: true },
+      }),
+      this.repository.recipientEngagement.findMany({
+        where: { instanceId, lastOutreachAt: { gte: dayAgo } },
+        orderBy: { lastOutreachAt: 'asc' },
+        select: { recipient: true, lastOutreachAt: true },
+      }),
+      this.repository.outboundMessageQueue.findFirst({
+        where: { instanceId, status: { in: queuedStatuses } },
+        orderBy: { scheduledAt: 'desc' },
+        select: { scheduledAt: true },
+      }),
+    ]);
 
-    if (recentInstanceMessages + queuedInstance >= policy.rateLimit.instancePerDay) {
-      throw new OutboundQueueCapacityError('outbound_queue_instance_capacity', 86_400);
-    }
-    if (recentRecipientMessages + queuedRecipient >= policy.rateLimit.recipientPerDay) {
-      throw new OutboundQueueCapacityError('outbound_queue_recipient_capacity', 86_400);
+    const capacity = (
+      code: OutboundQueueCapacityError['code'],
+      scope: OutboundQueueCapacityError['details']['scope'],
+      window: OutboundQueueCapacityError['details']['window'],
+      limit: number,
+      sentRows: Array<{ requestedAt?: Date; lastOutreachAt?: Date | null }>,
+      queued: number,
+    ) => {
+      const sent = sentRows.length;
+      if (sent + queued < limit) return;
+      const oldest = sentRows[0]?.requestedAt ?? sentRows[0]?.lastOutreachAt;
+      const windowMs = window === 'minute' ? 60_000 : 86_400_000;
+      const retryAfterSeconds = oldest
+        ? Math.max(1, Math.ceil((oldest.getTime() + windowMs - now.getTime()) / 1000))
+        : Math.ceil(windowMs / 1000);
+      throw new OutboundQueueCapacityError(code, retryAfterSeconds, {
+        scope,
+        window,
+        limit,
+        sent,
+        queued,
+        total: sent + queued,
+      });
+    };
+
+    capacity(
+      'outbound_queue_instance_minute_capacity',
+      'instance',
+      'minute',
+      policy.rateLimit.instancePerMinute,
+      instanceMinuteRows,
+      queuedInstance,
+    );
+    capacity(
+      'outbound_queue_instance_daily_capacity',
+      'instance',
+      'day',
+      policy.rateLimit.instancePerDay,
+      instanceDayRows,
+      queuedInstance,
+    );
+    capacity(
+      'outbound_queue_recipient_minute_capacity',
+      'recipient',
+      'minute',
+      policy.rateLimit.recipientPerMinute,
+      recipientMinuteRows,
+      queuedRecipient,
+    );
+    capacity(
+      'outbound_queue_recipient_daily_capacity',
+      'recipient',
+      'day',
+      policy.rateLimit.recipientPerDay,
+      recipientDayRows,
+      queuedRecipient,
+    );
+
+    if (reason === 'outreach_recipient_limit' && policy.outreach.enabled) {
+      const queuedRecipients = new Set(queuedOutreachRecipients.map((row) => row.recipient));
+      const queuedOutreach = queuedRecipients.has(recipient) ? queuedRecipients.size - 1 : queuedRecipients.size;
+      capacity(
+        'outbound_queue_outreach_daily_capacity',
+        'outreach',
+        'day',
+        policy.outreach.newOrDormantRecipientsPerDay,
+        recentOutreachRecipients,
+        queuedOutreach,
+      );
     }
 
     const requestedSchedule = now.getTime() + Math.max(1, retryAfterSeconds) * 1000;
@@ -103,6 +234,18 @@ export class OutboundMessageQueueService {
       ? lastQueued.scheduledAt.getTime() + Math.max(1, policy.rateLimit.minimumIntervalMs)
       : requestedSchedule;
     const scheduledAt = new Date(Math.max(requestedSchedule, afterExistingQueue));
+
+    if (lastQueued) {
+      const gapMs = scheduledAt.getTime() - lastQueued.scheduledAt.getTime();
+      if (gapMs > this.maxTailGapMs) {
+        throw new OutboundQueueWaitTooLongError(Math.max(1, Math.ceil(gapMs / 1000)), {
+          queueTailAt: lastQueued.scheduledAt,
+          requestedSendAt: scheduledAt,
+          gapSeconds: Math.ceil(gapMs / 1000),
+          maxGapSeconds: Math.floor(this.maxTailGapMs / 1000),
+        });
+      }
+    }
 
     const item = await this.repository.outboundMessageQueue.create({
       data: {
