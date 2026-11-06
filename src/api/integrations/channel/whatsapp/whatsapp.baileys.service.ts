@@ -310,6 +310,9 @@ export class BaileysStartupService extends ChannelStartupService {
   }
 
   public async logoutInstance() {
+    clearInterval(this.socketWatchdog);
+    clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = undefined;
     this.stopOutboundQueueWorker();
     this.messageProcessor.onDestroy();
     await this.client?.logout('Log out instance: ' + this.instanceName);
@@ -375,6 +378,55 @@ export class BaileysStartupService extends ChannelStartupService {
       base64: this.instance.qrcode?.base64,
       count: this.instance.qrcode?.count,
     };
+  }
+
+  private reconnectTimer?: ReturnType<typeof setTimeout>;
+  private reconnectAttempts = 0;
+  private socketWatchdog?: ReturnType<typeof setInterval>;
+
+  private watchSocket(socket: WASocket) {
+    clearInterval(this.socketWatchdog);
+    let checking = false;
+    this.socketWatchdog = setInterval(async () => {
+      if (checking || socket !== this.client || this.stateConnection.state !== 'open') return;
+      checking = true;
+      try {
+        await socket.query(
+          {
+            tag: 'iq',
+            attrs: { to: 's.whatsapp.net', type: 'get', xmlns: 'w:p' },
+            content: [{ tag: 'ping', attrs: {} }],
+          },
+          10_000,
+        );
+      } catch {
+        if (socket === this.client && this.stateConnection.state === 'open') {
+          this.logger.warn('WhatsApp socket health probe failed. Reconnecting.');
+          socket.end(new Boom('WhatsApp socket health probe failed', { statusCode: DisconnectReason.connectionLost }));
+        }
+      } finally {
+        checking = false;
+      }
+    }, 60_000);
+    this.socketWatchdog.unref?.();
+  }
+
+  private scheduleReconnect(statusCode?: number) {
+    if (this.reconnectTimer) return;
+    const delay = Math.min(60_000, 1000 * 2 ** Math.min(this.reconnectAttempts, 6));
+    this.reconnectTimer = setTimeout(async () => {
+      this.reconnectTimer = undefined;
+      if (this.stateConnection.state !== 'close') return;
+      this.reconnectAttempts++;
+      this.logger.info(`Reconnect attempt ${this.reconnectAttempts} after close code ${statusCode ?? 'unknown'}`);
+      try {
+        await this.connectToWhatsapp(this.phoneNumber);
+      } catch (error) {
+        this.logger.error(error);
+        this.scheduleReconnect(statusCode);
+      }
+    }, delay);
+    this.reconnectTimer.unref?.();
   }
 
   private async connectionUpdate({ qr, connection, lastDisconnect }: Partial<ConnectionState>) {
@@ -470,29 +522,32 @@ export class BaileysStartupService extends ChannelStartupService {
     }
 
     if (connection === 'close') {
+      clearInterval(this.socketWatchdog);
       this.stopOutboundQueueWorker();
       const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
       const codesToNotReconnect = [DisconnectReason.loggedOut, DisconnectReason.forbidden, 402, 406];
       const shouldReconnect = !codesToNotReconnect.includes(statusCode);
+      await this.prismaRepository.instance.update({
+        where: { id: this.instanceId },
+        data: {
+          connectionStatus: 'close',
+          disconnectionAt: new Date(),
+          disconnectionReasonCode: statusCode ?? null,
+          disconnectionObject: JSON.stringify(lastDisconnect) ?? null,
+        },
+      });
       if (shouldReconnect) {
-        await this.connectToWhatsapp(this.phoneNumber);
+        this.sendDataWebhook(Events.CONNECTION_UPDATE, { instance: this.instance.name, ...this.stateConnection });
+        this.scheduleReconnect(statusCode);
       } else {
+        clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = undefined;
         this.sendDataWebhook(Events.STATUS_INSTANCE, {
           instance: this.instance.name,
           status: 'closed',
           disconnectionAt: new Date(),
           disconnectionReasonCode: statusCode,
           disconnectionObject: JSON.stringify(lastDisconnect),
-        });
-
-        await this.prismaRepository.instance.update({
-          where: { id: this.instanceId },
-          data: {
-            connectionStatus: 'close',
-            disconnectionAt: new Date(),
-            disconnectionReasonCode: statusCode,
-            disconnectionObject: JSON.stringify(lastDisconnect),
-          },
         });
 
         if (this.configService.get<Chatwoot>('CHATWOOT').ENABLED && this.localChatwoot?.enabled) {
@@ -512,6 +567,10 @@ export class BaileysStartupService extends ChannelStartupService {
     }
 
     if (connection === 'open') {
+      this.watchSocket(this.client);
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = undefined;
+      this.reconnectAttempts = 0;
       this.startOutboundQueueWorker();
       this.instance.wuid = this.client.user.id.replace(/:\d+/, '');
       try {
@@ -535,13 +594,18 @@ export class BaileysStartupService extends ChannelStartupService {
       `,
       );
 
+      const profileName = (await this.getProfileName()) as string;
+      if (this.stateConnection.state !== 'open') return;
       await this.prismaRepository.instance.update({
         where: { id: this.instanceId },
         data: {
           ownerJid: this.instance.wuid,
-          profileName: (await this.getProfileName()) as string,
+          profileName,
           profilePicUrl: this.instance.profilePictureUrl,
           connectionStatus: 'open',
+          disconnectionAt: null,
+          disconnectionReasonCode: null,
+          disconnectionObject: null,
         },
       });
 
@@ -564,6 +628,10 @@ export class BaileysStartupService extends ChannelStartupService {
     }
 
     if (connection === 'connecting') {
+      await this.prismaRepository.instance.update({
+        where: { id: this.instanceId },
+        data: { connectionStatus: 'connecting' },
+      });
       this.sendDataWebhook(Events.CONNECTION_UPDATE, { instance: this.instance.name, ...this.stateConnection });
     }
   }
@@ -2122,7 +2190,7 @@ export class BaileysStartupService extends ChannelStartupService {
             }
 
             if (events['connection.update']) {
-              this.connectionUpdate(events['connection.update']);
+              void this.connectionUpdate(events['connection.update']).catch((error) => this.logger.error(error));
             }
 
             if (events['creds.update']) {
