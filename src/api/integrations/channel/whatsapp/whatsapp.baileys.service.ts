@@ -383,7 +383,14 @@ export class BaileysStartupService extends ChannelStartupService {
   private reconnectTimer?: ReturnType<typeof setTimeout>;
   private reconnectAttempts = 0;
   private socketWatchdog?: ReturnType<typeof setInterval>;
+  private watchdogRecoveryInFlight = false;
+  private readonly socketProbeIntervalMs = 60_000;
+  private readonly socketProbeTimeoutMs = 10_000;
 
+  // Detection is bounded by one 60-second interval plus a 10-second probe.
+  // The first reconnect is scheduled within a further 1 second; issue #42's
+  // 30-second attempt deadline bounds that attempt, not total recovery when
+  // WhatsApp remains unavailable.
   private watchSocket(socket: WASocket) {
     clearInterval(this.socketWatchdog);
     let checking = false;
@@ -391,24 +398,80 @@ export class BaileysStartupService extends ChannelStartupService {
       if (checking || socket !== this.client || this.stateConnection.state !== 'open') return;
       checking = true;
       try {
-        await socket.query(
+        await this.checkSocketHealth(socket);
+      } catch (error) {
+        this.logger.error(`Socket watchdog unexpected failure: ${String(error)}`);
+      } finally {
+        checking = false;
+      }
+    }, this.socketProbeIntervalMs);
+    this.socketWatchdog.unref?.();
+  }
+
+  private async checkSocketHealth(socket: WASocket): Promise<void> {
+    if (socket !== this.client || this.stateConnection.state !== 'open' ||
+        this.reconnectTimer || this.watchdogRecoveryInFlight) return;
+
+    // Only probe instances that are genuinely exposed as 'open' to API consumers.
+    const stored = await this.prismaRepository.instance.findUnique({
+      where: { id: this.instanceId },
+      select: { connectionStatus: true },
+    });
+    if (stored?.connectionStatus !== 'open' ||
+        socket !== this.client || this.stateConnection.state !== 'open') return;
+
+    const started = Date.now();
+    let deadline: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        socket.query(
           {
             tag: 'iq',
             attrs: { to: 's.whatsapp.net', type: 'get', xmlns: 'w:p' },
             content: [{ tag: 'ping', attrs: {} }],
           },
-          10_000,
-        );
-      } catch {
-        if (socket === this.client && this.stateConnection.state === 'open') {
-          this.logger.warn('WhatsApp socket health probe failed. Reconnecting.');
-          socket.end(new Boom('WhatsApp socket health probe failed', { statusCode: DisconnectReason.connectionLost }));
-        }
+          this.socketProbeTimeoutMs,
+        ),
+        new Promise<never>((_, reject) => {
+          deadline = setTimeout(() => reject(new Error('Baileys ping timed out')), this.socketProbeTimeoutMs);
+          deadline.unref?.();
+        }),
+      ]);
+      this.logger.info(`Socket watchdog instance=${this.instanceName} result=healthy durationMs=${Date.now() - started}`);
+    } catch (error) {
+      if (socket !== this.client || this.stateConnection.state !== 'open' ||
+          this.reconnectTimer || this.watchdogRecoveryInFlight) return;
+      this.watchdogRecoveryInFlight = true;
+      const reason = error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `Socket watchdog instance=${this.instanceName} result=failed durationMs=${Date.now() - started} reason=${reason}; reconnect triggered`,
+      );
+
+      const disconnectError = new Boom('WhatsApp socket health probe failed', {
+        statusCode: DisconnectReason.connectionLost,
+      });
+      try {
+        // Use the ordinary close transition, even if Baileys never emits close.
+        // It persists a truthful non-open state and schedules the same backoff path.
+        await this.connectionUpdate({
+          connection: 'close',
+          lastDisconnect: { error: disconnectError, date: new Date() },
+        });
+      } catch (transitionError) {
+        this.logger.error(`Socket watchdog close transition failed: ${String(transitionError)}`);
+        this.stateConnection = { state: 'close', statusReason: DisconnectReason.connectionLost };
+        this.scheduleReconnect(DisconnectReason.connectionLost);
       } finally {
-        checking = false;
+        try {
+          socket.end(disconnectError);
+        } catch (endError) {
+          this.logger.error(`Socket watchdog socket end failed: ${String(endError)}`);
+        }
+        this.watchdogRecoveryInFlight = false;
       }
-    }, 60_000);
-    this.socketWatchdog.unref?.();
+    } finally {
+      if (deadline) clearTimeout(deadline);
+    }
   }
 
   private scheduleReconnect(statusCode?: number) {
