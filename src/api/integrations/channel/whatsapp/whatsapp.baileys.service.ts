@@ -391,6 +391,7 @@ export class BaileysStartupService extends ChannelStartupService {
   private connectionRevision = 0;
   private statusWriteQueue: Promise<void> = Promise.resolve();
   private socketBuildRevision = 0;
+  private activeSocketBuildRevision = 0;
   private socketWatchdog?: ReturnType<typeof setInterval>;
 
   // Serialize status writes and reject stale transitions before they enter the database.
@@ -476,8 +477,9 @@ export class BaileysStartupService extends ChannelStartupService {
     );
     if (outcome.kind === 'threw') this.logger.error(outcome.error);
 
-    if (outcome.kind === 'timed_out') {
-      // Prevent a timed-out asynchronous socket build from replacing the next attempt.
+    if (outcome.kind === 'timed_out' || outcome.kind === 'threw') {
+      // Invalidate late events and socket construction from the failed attempt.
+      // A thrown initialization may already have emitted 'connecting'.
       this.socketBuildRevision++;
       this.stateConnection = { state: 'close', statusReason: DisconnectReason.connectionLost };
       const revision = ++this.connectionRevision;
@@ -486,7 +488,11 @@ export class BaileysStartupService extends ChannelStartupService {
       } catch (error) {
         this.logger.error(error);
       }
-      this.client?.end(new Boom('WhatsApp reconnect deadline exceeded', { statusCode: DisconnectReason.connectionLost }));
+      try {
+        this.client?.end(new Boom('WhatsApp reconnect attempt failed', { statusCode: DisconnectReason.connectionLost }));
+      } catch (error) {
+        this.logger.error(error);
+      }
     }
 
     this.reconnectInFlight = false;
@@ -499,7 +505,7 @@ export class BaileysStartupService extends ChannelStartupService {
     { qr, connection, lastDisconnect }: Partial<ConnectionState>,
     socket: WASocket = this.client,
   ) {
-    if (socket !== this.client) return;
+    if (socket !== this.client || this.activeSocketBuildRevision !== this.socketBuildRevision) return;
     const revision = qr || connection ? ++this.connectionRevision : this.connectionRevision;
     if (connection) {
       this.stateConnection = {
@@ -881,6 +887,7 @@ export class BaileysStartupService extends ChannelStartupService {
     this.endSession = false;
 
     this.client = makeWASocket(socketConfig);
+    this.activeSocketBuildRevision = buildRevision;
 
     if (this.localSettings.wavoipToken && this.localSettings.wavoipToken.length > 0) {
       useVoiceCallsBaileys(this.localSettings.wavoipToken, this.client, this.connectionStatus.state as any, true);
