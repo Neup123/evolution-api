@@ -42,8 +42,7 @@
     "prepare": "husky",
     "test:settings-templates": "tsx ./test/settings-template-hierarchy.test.ts",
     "test:review-surfaces": "tsx ./test/review-surfaces.test.ts",
-    "test:mistakes-generator": "tsx ./test/mistakes-generator.test.ts",
-    "test:socket-watchdog": "tsx ./test/socket-watchdog.test.ts"
+    "test:mistakes-generator": "tsx ./test/mistakes-generator.test.ts"
   },
   "repository": {
     "type": "git",
