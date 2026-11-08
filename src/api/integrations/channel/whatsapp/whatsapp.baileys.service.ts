@@ -397,7 +397,9 @@ export class BaileysStartupService extends ChannelStartupService {
   // Serialize status writes and reject stale transitions before they enter the database.
   // A close queued behind an in-flight open write is always applied last.
   private async persistConnectionTransition(revision: number, data: Prisma.InstanceUpdateInput): Promise<void> {
-    const write = this.statusWriteQueue.catch(() => undefined).then(async () => {
+    // A service wrapping an existing socket may not have a queued write yet.
+    const previousWrite = this.statusWriteQueue ?? Promise.resolve();
+    const write = previousWrite.catch(() => undefined).then(async () => {
       if (revision !== this.connectionRevision) return;
       await this.prismaRepository.instance.update({ where: { id: this.instanceId }, data });
     });
@@ -505,8 +507,16 @@ export class BaileysStartupService extends ChannelStartupService {
     { qr, connection, lastDisconnect }: Partial<ConnectionState>,
     socket: WASocket = this.client,
   ) {
-    if (socket !== this.client || this.activeSocketBuildRevision !== this.socketBuildRevision) return;
-    const revision = qr || connection ? ++this.connectionRevision : this.connectionRevision;
+    if (socket !== this.client) return;
+    // Built sockets must match the active generation. An adopted socket without
+    // a generation marker is still the current socket and must report transitions.
+    if (
+      this.activeSocketBuildRevision !== undefined &&
+      this.activeSocketBuildRevision !== this.socketBuildRevision
+    ) return;
+    const revision = qr || connection
+      ? (this.connectionRevision = (this.connectionRevision ?? 0) + 1)
+      : (this.connectionRevision ??= 0);
     if (connection) {
       this.stateConnection = {
         state: connection,
@@ -607,7 +617,9 @@ export class BaileysStartupService extends ChannelStartupService {
       const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
       const codesToNotReconnect = [DisconnectReason.loggedOut, DisconnectReason.forbidden, 402, 406];
       const shouldReconnect = !codesToNotReconnect.includes(statusCode);
-      if (!shouldReconnect) this.socketBuildRevision++;
+      // Invalidate generation-managed sockets after terminal closes. An
+      // externally supplied socket has no build generation to invalidate.
+      if (!shouldReconnect && this.activeSocketBuildRevision !== undefined) this.socketBuildRevision++;
       await this.persistConnectionTransition(revision, {
         connectionStatus: 'close',
         disconnectionAt: new Date(),
