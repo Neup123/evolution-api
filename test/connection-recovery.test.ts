@@ -74,6 +74,7 @@ async function failedReconnectThenOpen() {
   const { service, socket, stored, logs } = harness();
   let attempts = 0;
   service.connectToWhatsapp = async () => {
+    service.activeSocketBuildRevision = ++service.socketBuildRevision;
     attempts++;
     if (attempts === 1) throw new Error('Simulated reconnect failure');
     queueMicrotask(() => { void service.connectionUpdate({ connection: 'open' }, socket); });
@@ -94,6 +95,7 @@ async function hangingReconnectThenOpen() {
   const { service, socket, stored, logs } = harness();
   let attempts = 0;
   service.connectToWhatsapp = () => {
+    service.activeSocketBuildRevision = ++service.socketBuildRevision;
     attempts++;
     if (attempts === 1) return new Promise(() => {});
     queueMicrotask(() => { void service.connectionUpdate({ connection: 'open' }, socket); });
