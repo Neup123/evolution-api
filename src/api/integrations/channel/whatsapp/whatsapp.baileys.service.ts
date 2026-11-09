@@ -107,7 +107,7 @@ import {
 import ffmpegPath from '@ffmpeg-installer/ffmpeg';
 import { Boom } from '@hapi/boom';
 import { createId as cuid } from '@paralleldrive/cuid2';
-import { Instance } from '@prisma/client';
+import { Instance, Prisma } from '@prisma/client';
 import { createJid } from '@utils/createJid';
 import { fetchLatestWaWebVersion } from '@utils/fetchLatestWaWebVersion';
 import { makeProxyAgent, makeProxyAgentUndici } from '@utils/makeProxyAgent';
@@ -382,7 +382,31 @@ export class BaileysStartupService extends ChannelStartupService {
 
   private reconnectTimer?: ReturnType<typeof setTimeout>;
   private reconnectAttempts = 0;
+  private reconnectInFlight = false;
+  private readonly reconnectAttemptTimeoutMs = 30_000;
+  private readonly reconnectBackoffBaseMs = 1_000;
+  private pendingReconnect?: {
+    settle: (kind: 'opened' | 'closed' | 'terminal', code?: number) => void;
+  };
+  private connectionRevision = 0;
+  private statusWriteQueue: Promise<void> = Promise.resolve();
+  private socketBuildRevision = 0;
+  private activeSocketBuildRevision = 0;
   private socketWatchdog?: ReturnType<typeof setInterval>;
+
+  // Serialize status writes and reject stale transitions before they enter the database.
+  // A close queued behind an in-flight open write is always applied last.
+  private async persistConnectionTransition(revision: number, data: Prisma.InstanceUpdateInput): Promise<void> {
+    // A service wrapping an existing socket may not have a queued write yet.
+    const previousWrite = this.statusWriteQueue ?? Promise.resolve();
+    const write = previousWrite.catch(() => undefined).then(async () => {
+      if (revision !== this.connectionRevision) return;
+      await this.prismaRepository.instance.update({ where: { id: this.instanceId }, data });
+    });
+    this.statusWriteQueue = write.catch((error) => this.logger.error(error));
+    await write;
+  }
+
   private watchdogRecoveryInFlight = false;
   private readonly socketProbeIntervalMs = 60_000;
   private readonly socketProbeTimeoutMs = 10_000;
@@ -475,24 +499,101 @@ export class BaileysStartupService extends ChannelStartupService {
   }
 
   private scheduleReconnect(statusCode?: number) {
-    if (this.reconnectTimer) return;
-    const delay = Math.min(60_000, 1000 * 2 ** Math.min(this.reconnectAttempts, 6));
-    this.reconnectTimer = setTimeout(async () => {
+    if (this.reconnectTimer || this.reconnectInFlight || this.stateConnection.state !== 'close') return;
+    const delay = Math.min(60_000, this.reconnectBackoffBaseMs * 2 ** Math.min(this.reconnectAttempts, 6));
+    this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = undefined;
-      if (this.stateConnection.state !== 'close') return;
-      this.reconnectAttempts++;
-      this.logger.info(`Reconnect attempt ${this.reconnectAttempts} after close code ${statusCode ?? 'unknown'}`);
-      try {
-        await this.connectToWhatsapp(this.phoneNumber);
-      } catch (error) {
-        this.logger.error(error);
-        this.scheduleReconnect(statusCode);
-      }
+      void this.runReconnectAttempt(statusCode).catch((error) => this.logger.error(error));
     }, delay);
     this.reconnectTimer.unref?.();
   }
 
-  private async connectionUpdate({ qr, connection, lastDisconnect }: Partial<ConnectionState>) {
+  private async runReconnectAttempt(statusCode?: number): Promise<void> {
+    if (this.reconnectInFlight || this.stateConnection.state !== 'close') return;
+    this.reconnectInFlight = true;
+    const attempt = ++this.reconnectAttempts;
+    this.logger.info(`Reconnect attempt ${attempt} started after close code ${statusCode ?? 'unknown'}`);
+
+    // connectToWhatsapp resolves when a socket is constructed, not when it opens.
+    // The attempt succeeds only on an actual 'open' event, with a 30-second deadline.
+    const outcome = await new Promise<
+      { kind: 'opened' | 'closed' | 'terminal' | 'threw' | 'timed_out'; code?: number; error?: unknown }
+    >((resolve) => {
+      let completed = false;
+      let deadline: ReturnType<typeof setTimeout>;
+      const finish = (result: {
+        kind: 'opened' | 'closed' | 'terminal' | 'threw' | 'timed_out';
+        code?: number;
+        error?: unknown;
+      }) => {
+        if (completed) return;
+        completed = true;
+        clearTimeout(deadline);
+        this.pendingReconnect = undefined;
+        resolve(result);
+      };
+      this.pendingReconnect = { settle: (kind, code) => finish({ kind, code }) };
+      deadline = setTimeout(() => finish({ kind: 'timed_out' }), this.reconnectAttemptTimeoutMs);
+      deadline.unref?.();
+      void this.connectToWhatsapp(this.phoneNumber).catch((error) => finish({ kind: 'threw', error }));
+    });
+
+    this.logger.info(
+      `Reconnect attempt ${attempt} outcome=${outcome.kind} code=${outcome.code ?? statusCode ?? 'unknown'}`,
+    );
+    if (outcome.kind === 'threw') this.logger.error(outcome.error);
+
+    if (outcome.kind === 'timed_out' || outcome.kind === 'threw') {
+      // Invalidate late events and socket construction from the failed attempt.
+      // A thrown initialization may already have emitted 'connecting'.
+      this.socketBuildRevision++;
+      this.stateConnection = { state: 'close', statusReason: DisconnectReason.connectionLost };
+      const revision = ++this.connectionRevision;
+      try {
+        await this.persistConnectionTransition(revision, { connectionStatus: 'close' });
+      } catch (error) {
+        this.logger.error(error);
+      }
+      try {
+        this.client?.end(new Boom('WhatsApp reconnect attempt failed', { statusCode: DisconnectReason.connectionLost }));
+      } catch (error) {
+        this.logger.error(error);
+      }
+    }
+
+    this.reconnectInFlight = false;
+    if (outcome.kind !== 'opened' && outcome.kind !== 'terminal' && this.stateConnection.state === 'close') {
+      this.scheduleReconnect(outcome.code ?? statusCode);
+    }
+  }
+
+  private async connectionUpdate(
+    { qr, connection, lastDisconnect }: Partial<ConnectionState>,
+    socket: WASocket = this.client,
+  ) {
+    if (socket !== this.client) return;
+    // Built sockets must match the active generation. An adopted socket without
+    // a generation marker is still the current socket and must report transitions.
+    if (
+      this.activeSocketBuildRevision !== undefined &&
+      this.activeSocketBuildRevision !== this.socketBuildRevision
+    ) return;
+    const revision = qr || connection
+      ? (this.connectionRevision = (this.connectionRevision ?? 0) + 1)
+      : (this.connectionRevision ??= 0);
+    if (connection) {
+      this.stateConnection = {
+        state: connection,
+        statusReason: (lastDisconnect?.error as Boom)?.output?.statusCode ?? 200,
+      };
+    }
+    if (connection === 'open') this.pendingReconnect?.settle('opened');
+    if (connection === 'close') {
+      const code = (lastDisconnect?.error as Boom)?.output?.statusCode;
+      const terminal = [DisconnectReason.loggedOut, DisconnectReason.forbidden, 402, 406].includes(code);
+      this.pendingReconnect?.settle(terminal ? 'terminal' : 'closed', code);
+    }
+
     if (qr) {
       if (this.instance.qrcode.count === this.configService.get<QrCode>('QRCODE').LIMIT) {
         this.sendDataWebhook(Events.QRCODE_UPDATED, {
@@ -571,17 +672,7 @@ export class BaileysStartupService extends ChannelStartupService {
         ),
       );
 
-      await this.prismaRepository.instance.update({
-        where: { id: this.instanceId },
-        data: { connectionStatus: 'connecting' },
-      });
-    }
-
-    if (connection) {
-      this.stateConnection = {
-        state: connection,
-        statusReason: (lastDisconnect?.error as Boom)?.output?.statusCode ?? 200,
-      };
+      await this.persistConnectionTransition(revision, { connectionStatus: 'connecting' });
     }
 
     if (connection === 'close') {
@@ -590,14 +681,14 @@ export class BaileysStartupService extends ChannelStartupService {
       const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
       const codesToNotReconnect = [DisconnectReason.loggedOut, DisconnectReason.forbidden, 402, 406];
       const shouldReconnect = !codesToNotReconnect.includes(statusCode);
-      await this.prismaRepository.instance.update({
-        where: { id: this.instanceId },
-        data: {
-          connectionStatus: 'close',
-          disconnectionAt: new Date(),
-          disconnectionReasonCode: statusCode ?? null,
-          disconnectionObject: JSON.stringify(lastDisconnect) ?? null,
-        },
+      // Invalidate generation-managed sockets after terminal closes. An
+      // externally supplied socket has no build generation to invalidate.
+      if (!shouldReconnect && this.activeSocketBuildRevision !== undefined) this.socketBuildRevision++;
+      await this.persistConnectionTransition(revision, {
+        connectionStatus: 'close',
+        disconnectionAt: new Date(),
+        disconnectionReasonCode: statusCode ?? null,
+        disconnectionObject: lastDisconnect ? JSON.stringify(lastDisconnect) : null,
       });
       if (shouldReconnect) {
         this.sendDataWebhook(Events.CONNECTION_UPDATE, { instance: this.instance.name, ...this.stateConnection });
@@ -658,18 +749,15 @@ export class BaileysStartupService extends ChannelStartupService {
       );
 
       const profileName = (await this.getProfileName()) as string;
-      if (this.stateConnection.state !== 'open') return;
-      await this.prismaRepository.instance.update({
-        where: { id: this.instanceId },
-        data: {
-          ownerJid: this.instance.wuid,
-          profileName,
-          profilePicUrl: this.instance.profilePictureUrl,
-          connectionStatus: 'open',
-          disconnectionAt: null,
-          disconnectionReasonCode: null,
-          disconnectionObject: null,
-        },
+      if (this.stateConnection.state !== 'open' || revision !== this.connectionRevision || socket !== this.client) return;
+      await this.persistConnectionTransition(revision, {
+        ownerJid: this.instance.wuid,
+        profileName,
+        profilePicUrl: this.instance.profilePictureUrl,
+        connectionStatus: 'open',
+        disconnectionAt: null,
+        disconnectionReasonCode: null,
+        disconnectionObject: null,
       });
 
       if (this.configService.get<Chatwoot>('CHATWOOT').ENABLED && this.localChatwoot?.enabled) {
@@ -691,10 +779,7 @@ export class BaileysStartupService extends ChannelStartupService {
     }
 
     if (connection === 'connecting') {
-      await this.prismaRepository.instance.update({
-        where: { id: this.instanceId },
-        data: { connectionStatus: 'connecting' },
-      });
+      await this.persistConnectionTransition(revision, { connectionStatus: 'connecting' });
       this.sendDataWebhook(Events.CONNECTION_UPDATE, { instance: this.instance.name, ...this.stateConnection });
     }
   }
@@ -752,8 +837,10 @@ export class BaileysStartupService extends ChannelStartupService {
     }
   }
 
-  private async createClient(number?: string): Promise<WASocket> {
-    this.instance.authState = await this.defineAuthState();
+  private async createClient(number?: string, buildRevision = this.socketBuildRevision): Promise<WASocket> {
+    const authState = await this.defineAuthState();
+    if (buildRevision !== this.socketBuildRevision) throw new Error('Superseded WhatsApp socket build');
+    this.instance.authState = authState;
 
     const session = this.configService.get<ConfigSessionPhone>('CONFIG_SESSION_PHONE');
 
@@ -771,6 +858,7 @@ export class BaileysStartupService extends ChannelStartupService {
     }
 
     const baileysVersion = await fetchLatestWaWebVersion({});
+    if (buildRevision !== this.socketBuildRevision) throw new Error('Superseded WhatsApp socket build');
     const version = baileysVersion.version;
     const log = `Baileys version: ${version.join('.')}`;
 
@@ -875,6 +963,7 @@ export class BaileysStartupService extends ChannelStartupService {
     this.endSession = false;
 
     this.client = makeWASocket(socketConfig);
+    this.activeSocketBuildRevision = buildRevision;
 
     if (this.localSettings.wavoipToken && this.localSettings.wavoipToken.length > 0) {
       useVoiceCallsBaileys(this.localSettings.wavoipToken, this.client, this.connectionStatus.state as any, true);
@@ -900,6 +989,7 @@ export class BaileysStartupService extends ChannelStartupService {
   }
 
   public async connectToWhatsapp(number?: string): Promise<WASocket> {
+    const buildRevision = ++this.socketBuildRevision;
     try {
       this.loadChatwoot();
       this.loadSettings();
@@ -911,7 +1001,8 @@ export class BaileysStartupService extends ChannelStartupService {
         onMessageReceive: this.messageHandle['messages.upsert'].bind(this),
       });
 
-      return await this.createClient(number);
+      if (buildRevision !== this.socketBuildRevision) throw new Error('Superseded WhatsApp socket build');
+      return await this.createClient(number, buildRevision);
     } catch (error) {
       this.logger.error(error);
       throw new InternalServerErrorException(error?.toString());
@@ -920,7 +1011,7 @@ export class BaileysStartupService extends ChannelStartupService {
 
   public async reloadConnection(): Promise<WASocket> {
     try {
-      return await this.createClient(this.phoneNumber);
+      return await this.createClient(this.phoneNumber, ++this.socketBuildRevision);
     } catch (error) {
       this.logger.error(error);
       throw new InternalServerErrorException(error?.toString());
@@ -2226,7 +2317,8 @@ export class BaileysStartupService extends ChannelStartupService {
   };
 
   private eventHandler() {
-    this.client.ev.process(async (events) => {
+    const socket = this.client;
+    socket.ev.process(async (events) => {
       this.eventProcessingQueue = this.eventProcessingQueue.then(async () => {
         try {
           if (!this.endSession) {
@@ -2253,7 +2345,7 @@ export class BaileysStartupService extends ChannelStartupService {
             }
 
             if (events['connection.update']) {
-              void this.connectionUpdate(events['connection.update']).catch((error) => this.logger.error(error));
+              void this.connectionUpdate(events['connection.update'], socket).catch((error) => this.logger.error(error));
             }
 
             if (events['creds.update']) {

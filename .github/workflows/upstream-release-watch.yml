@@ -1,0 +1,70 @@
+name: Upstream release watch
+
+# Watches the upstream Evolution API project for new STABLE releases.
+# It never updates, merges or installs anything: when a new stable version
+# appears upstream, it opens ONE tracking issue (per version) asking for a
+# human review of what the release offers and whether any of it should be
+# adopted into this fork (by cherry-pick, never by wholesale merge).
+
+on:
+  schedule:
+    - cron: "17 6 * * 1" # Mondays, ~06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check upstream for a new stable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPSTREAM: evolution-foundation/evolution-api
+        run: |
+          set -euo pipefail
+
+          # Latest non-draft, non-prerelease release of the upstream repo.
+          release_json="$(gh api "repos/$UPSTREAM/releases/latest")"
+          tag="$(echo "$release_json" | jq -r .tag_name)"
+          url="$(echo "$release_json" | jq -r .html_url)"
+          published="$(echo "$release_json" | jq -r .published_at)"
+          echo "Upstream latest stable: $tag ($published) — $url"
+
+          # Dedup: at most one tracking issue per version, open or closed.
+          # (A version reviewed and closed as "skip" is never re-opened.)
+          gh label create upstream-release --color "0E8A16" \
+            --description "Tracking issue for an upstream stable release" --force
+          existing="$(gh issue list --state all --label upstream-release \
+            --json title --jq "[.[] | select(.title | contains(\"$tag\"))] | length")"
+          if [ "$existing" != "0" ]; then
+            echo "A tracking issue for $tag already exists; nothing to do."
+            exit 0
+          fi
+
+          notes="$(echo "$release_json" | jq -r '.body // ""' | head -c 6000)"
+          {
+            echo "A new stable Evolution API release was published upstream."
+            echo ""
+            echo "- **Version:** $tag"
+            echo "- **Published:** $published"
+            echo "- **Release page:** $url"
+            echo ""
+            echo "## What to do"
+            echo ""
+            echo "- [ ] Read the release notes below and list what is new: features, fixes, breaking changes."
+            echo "- [ ] Check which of the changes are already contained in this fork (the fork tracks upstream main closely; compare before assuming anything is missing)."
+            echo "- [ ] Decide: adopt, defer, or skip this version."
+            echo "- [ ] If adopting: file the usual issues and cherry-pick the wanted changes only. Never merge an upstream release wholesale, and check for licensing/activation changes before adopting anything."
+            echo ""
+            echo "## Upstream release notes"
+            echo ""
+            echo "$notes"
+          } > issue-body.md
+
+          gh issue create \
+            --title "Upstream stable release $tag — review for adoption" \
+            --body-file issue-body.md \
+            --label upstream-release
