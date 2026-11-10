@@ -37,7 +37,7 @@ grep -R -nE 'resolveWaWebVersion|readVersionCache|writeVersionCache|cachedWaWebV
 grep -R -n 'companion_reg_refresh' node_modules/baileys/lib
 ```
 
-The generated `dist` may minify symbols: compare emitted strings and inspect output chunks; missing exact identifiers due to bundling is not automatically a failure, but missing behavior is. Confirm that `npm ci` displays `patch-package` applying the complete patch to `baileys@7.0.0-rc14` and exits successfully. A failed patch must stop install. Verify both paid and unpaired 408 cases, 515 then 401 within/outside 30s, recovery from 428, one-socket teardown, timeout rejection, and zombie cleanup. Review CI on the PR directly; no checks is not success.
+The generated `dist` may minify symbols: compare emitted strings and inspect output chunks; missing exact identifiers due to bundling is not automatically a failure, but missing behavior is. Confirm that `npm ci` displays `patch-package` applying the complete patch to `baileys@7.0.0-rc14` and exits successfully. A failed patch must stop install. Verify both paired and unpaired 408 cases, 515 then 401 within/outside 30s, recovery from 428, one-socket teardown, timeout rejection, and zombie cleanup. Review CI on the PR directly; no checks is not success.
 
 ## Provenance and intentional exclusions
 
