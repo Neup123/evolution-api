@@ -9,8 +9,9 @@ COPY ./package*.json ./
 COPY ./tsconfig.json ./
 COPY ./tsup.config.ts ./
 COPY ./scripts/patch-libsignal-logging.mjs ./scripts/patch-libsignal-logging.mjs
+COPY ./patches ./patches
 
-RUN npm ci --silent
+RUN npm ci
 
 COPY ./src ./src
 COPY ./public ./public
