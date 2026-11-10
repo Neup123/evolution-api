@@ -135,11 +135,71 @@ async function terminalDoesNotRetry() {
   assert.equal(attempts, 0);
 }
 
+// A keep-alive 408 must never destroy credentials already paired to WhatsApp.
+async function registered408Retries() {
+  const { service, socket, stored } = harness();
+  service.instance.authState = { state: { creds: { registered: true } } };
+  const reconnectCodes: number[] = [];
+  const events: string[] = [];
+  service.scheduleReconnect = (code: number) => { reconnectCodes.push(code); };
+  service.eventEmitter.emit = (event: string) => { events.push(event); };
+  await service.connectionUpdate({ connection: 'close', lastDisconnect: {
+    error: new Boom('Keep-alive timed out', { statusCode: 408 }),
+  } }, socket);
+  assert.deepEqual(reconnectCodes, [408]);
+  assert.equal(stored.connectionStatus, 'close');
+  assert.ok(!events.includes('logout.instance'), '408 may not wipe paired credentials');
+}
+
+async function unregistered408Terminates() {
+  const { service, socket } = harness();
+  service.instance.authState = { state: { creds: { registered: false } } };
+  const reconnectCodes: number[] = [];
+  const events: string[] = [];
+  service.scheduleReconnect = (code: number) => { reconnectCodes.push(code); };
+  service.eventEmitter.emit = (event: string) => { events.push(event); };
+  await service.connectionUpdate({ connection: 'close', lastDisconnect: {
+    error: new Boom('Unpaired registration timed out', { statusCode: 408 }),
+  } }, socket);
+  assert.deepEqual(reconnectCodes, []);
+  assert.ok(events.includes('logout.instance'), 'Unregistered 408 must terminate');
+}
+
+async function trailing401After515Retries() {
+  const { service, socket } = harness();
+  service.lastStream515At = Date.now();
+  const reconnectCodes: number[] = [];
+  const events: string[] = [];
+  service.scheduleReconnect = (code: number) => { reconnectCodes.push(code); };
+  service.eventEmitter.emit = (event: string) => { events.push(event); };
+  await service.connectionUpdate({ connection: 'close', lastDisconnect: {
+    error: new Boom('Trailing loggedOut after restartRequired', { statusCode: DisconnectReason.loggedOut }),
+  } }, socket);
+  assert.deepEqual(reconnectCodes, [DisconnectReason.loggedOut]);
+  assert.ok(!events.includes('logout.instance'), 'Recent 515 must protect the session');
+}
+
+async function expired515DoesNotMaskLogout() {
+  const { service, socket } = harness();
+  service.lastStream515At = Date.now() - 31_000;
+  const events: string[] = [];
+  service.eventEmitter.emit = (event: string) => { events.push(event); };
+  service.scheduleReconnect = () => { throw new Error('401 outside grace must not reconnect'); };
+  await service.connectionUpdate({ connection: 'close', lastDisconnect: {
+    error: new Boom('Real loggedOut', { statusCode: DisconnectReason.loggedOut }),
+  } }, socket);
+  assert.ok(events.includes('logout.instance'));
+}
+
 async function main() {
   await failedReconnectThenOpen();
   await hangingReconnectThenOpen();
   await delayedOpenCannotOverwriteClose();
   await terminalDoesNotRetry();
+  await registered408Retries();
+  await unregistered408Terminates();
+  await trailing401After515Retries();
+  await expired515DoesNotMaskLogout();
   console.log('Connection recovery tests passed');
 }
 
