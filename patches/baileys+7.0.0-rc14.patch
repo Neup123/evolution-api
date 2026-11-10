@@ -229,14 +229,14 @@ diff --git a/node_modules/baileys/lib/Utils/generics.js b/node_modules/baileys/l
 index 1a2b3c4..5d6e7f8 100644
 --- a/node_modules/baileys/lib/Utils/generics.js
 +++ b/node_modules/baileys/lib/Utils/generics.js
-@@ -1,3 +1,7 @@
+@@ -1,3 +1,6 @@
  import { Boom } from '@hapi/boom';
 +// WhiskeySockets/Baileys#2777 (chaeulso): monotonic, persisted WA Web version.
 +import { resolveWaWebVersion as resolvePatchedWaWebVersion } from './wa-version.js';
 +export { resolveWaWebVersion } from './wa-version.js';
  import { createHash, randomBytes } from 'crypto';
  import { proto } from '../../WAProto/index.js';
-@@ -218,2 +222,5 @@
+@@ -218,2 +221,5 @@
  export const fetchLatestWaWebVersion = async (options = {}) => {
 +    // Preserve the existing API, but route all callers through the monotonic
 +    // resolver. The original fetch code below is retained for rc14 patch context.
@@ -246,7 +246,7 @@ diff --git a/node_modules/baileys/lib/Utils/generics.d.ts b/node_modules/baileys
 index 1a2b3c4..5d6e7f8 100644
 --- a/node_modules/baileys/lib/Utils/generics.d.ts
 +++ b/node_modules/baileys/lib/Utils/generics.d.ts
-@@ -1,3 +1,5 @@
+@@ -1,2 +1,4 @@
  import type Long from 'long';
 +// WhiskeySockets/Baileys#2777: persisted monotonic WA Web version.
 +export { resolveWaWebVersion } from './wa-version.js';
