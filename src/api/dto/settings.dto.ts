@@ -71,7 +71,7 @@ export type AutomationSafetySettings = {
 
 export type MistakesGeneratorSettings = {
   enabled: boolean;
-  minLetters: number;
-  maxLetters: number;
+  /** Eligible letters required for one typo. */
+  lettersPerMistake: number;
   probability: number;
 };
