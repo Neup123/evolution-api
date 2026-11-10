@@ -13,6 +13,7 @@ function harness() {
   };
   const service: any = Object.create(BaileysStartupService.prototype);
   service.instance = { id: 'instance-1', name: 'watchdog-test', qrcode: { count: 0 } };
+  service.instance.authState = { state: { creds: { registered: true } } };
   service.client = socket;
   service.stateConnection = { state: 'open' };
   service.localChatwoot = { enabled: false };

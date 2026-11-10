@@ -109,7 +109,6 @@ import { Boom } from '@hapi/boom';
 import { createId as cuid } from '@paralleldrive/cuid2';
 import { Instance, Prisma } from '@prisma/client';
 import { createJid } from '@utils/createJid';
-import { fetchLatestWaWebVersion } from '@utils/fetchLatestWaWebVersion';
 import { makeProxyAgent, makeProxyAgentUndici } from '@utils/makeProxyAgent';
 import { getOnWhatsappCache, saveOnWhatsappCache } from '@utils/onWhatsappCache';
 import { status } from '@utils/renderStatus';
@@ -161,6 +160,7 @@ import makeWASocket, {
   prepareWAMessageMedia,
   Product,
   proto,
+  resolveWaWebVersion,
   UserFacingSocketConfig,
   WABrowserDescription,
   WAMediaUpload,
@@ -309,6 +309,33 @@ export class BaileysStartupService extends ChannelStartupService {
     return this.stateConnection;
   }
 
+  // A stuck Baileys per-account key mutex must not park API send requests forever.
+  // This bounds the caller's wait; it does not cancel an operation already inside Baileys.
+  private async withSendTimeout<T>(operation: () => Promise<T>): Promise<T> {
+    const parsed = Number(process.env.EVOLUTION_SEND_TIMEOUT_MS);
+    const timeoutMs = Number.isFinite(parsed) && parsed > 0 ? parsed : 60_000;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        operation(),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error(`WhatsApp send timed out after ${timeoutMs}ms`)), timeoutMs);
+          timer.unref?.();
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
+  private sendBaileysMessage(...args: Parameters<WASocket['sendMessage']>) {
+    return this.withSendTimeout(() => this.client.sendMessage(...args));
+  }
+
+  private relayBaileysMessage(...args: Parameters<WASocket['relayMessage']>) {
+    return this.withSendTimeout(() => this.client.relayMessage(...args));
+  }
+
   public async logoutInstance() {
     clearInterval(this.socketWatchdog);
     clearTimeout(this.reconnectTimer);
@@ -382,6 +409,9 @@ export class BaileysStartupService extends ChannelStartupService {
 
   private reconnectTimer?: ReturnType<typeof setTimeout>;
   private reconnectAttempts = 0;
+  // A 515 restart handshake may produce a trailing 401 on the same session.
+  private lastStream515At = 0;
+  private readonly stream515GraceMs = 30_000;
   private reconnectInFlight = false;
   private readonly reconnectAttemptTimeoutMs = 30_000;
   private readonly reconnectBackoffBaseMs = 1_000;
@@ -498,9 +528,22 @@ export class BaileysStartupService extends ChannelStartupService {
     }
   }
 
+  private shouldReconnectAfterClose(statusCode?: number): boolean {
+    // 408 is both Baileys connectionLost and timedOut. A paired session must
+    // survive a keep-alive gap; only an unregistered session stops retrying.
+    if (statusCode === 408) return this.instance.authState?.state?.creds?.registered === true;
+    const recent515 = this.lastStream515At > 0 &&
+      Date.now() - this.lastStream515At <= this.stream515GraceMs;
+    if (statusCode === DisconnectReason.loggedOut && recent515) return true;
+    return ![DisconnectReason.loggedOut, DisconnectReason.forbidden, 402, 406].includes(statusCode);
+  }
+
   private scheduleReconnect(statusCode?: number) {
     if (this.reconnectTimer || this.reconnectInFlight || this.stateConnection.state !== 'close') return;
-    const delay = Math.min(60_000, this.reconnectBackoffBaseMs * 2 ** Math.min(this.reconnectAttempts, 6));
+    const ceilingMs = Math.min(60_000, this.reconnectBackoffBaseMs * 2 ** Math.min(this.reconnectAttempts, 16));
+    // Full jitter spreads 428 storms across accounts; restartRequired (515)
+    // must reconnect immediately instead of using the backoff window.
+    const delay = statusCode === 515 ? 0 : Math.floor(Math.random() * ceilingMs);
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = undefined;
       void this.runReconnectAttempt(statusCode).catch((error) => this.logger.error(error));
@@ -590,7 +633,7 @@ export class BaileysStartupService extends ChannelStartupService {
     if (connection === 'open') this.pendingReconnect?.settle('opened');
     if (connection === 'close') {
       const code = (lastDisconnect?.error as Boom)?.output?.statusCode;
-      const terminal = [DisconnectReason.loggedOut, DisconnectReason.forbidden, 402, 406].includes(code);
+      const terminal = !this.shouldReconnectAfterClose(code);
       this.pendingReconnect?.settle(terminal ? 'terminal' : 'closed', code);
     }
 
@@ -679,8 +722,7 @@ export class BaileysStartupService extends ChannelStartupService {
       clearInterval(this.socketWatchdog);
       this.stopOutboundQueueWorker();
       const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
-      const codesToNotReconnect = [DisconnectReason.loggedOut, DisconnectReason.forbidden, 402, 406];
-      const shouldReconnect = !codesToNotReconnect.includes(statusCode);
+      const shouldReconnect = this.shouldReconnectAfterClose(statusCode);
       // Invalidate generation-managed sockets after terminal closes. An
       // externally supplied socket has no build generation to invalidate.
       if (!shouldReconnect && this.activeSocketBuildRevision !== undefined) this.socketBuildRevision++;
@@ -857,7 +899,11 @@ export class BaileysStartupService extends ChannelStartupService {
       this.logger.info(`Browser: ${browser}`);
     }
 
-    const baileysVersion = await fetchLatestWaWebVersion({});
+    // #2777: persist the last good WA Web revision on the existing
+    // /evolution/instances Docker volume, not in a disposable process cache.
+    const baileysVersion = await resolveWaWebVersion({
+      cachePath: process.env.EVOLUTION_WA_VERSION_CACHE_PATH || join(process.cwd(), 'instances', 'wa-web-version.json'),
+    });
     if (buildRevision !== this.socketBuildRevision) throw new Error('Superseded WhatsApp socket build');
     const version = baileysVersion.version;
     const log = `Baileys version: ${version.join('.')}`;
@@ -960,9 +1006,36 @@ export class BaileysStartupService extends ChannelStartupService {
       },
     };
 
+    // A slow proxy lookup may have been superseded after the earlier revision check.
+    if (buildRevision !== this.socketBuildRevision) throw new Error('Superseded WhatsApp socket build');
     this.endSession = false;
 
+    // Never allow two sockets to use the same credential state. Do not call
+    // logout(): this is a reconnect, and logout would revoke paired creds.
+    const previousSocket = this.client;
+    if (previousSocket) {
+      try {
+        (previousSocket.ev as any)?.removeAllListeners?.();
+        (previousSocket.ws as any)?.removeAllListeners?.();
+      } catch (error) {
+        this.logger.warn({ message: 'Could not remove superseded socket listeners', error });
+      }
+      try {
+        previousSocket.end(new Error('Superseded WhatsApp socket'));
+      } catch (error) {
+        this.logger.warn({ message: 'Could not end superseded socket', error });
+      }
+      try {
+        previousSocket.ws?.close();
+      } catch (error) {
+        this.logger.warn({ message: 'Could not close superseded WebSocket', error });
+      }
+    }
+
     this.client = makeWASocket(socketConfig);
+    this.client.ws.on('CB:stream:error', (node: { attrs?: { code?: string | number } }) => {
+      if (String(node?.attrs?.code) === '515') this.lastStream515At = Date.now();
+    });
     this.activeSocketBuildRevision = buildRevision;
 
     if (this.localSettings.wavoipToken && this.localSettings.wavoipToken.length > 0) {
@@ -2336,7 +2409,7 @@ export class BaileysStartupService extends ChannelStartupService {
                 if (call.from.endsWith('@lid')) {
                   call.from = await this.client.signalRepository.lidMapping.getPNForLID(call.from as string);
                 }
-                const msg = await this.client.sendMessage(call.from, { text: settings.msgCall });
+                const msg = await this.sendBaileysMessage(call.from, { text: settings.msgCall });
 
                 this.client.ev.emit('messages.upsert', { messages: [msg], type: 'notify' });
               }
@@ -2699,7 +2772,7 @@ export class BaileysStartupService extends ChannelStartupService {
         messageId,
         quoted,
       });
-      const id = await this.client.relayMessage(sender, message, { messageId });
+      const id = await this.relayBaileysMessage(sender, message, { messageId });
       m.key = { id: id, remoteJid: sender, participant: isPnUser(sender) ? sender : undefined, fromMe: true };
       for (const [key, value] of Object.entries(m)) {
         if (!value || (isArray(value) && value.length) === 0) {
@@ -2717,7 +2790,7 @@ export class BaileysStartupService extends ChannelStartupService {
       sender !== 'status@broadcast'
     ) {
       if (message['reactionMessage']) {
-        return await this.client.sendMessage(
+        return await this.sendBaileysMessage(
           sender,
           {
             react: {
@@ -2735,7 +2808,7 @@ export class BaileysStartupService extends ChannelStartupService {
     }
 
     if (message['conversation']) {
-      return await this.client.sendMessage(
+      return await this.sendBaileysMessage(
         sender,
         {
           text: message['conversation'],
@@ -2748,7 +2821,7 @@ export class BaileysStartupService extends ChannelStartupService {
     }
 
     if (!message['audio'] && !message['poll'] && !message['sticker'] && sender != 'status@broadcast') {
-      return await this.client.sendMessage(
+      return await this.sendBaileysMessage(
         sender,
         {
           forward: { key: { remoteJid: this.instance.wuid, fromMe: true }, message },
@@ -2784,7 +2857,7 @@ export class BaileysStartupService extends ChannelStartupService {
       const firstBatch = batches.shift();
 
       if (firstBatch) {
-        firstMessage = await this.client.sendMessage(
+        firstMessage = await this.sendBaileysMessage(
           sender,
           message['status'].content as unknown as AnyMessageContent,
           {
@@ -2801,7 +2874,7 @@ export class BaileysStartupService extends ChannelStartupService {
 
       await Promise.allSettled(
         batches.map(async (batch) => {
-          const messageSent = await this.client.sendMessage(
+          const messageSent = await this.sendBaileysMessage(
             sender,
             message['status'].content as unknown as AnyMessageContent,
             {
@@ -2819,7 +2892,7 @@ export class BaileysStartupService extends ChannelStartupService {
       return firstMessage;
     }
 
-    return await this.client.sendMessage(
+    return await this.sendBaileysMessage(
       sender,
       message as unknown as AnyMessageContent,
       option as unknown as MiscMessageGenerationOptions,
@@ -3158,7 +3231,7 @@ export class BaileysStartupService extends ChannelStartupService {
     let delivered = false;
     try {
       await this.applyOutboundPresence(recipient, safety.delayMs, safety.presence);
-      const result = await this.client.sendMessage(recipient, message, options);
+      const result = await this.sendBaileysMessage(recipient, message, options);
       delivered = true;
       try {
         await this.outboundSafety.sent(this.instanceId, safety.auditId);
@@ -4766,7 +4839,7 @@ export class BaileysStartupService extends ChannelStartupService {
 
       let response;
       try {
-        response = await this.client.sendMessage(
+        response = await this.sendBaileysMessage(
           deleteKey.remoteJid,
           { delete: deleteKey },
           { messageId: revokeMessageId },
@@ -5163,7 +5236,7 @@ export class BaileysStartupService extends ChannelStartupService {
         }
       }
 
-      const messageSent = await this.client.sendMessage(jid, { ...(options as any), edit: data.key });
+      const messageSent = await this.sendBaileysMessage(jid, { ...(options as any), edit: data.key });
       if (messageSent) {
         const editedMessage =
           messageSent?.message?.protocolMessage || messageSent?.message?.editedMessage?.message?.protocolMessage;
@@ -6044,6 +6117,8 @@ export class BaileysStartupService extends ChannelStartupService {
           normalizedArgs[1] as AnyMessageContent,
           normalizedArgs[2],
         );
+      } else if (method === 'relayMessage') {
+        result = await this.withSendTimeout(() => socketMethod.apply(this.client, normalizedArgs));
       } else {
         result = await socketMethod.apply(this.client, normalizedArgs);
       }
