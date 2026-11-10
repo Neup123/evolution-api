@@ -1006,6 +1006,8 @@ export class BaileysStartupService extends ChannelStartupService {
       },
     };
 
+    // A slow proxy lookup may have been superseded after the earlier revision check.
+    if (buildRevision !== this.socketBuildRevision) throw new Error('Superseded WhatsApp socket build');
     this.endSession = false;
 
     // Never allow two sockets to use the same credential state. Do not call
