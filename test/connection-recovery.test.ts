@@ -31,6 +31,7 @@ function harness() {
   // status persistence and retry methods with controlled collaborators.
   const service: any = Object.create(BaileysStartupService.prototype);
   service.instance = { id: 'instance-1', name: 'test', qrcode: { count: 0 } };
+  service.instance.authState = { state: { creds: { registered: true } } };
   service.client = socket;
   service.stateConnection = { state: 'open' };
   service.connectionRevision = 0;
