@@ -26,7 +26,7 @@ rm -rf node_modules
 npm ci                         # require: baileys@7.0.0-rc14 ✔
 npm run build                   # tsc --noEmit && tsup
 grep -nE 'companion_reg_refresh|handleCompanionRegRefresh' node_modules/baileys/lib/Socket/socket.js node_modules/baileys/lib/Utils/companion-reg-client-utils.js
-grep -nE 'primary_identity_pub|creds.me\\?\\.id' node_modules/baileys/lib/Socket/messages-recv.js
+grep -nE 'primary_identity_pub|creds[.]me[?][.]id' node_modules/baileys/lib/Socket/messages-recv.js
 npx tsx ./test/connection-recovery.test.ts
 npx tsx ./test/socket-watchdog.test.ts
 npx tsx ./test/disconnection-fields.test.ts
