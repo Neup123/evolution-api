@@ -42,11 +42,10 @@ export const settingsSchema: JSONSchema7 = {
       additionalProperties: false,
       properties: {
         enabled: { type: 'boolean' },
-        minLetters: { type: 'integer', minimum: 0, maximum: 1000 },
-        maxLetters: { type: 'integer', minimum: 0, maximum: 1000 },
+        lettersPerMistake: { type: 'number', minimum: 1 },
         probability: { type: 'integer', minimum: 0, maximum: 100 },
       },
-      required: ['enabled', 'minLetters', 'maxLetters', 'probability'],
+      required: ['enabled', 'lettersPerMistake', 'probability'],
     },
     automationSafety: {
       type: ['object', 'null'],

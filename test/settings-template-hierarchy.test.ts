@@ -5,7 +5,7 @@ async function main() {
   const templates = new Map([
     ['instance', { id: 'instance', settings: { localReadTtlSeconds: 10 } }],
     ['group', { id: 'group', settings: { localReadTtlSeconds: 20 } }],
-    ['contact', { id: 'contact', settings: { localReadTtlSeconds: 30 } }],
+    ['contact', { id: 'contact', settings: { localReadTtlSeconds: 30, mistakesGenerator: { enabled: true, lettersPerMistake: 5, probability: 100 } } }],
     ['request', { id: 'request', settings: { localReadTtlSeconds: 40 } }],
   ]);
   const bindings = new Map([
@@ -20,6 +20,8 @@ async function main() {
   assert.equal((await resolveSettingsTemplate(lookup))?.localReadTtlSeconds, 10);
   assert.equal((await resolveSettingsTemplate(lookup, '123@g.us'))?.localReadTtlSeconds, 20);
   assert.equal((await resolveSettingsTemplate(lookup, '456@s.whatsapp.net'))?.localReadTtlSeconds, 30);
+  assert.equal((await resolveSettingsTemplate(lookup, '456@s.whatsapp.net'))?.mistakesGenerator?.lettersPerMistake, 5);
+  assert.equal((await resolveSettingsTemplate(lookup, 'unassigned@s.whatsapp.net'))?.mistakesGenerator, undefined);
   assert.equal((await resolveSettingsTemplate(lookup, '123@g.us', 'request'))?.localReadTtlSeconds, 40);
   assert.equal((await resolveSettingsTemplate(lookup, 'unassigned@s.whatsapp.net'))?.localReadTtlSeconds, 10);
   templates.get('instance')!.settings.localReadTtlSeconds = 11;

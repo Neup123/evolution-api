@@ -11,8 +11,11 @@ export class SettingsService {
   private readonly logger = new Logger('SettingsService');
 
   public async create(instance: InstanceDto, data: SettingsDto) {
-    if (data.mistakesGenerator && data.mistakesGenerator.minLetters > data.mistakesGenerator.maxLetters)
-      throw new BadRequestException('mistakesGenerator.minLetters must not exceed maxLetters.');
+    if (
+      data.mistakesGenerator &&
+      (!Number.isFinite(data.mistakesGenerator.lettersPerMistake) || data.mistakesGenerator.lettersPerMistake < 1)
+    )
+      throw new BadRequestException('mistakesGenerator.lettersPerMistake must be at least 1.');
     await this.waMonitor.waInstances[instance.instanceName].setSettings(data);
 
     return { settings: { ...instance, settings: data } };

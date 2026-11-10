@@ -8,8 +8,11 @@ export class SettingsTemplateService {
   constructor(private readonly prisma: PrismaRepository) {}
 
   private validate(settings?: TemplateSettings) {
-    if (settings?.mistakesGenerator && settings.mistakesGenerator.minLetters > settings.mistakesGenerator.maxLetters)
-      throw new BadRequestException('mistakesGenerator.minLetters must not exceed maxLetters.');
+    if (
+      settings?.mistakesGenerator &&
+      (!Number.isFinite(settings.mistakesGenerator.lettersPerMistake) || settings.mistakesGenerator.lettersPerMistake < 1)
+    )
+      throw new BadRequestException('mistakesGenerator.lettersPerMistake must be at least 1.');
   }
 
   private async instanceId(instanceName: string) {

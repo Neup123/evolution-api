@@ -30,14 +30,15 @@ The Manager exposes every `automationSafety` field under **Instance → Settings
 {
   "mistakesGenerator": {
     "enabled": true,
-    "minLetters": 1,
-    "maxLetters": 2,
+    "lettersPerMistake": 25,
     "probability": 35
   }
 }
 ```
 
-For each eligible send, `probability` is the integer percentage (0-100) that the transformation runs. It changes a random count between `minLetters` and `maxLetters`, capped by the safe eligible letters in the message. Replacements come from adjacent keys in the detected Latin, Hebrew, Cyrillic, or Arabic keyboard row and preserve uppercase letters.
+For each eligible send, `probability` is the integer percentage (0-100) that the transformation runs. With `lettersPerMistake: N`, the count is `Math.floor(eligibleLetters / N)`; messages with fewer than N safe eligible letters are unchanged. Replacements come from adjacent keys in the detected Latin, Hebrew, Cyrillic, or Arabic keyboard row and preserve uppercase letters.
+
+Previously stored `minLetters`/`maxLetters` configurations remain readable: the old midpoint is interpreted as mistakes per 100 eligible letters, giving `lettersPerMistake = Math.max(1, Math.round(100 / midpoint))` when positive; zero or negative midpoint makes no changes. New settings use only `lettersPerMistake`.
 
 URLs, bare domains such as `wikipedia.com`, email addresses, mentions, and phone-like identifiers are protected as whole tokens. Quoted keys, mentions, link-preview options, and other message metadata are not changed. Messages with no safe eligible letters are sent unchanged.
 
