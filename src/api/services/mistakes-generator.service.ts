@@ -41,6 +41,26 @@ function protectedIndexes(text: string): Set<number> {
   return protectedSet;
 }
 
+function resolveLettersPerMistake(settings: MistakesGeneratorSettings): number {
+  const stored = settings as MistakesGeneratorSettings & { minLetters?: number; maxLetters?: number };
+  if (
+    stored.lettersPerMistake === undefined &&
+    typeof stored.minLetters === 'number' &&
+    Number.isFinite(stored.minLetters) &&
+    typeof stored.maxLetters === 'number' &&
+    Number.isFinite(stored.maxLetters)
+  ) {
+    // Legacy min/max counts are treated as their midpoint in mistakes per
+    // 100 eligible letters: convert that density to one mistake per N letters.
+    const mid = (stored.minLetters + stored.maxLetters) / 2;
+    return mid > 0 ? Math.max(1, Math.round(100 / mid)) : 0;
+  }
+  // Missing, non-finite, or sub-one densities must not cause bad arithmetic.
+  return typeof stored.lettersPerMistake === 'number' && Number.isFinite(stored.lettersPerMistake)
+    ? Math.max(1, stored.lettersPerMistake)
+    : 1;
+}
+
 export function generateNaturalMistakes(
   text: string,
   settings?: MistakesGeneratorSettings | null,
@@ -61,9 +81,8 @@ export function generateNaturalMistakes(
   }
   if (!eligible.length) return text;
 
-  const minimum = Math.max(0, Math.min(settings.minLetters, eligible.length));
-  const maximum = Math.max(minimum, Math.min(settings.maxLetters, eligible.length));
-  const count = minimum + Math.floor(random() * (maximum - minimum + 1));
+  const lettersPerMistake = resolveLettersPerMistake(settings);
+  const count = lettersPerMistake > 0 ? Math.floor(eligible.length / lettersPerMistake) : 0;
   if (!count) return text;
 
   const pool = [...eligible];
