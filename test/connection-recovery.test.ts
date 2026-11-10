@@ -74,20 +74,23 @@ function transientClose() {
 async function failedReconnectThenOpen() {
   const { service, socket, stored, logs } = harness();
   let attempts = 0;
+  let statusAtRecoveryAttempt: string | undefined;
   service.connectToWhatsapp = async () => {
     service.activeSocketBuildRevision = ++service.socketBuildRevision;
     attempts++;
     if (attempts === 1) throw new Error('Simulated reconnect failure');
+    // Snapshot the state *before* the retry opens. Full jitter can make the
+    // second attempt complete before a polling assertion after attempt one.
+    statusAtRecoveryAttempt = stored.connectionStatus;
     queueMicrotask(() => { void service.connectionUpdate({ connection: 'open' }, socket); });
     return socket;
   };
 
   await service.connectionUpdate(transientClose(), socket);
   assert.equal(stored.connectionStatus, 'close', 'fetchInstances must not report open after transient close');
-  await until(() => attempts >= 1, 'First reconnect attempt did not start');
-  assert.equal(stored.connectionStatus, 'close', 'Failed first attempt must leave a non-open stored state');
   await until(() => stored.connectionStatus === 'open', 'A subsequent attempt did not recover');
   assert.ok(attempts >= 2);
+  assert.equal(statusAtRecoveryAttempt, 'close', 'Failed first attempt must leave a non-open stored state');
   assert.ok(logs.some((line) => line.includes('outcome=threw')));
   assert.ok(logs.some((line) => line.includes('outcome=opened')));
 }
@@ -95,16 +98,20 @@ async function failedReconnectThenOpen() {
 async function hangingReconnectThenOpen() {
   const { service, socket, stored, logs } = harness();
   let attempts = 0;
+  let statusAtRecoveryAttempt: string | undefined;
   service.connectToWhatsapp = () => {
     service.activeSocketBuildRevision = ++service.socketBuildRevision;
     attempts++;
     if (attempts === 1) return new Promise(() => {});
+    // Check the state after the timed-out attempt, independent of retry jitter.
+    statusAtRecoveryAttempt = stored.connectionStatus;
     queueMicrotask(() => { void service.connectionUpdate({ connection: 'open' }, socket); });
     return Promise.resolve(socket);
   };
   await service.connectionUpdate(transientClose(), socket);
   await until(() => stored.connectionStatus === 'open', 'A hung reconnect did not time out and recover');
   assert.ok(attempts >= 2);
+  assert.equal(statusAtRecoveryAttempt, 'close', 'Timed-out first attempt must leave a non-open stored state');
   assert.ok(logs.some((line) => line.includes('outcome=timed_out')));
 }
 
