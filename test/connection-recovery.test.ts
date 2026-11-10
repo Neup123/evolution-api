@@ -38,6 +38,7 @@ function harness() {
   service.socketBuildRevision = 0;
   service.statusWriteQueue = Promise.resolve();
   service.reconnectBackoffBaseMs = 5;
+  service.stream515GraceMs = 30_000;
   service.reconnectAttemptTimeoutMs = 40;
   service.reconnectAttempts = 0;
   service.reconnectInFlight = false;
