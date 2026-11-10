@@ -109,7 +109,6 @@ import { Boom } from '@hapi/boom';
 import { createId as cuid } from '@paralleldrive/cuid2';
 import { Instance, Prisma } from '@prisma/client';
 import { createJid } from '@utils/createJid';
-import { fetchLatestWaWebVersion } from '@utils/fetchLatestWaWebVersion';
 import { makeProxyAgent, makeProxyAgentUndici } from '@utils/makeProxyAgent';
 import { getOnWhatsappCache, saveOnWhatsappCache } from '@utils/onWhatsappCache';
 import { status } from '@utils/renderStatus';
@@ -161,6 +160,7 @@ import makeWASocket, {
   prepareWAMessageMedia,
   Product,
   proto,
+  resolveWaWebVersion,
   UserFacingSocketConfig,
   WABrowserDescription,
   WAMediaUpload,
@@ -899,7 +899,11 @@ export class BaileysStartupService extends ChannelStartupService {
       this.logger.info(`Browser: ${browser}`);
     }
 
-    const baileysVersion = await fetchLatestWaWebVersion({});
+    // #2777: persist the last good WA Web revision on the existing
+    // /evolution/instances Docker volume, not in a disposable process cache.
+    const baileysVersion = await resolveWaWebVersion({
+      cachePath: process.env.EVOLUTION_WA_VERSION_CACHE_PATH || join(process.cwd(), 'instances', 'wa-web-version.json'),
+    });
     if (buildRevision !== this.socketBuildRevision) throw new Error('Superseded WhatsApp socket build');
     const version = baileysVersion.version;
     const log = `Baileys version: ${version.join('.')}`;
