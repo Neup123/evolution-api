@@ -51,6 +51,10 @@ async function main() {
   assert.ok(stored.disconnectionAt instanceof Date);
   assert.equal(stored.disconnectionReasonCode, DisconnectReason.loggedOut);
   assert.ok(stored.disconnectionObject, 'Terminal close must retain diagnostic information');
+  assert.deepEqual(JSON.parse(stored.disconnectionObject), {
+    statusCode: DisconnectReason.loggedOut,
+    message: 'Logged out',
+  }, 'The stored disconnect must be a structured code/message record');
 
   await service.connectionUpdate({ connection: 'open' }, socket);
   assert.equal(stored.connectionStatus, 'open');

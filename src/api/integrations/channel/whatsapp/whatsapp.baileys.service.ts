@@ -629,7 +629,6 @@ export class BaileysStartupService extends ChannelStartupService {
         statusReason: (lastDisconnect?.error as Boom)?.output?.statusCode ?? 200,
       };
     }
-    if (connection === 'open') this.pendingReconnect?.settle('opened');
     if (connection === 'close') {
       const code = (lastDisconnect?.error as Boom)?.output?.statusCode;
       const terminal = !this.shouldReconnectAfterClose(code);
@@ -725,15 +724,27 @@ export class BaileysStartupService extends ChannelStartupService {
       // Invalidate generation-managed sockets after terminal closes. An
       // externally supplied socket has no build generation to invalidate.
       if (!shouldReconnect && this.activeSocketBuildRevision !== undefined) this.socketBuildRevision++;
-      await this.persistConnectionTransition(revision, {
-        connectionStatus: 'close',
-        disconnectionAt: new Date(),
-        disconnectionReasonCode: statusCode ?? null,
-        disconnectionObject: lastDisconnect ? JSON.stringify(lastDisconnect) : null,
-      });
+      // Persist only the diagnostic fields, not the raw Boom/socket object.
+      const disconnectionObject = lastDisconnect
+        ? JSON.stringify({
+            statusCode: statusCode ?? null,
+            message: (lastDisconnect.error as Error)?.message ?? 'Unknown disconnect',
+          })
+        : null;
+      try {
+        await this.persistConnectionTransition(revision, {
+          connectionStatus: 'close',
+          disconnectionAt: new Date(),
+          disconnectionReasonCode: statusCode ?? null,
+          disconnectionObject,
+        });
+      } catch (error) {
+        // Database errors must not swallow the native close's reconnect.
+        this.logger.error(`Could not persist WhatsApp close transition: ${String(error)}`);
+      }
       if (shouldReconnect) {
-        this.sendDataWebhook(Events.CONNECTION_UPDATE, { instance: this.instance.name, ...this.stateConnection });
         this.scheduleReconnect(statusCode);
+        this.sendDataWebhook(Events.CONNECTION_UPDATE, { instance: this.instance.name, ...this.stateConnection });
       } else {
         clearTimeout(this.reconnectTimer);
         this.reconnectTimer = undefined;
@@ -742,7 +753,7 @@ export class BaileysStartupService extends ChannelStartupService {
           status: 'closed',
           disconnectionAt: new Date(),
           disconnectionReasonCode: statusCode,
-          disconnectionObject: JSON.stringify(lastDisconnect),
+          disconnectionObject,
         });
 
         if (this.configService.get<Chatwoot>('CHATWOOT').ENABLED && this.localChatwoot?.enabled) {
@@ -762,11 +773,6 @@ export class BaileysStartupService extends ChannelStartupService {
     }
 
     if (connection === 'open') {
-      this.watchSocket(this.client);
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = undefined;
-      this.reconnectAttempts = 0;
-      this.startOutboundQueueWorker();
       this.instance.wuid = this.client.user.id.replace(/:\d+/, '');
       try {
         const profilePic = await this.profilePicture(this.instance.wuid);
@@ -791,15 +797,37 @@ export class BaileysStartupService extends ChannelStartupService {
 
       const profileName = (await this.getProfileName()) as string;
       if (this.stateConnection.state !== 'open' || revision !== this.connectionRevision || socket !== this.client) return;
-      await this.persistConnectionTransition(revision, {
-        ownerJid: this.instance.wuid,
-        profileName,
-        profilePicUrl: this.instance.profilePictureUrl,
-        connectionStatus: 'open',
-        disconnectionAt: null,
-        disconnectionReasonCode: null,
-        disconnectionObject: null,
-      });
+      try {
+        await this.persistConnectionTransition(revision, {
+          ownerJid: this.instance.wuid,
+          profileName,
+          profilePicUrl: this.instance.profilePictureUrl,
+          connectionStatus: 'open',
+          disconnectionAt: null,
+          disconnectionReasonCode: null,
+          disconnectionObject: null,
+        });
+      } catch (error) {
+        this.logger.error(`Could not persist WhatsApp open transition: ${String(error)}`);
+        if (revision === this.connectionRevision && socket === this.client) {
+          // An open socket with a failed final write is not a recovered instance.
+          this.stateConnection = { state: 'close', statusReason: DisconnectReason.connectionLost };
+          clearInterval(this.socketWatchdog);
+          this.stopOutboundQueueWorker();
+          this.pendingReconnect?.settle('closed', DisconnectReason.connectionLost);
+          // If a reconnect is in flight, its outcome handler schedules the retry.
+          this.scheduleReconnect(DisconnectReason.connectionLost);
+        }
+        return;
+      }
+      if (this.stateConnection.state !== 'open' || revision !== this.connectionRevision || socket !== this.client) return;
+      // Recovery is complete only after the final status write, not on the raw event.
+      this.pendingReconnect?.settle('opened');
+      this.watchSocket(socket);
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = undefined;
+      this.reconnectAttempts = 0;
+      this.startOutboundQueueWorker();
 
       if (this.configService.get<Chatwoot>('CHATWOOT').ENABLED && this.localChatwoot?.enabled) {
         this.chatwootService.eventWhatsapp(
