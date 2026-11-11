@@ -200,7 +200,63 @@ async function expired515DoesNotMaskLogout() {
   assert.ok(events.includes('logout.instance'));
 }
 
+// A native Baileys close must schedule recovery even if Prisma is unavailable.
+async function nativeCloseWriteFailureStillRetries() {
+  const { service, socket, logs } = harness();
+  service.prismaRepository.instance.update = async () => { throw new Error('Prisma unavailable'); };
+  const reconnectCodes: number[] = [];
+  service.scheduleReconnect = (code: number) => { reconnectCodes.push(code); };
+
+  await service.connectionUpdate(transientClose(), socket);
+  assert.equal(service.stateConnection.state, 'close');
+  assert.deepEqual(reconnectCodes, [DisconnectReason.connectionLost]);
+  assert.ok(logs.some((line) => line.includes('Could not persist WhatsApp close transition')));
+}
+
+// The raw socket open does not complete a pending attempt while the DB write is pending.
+async function reconnectOpensOnlyAfterStoredWrite() {
+  const { service, socket, stored } = harness();
+  stored.connectionStatus = 'close';
+  let releaseWrite!: () => void;
+  const settled: string[] = [];
+  service.pendingReconnect = { settle: (kind: string) => { settled.push(kind); } };
+  service.prismaRepository.instance.update = async ({ data }: any) => {
+    await new Promise<void>((resolve) => { releaseWrite = resolve; });
+    Object.assign(stored, data);
+  };
+
+  const opening = service.connectionUpdate({ connection: 'open' }, socket);
+  await until(() => typeof releaseWrite === 'function', 'Open status write never began');
+  assert.deepEqual(settled, [], 'Open must not settle before its final persisted status');
+  assert.equal(stored.connectionStatus, 'close');
+  releaseWrite();
+  await opening;
+  assert.equal(stored.connectionStatus, 'open');
+  assert.deepEqual(settled, ['opened']);
+}
+
+// A failed final open write is a failed recovery, not an acknowledged success.
+async function failedOpenStatusWriteStaysRetryable() {
+  const { service, socket, stored, logs } = harness();
+  stored.connectionStatus = 'close';
+  const settled: string[] = [];
+  const reconnectCodes: number[] = [];
+  service.pendingReconnect = { settle: (kind: string) => { settled.push(kind); } };
+  service.scheduleReconnect = (code: number) => { reconnectCodes.push(code); };
+  service.prismaRepository.instance.update = async () => { throw new Error('Open status write rejected'); };
+
+  await service.connectionUpdate({ connection: 'open' }, socket);
+  assert.equal(service.stateConnection.state, 'close');
+  assert.equal(stored.connectionStatus, 'close');
+  assert.deepEqual(settled, ['closed'], 'Failed open write must not report opened');
+  assert.deepEqual(reconnectCodes, [DisconnectReason.connectionLost]);
+  assert.ok(logs.some((line) => line.includes('Could not persist WhatsApp open transition')));
+}
+
 async function main() {
+  await nativeCloseWriteFailureStillRetries();
+  await reconnectOpensOnlyAfterStoredWrite();
+  await failedOpenStatusWriteStaysRetryable();
   await failedReconnectThenOpen();
   await hangingReconnectThenOpen();
   await delayedOpenCannotOverwriteClose();
