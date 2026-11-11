@@ -289,7 +289,7 @@ index 0000000..1111111
 +export const WA_WEB_VERSION_FALLBACK = [2, 3000, 1046341789]
 +
 +/** Default network budget for one sw.js request. */
-+export const WA_WEB_VERSION_FETCH_TIMEOUT_MS = 15000
++export const WA_WEB_VERSION_FETCH_TIMEOUT_MS = 6000
 +/** Extra attempts after the first failure. */
 +export const WA_WEB_VERSION_FETCH_RETRIES = 2
 +
@@ -444,7 +444,7 @@ index 0000000..1111111
 + *    instead of the stale hardcoded constant (see #2777)
 + *
 + * @param {object} [options]
-+ * @param {number} [options.timeoutMs=15000] per-attempt budget
++ * @param {number} [options.timeoutMs=6000] per-attempt budget
 + * @param {number} [options.retries=2] attempts after the first one
 + * @param {boolean} [options.allowDowngrade=false] return an older fetched version than the cached one
 + * @param {(url: string, init: object) => Promise<any>} [options.fetchImpl] injectable fetch (tests/proxies)
@@ -562,7 +562,7 @@ index 0000000..1111111
 +	const version = pickNewestWaVersion(getCachedWaWebVersion(), fetched, persisted?.version, WA_WEB_VERSION_FALLBACK)
 +	rememberWaWebVersion(version)
 +
-+	if (cachePath && (!persisted || compareWaVersions(version, persisted.version) > 0)) {
++	if (cachePath && (!persisted || compareWaVersions(version, persisted.version) > 0 || (!!fetched && !fetchError && !freshEnough))) {
 +		await writeVersionCache(cachePath, version)
 +	}
 +
@@ -645,7 +645,7 @@ index 0000000..1111111
 +export declare const resetCachedWaWebVersion: () => void
 +
 +export type FetchWaWebVersionOptions = {
-+	/** per-attempt network budget, defaults to 15s */
++	/** per-attempt network budget, defaults to 6s */
 +	timeoutMs?: number
 +	/** attempts after the first one, defaults to 2 */
 +	retries?: number
