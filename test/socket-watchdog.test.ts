@@ -8,6 +8,7 @@ function harness() {
   let probes = 0;
   let ended = 0;
   const socket: any = {
+    ws: { isOpen: true },
     query: async () => { probes++; },
     end: () => { ended++; },
   };
@@ -49,23 +50,23 @@ async function healthyDoesNotFlap() {
   assert.ok(h.logs.some((line) => line.includes('result=healthy')));
 }
 
-async function throwingSocketForcesClose() {
+async function throwingProbeRetainsLiveSocket() {
   const h = harness();
   h.socket.query = async () => { throw new Error('Connection Closed'); };
   await h.service.checkSocketHealth(h.socket);
-  assert.equal(h.stored.connectionStatus, 'close', 'A dead-but-open socket must not stay open in fetchInstances');
-  assert.equal(h.reconnectCodes.length, 1);
-  assert.equal(h.ended(), 1);
-  assert.ok(h.logs.some((line) => line.includes('result=failed') && line.includes('Connection Closed')));
+  assert.equal(h.stored.connectionStatus, 'open', 'A failed ping is not proof that the WebSocket died');
+  assert.equal(h.reconnectCodes.length, 0);
+  assert.equal(h.ended(), 0);
+  assert.ok(h.logs.some((line) => line.includes('result=degraded') && line.includes('Connection Closed')));
 }
 
-async function hangingProbeForcesClose() {
+async function hangingProbeRetainsLiveSocket() {
   const h = harness();
   h.socket.query = () => new Promise(() => {});
   await h.service.checkSocketHealth(h.socket);
-  assert.equal(h.stored.connectionStatus, 'close');
-  assert.equal(h.reconnectCodes.length, 1);
-  assert.equal(h.ended(), 1);
+  assert.equal(h.stored.connectionStatus, 'open');
+  assert.equal(h.reconnectCodes.length, 0);
+  assert.equal(h.ended(), 0);
   assert.ok(h.logs.some((line) => line.includes('ping timed out')));
 }
 
@@ -84,8 +85,8 @@ async function nonOpenOrRetryingIsNotProbed() {
 
 async function main() {
   await healthyDoesNotFlap();
-  await throwingSocketForcesClose();
-  await hangingProbeForcesClose();
+  await throwingProbeRetainsLiveSocket();
+  await hangingProbeRetainsLiveSocket();
   await nonOpenOrRetryingIsNotProbed();
   console.log('Socket watchdog tests passed');
 }
