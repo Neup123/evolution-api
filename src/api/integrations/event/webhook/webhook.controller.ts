@@ -195,7 +195,6 @@ export class WebhookController extends EventController implements EventControlle
     sender,
     apiKey,
     local,
-    integration,
     extra,
   }: EmitData): Promise<void> {
     const endpoints = await this.getAll(instanceName);
