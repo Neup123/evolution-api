@@ -459,19 +459,26 @@ export class BaileysStartupService extends ChannelStartupService {
       // must not be treated as evidence that a paired session is lost.
       if (Date.now() - this.socketClosedObservedAt >= 60_000) {
         this.logger.warn(`Connection supervisor instance=${this.instanceName} result=socket-closed`);
-        await this.connectionUpdate({
-          connection: 'close',
-          lastDisconnect: {
-            error: new Boom('WhatsApp WebSocket stayed closed', { statusCode: DisconnectReason.connectionLost }),
-            date: new Date(),
+        await this.connectionUpdate(
+          {
+            connection: 'close',
+            lastDisconnect: {
+              error: new Boom('WhatsApp WebSocket stayed closed', { statusCode: DisconnectReason.connectionLost }),
+              date: new Date(),
+            },
           },
-        }, socket);
+          socket,
+        );
       }
       return;
     }
     this.socketClosedObservedAt = 0;
-    if ((socket.ws as any)?.isOpen !== true || !this.openObservedAt ||
-        Date.now() - this.openObservedAt < this.openReconcileDelayMs) return;
+    if (
+      (socket.ws as any)?.isOpen !== true ||
+      !this.openObservedAt ||
+      Date.now() - this.openObservedAt < this.openReconcileDelayMs
+    )
+      return;
 
     const stored = await this.prismaRepository.instance.findUnique({
       where: { id: this.instanceId },
@@ -479,7 +486,9 @@ export class BaileysStartupService extends ChannelStartupService {
     });
     if (socket !== this.client || this.stateConnection.state !== 'open') return;
     if (stored?.connectionStatus !== 'open') {
-      this.logger.warn(`Connection supervisor instance=${this.instanceName} result=orphan-open db=${stored?.connectionStatus ?? 'missing'}; reconciling`);
+      this.logger.warn(
+        `Connection supervisor instance=${this.instanceName} result=orphan-open db=${stored?.connectionStatus ?? 'missing'}; reconciling`,
+      );
       await this.completeOpenConnection(
         socket,
         (socket.user?.name ?? socket.user?.verifiedName ?? this.instance.name) as string,
@@ -492,12 +501,17 @@ export class BaileysStartupService extends ChannelStartupService {
   private async persistConnectionTransition(revision: number, data: Prisma.InstanceUpdateInput): Promise<boolean> {
     // A service wrapping an existing socket may not have a queued write yet.
     const previousWrite = this.statusWriteQueue ?? Promise.resolve();
-    const write = previousWrite.catch(() => undefined).then(async () => {
-      if (revision !== this.connectionRevision) return false;
-      await this.prismaRepository.instance.update({ where: { id: this.instanceId }, data });
-      return true;
-    });
-    this.statusWriteQueue = write.then(() => undefined, (error) => this.logger.error(error));
+    const write = previousWrite
+      .catch(() => undefined)
+      .then(async () => {
+        if (revision !== this.connectionRevision) return false;
+        await this.prismaRepository.instance.update({ where: { id: this.instanceId }, data });
+        return true;
+      });
+    this.statusWriteQueue = write.then(
+      () => undefined,
+      (error) => this.logger.error(error),
+    );
     return await write;
   }
 
@@ -527,16 +541,20 @@ export class BaileysStartupService extends ChannelStartupService {
   }
 
   private async checkSocketHealth(socket: WASocket): Promise<void> {
-    if (socket !== this.client || this.stateConnection.state !== 'open' ||
-        this.reconnectTimer || this.watchdogRecoveryInFlight) return;
+    if (
+      socket !== this.client ||
+      this.stateConnection.state !== 'open' ||
+      this.reconnectTimer ||
+      this.watchdogRecoveryInFlight
+    )
+      return;
 
     // Only probe instances that are genuinely exposed as 'open' to API consumers.
     const stored = await this.prismaRepository.instance.findUnique({
       where: { id: this.instanceId },
       select: { connectionStatus: true },
     });
-    if (stored?.connectionStatus !== 'open' ||
-        socket !== this.client || this.stateConnection.state !== 'open') return;
+    if (stored?.connectionStatus !== 'open' || socket !== this.client || this.stateConnection.state !== 'open') return;
 
     const started = Date.now();
     let deadline: ReturnType<typeof setTimeout> | undefined;
@@ -555,10 +573,17 @@ export class BaileysStartupService extends ChannelStartupService {
           deadline.unref?.();
         }),
       ]);
-      this.logger.info(`Socket watchdog instance=${this.instanceName} result=healthy durationMs=${Date.now() - started}`);
+      this.logger.info(
+        `Socket watchdog instance=${this.instanceName} result=healthy durationMs=${Date.now() - started}`,
+      );
     } catch (error) {
-      if (socket !== this.client || this.stateConnection.state !== 'open' ||
-          this.reconnectTimer || this.watchdogRecoveryInFlight) return;
+      if (
+        socket !== this.client ||
+        this.stateConnection.state !== 'open' ||
+        this.reconnectTimer ||
+        this.watchdogRecoveryInFlight
+      )
+        return;
       this.watchdogRecoveryInFlight = true;
       const reason = error instanceof Error ? error.message : String(error);
       // A failed IQ ping is not proof of a dead transport: delayed WA replies
@@ -605,8 +630,7 @@ export class BaileysStartupService extends ChannelStartupService {
     // 408 is both Baileys connectionLost and timedOut. A paired session must
     // survive a keep-alive gap; only an unregistered session stops retrying.
     if (statusCode === 408) return this.instance.authState?.state?.creds?.registered === true;
-    const recent515 = this.lastStream515At > 0 &&
-      Date.now() - this.lastStream515At <= this.stream515GraceMs;
+    const recent515 = this.lastStream515At > 0 && Date.now() - this.lastStream515At <= this.stream515GraceMs;
     if (statusCode === DisconnectReason.loggedOut && recent515) return true;
     return ![DisconnectReason.loggedOut, DisconnectReason.forbidden, 402, 406].includes(statusCode);
   }
@@ -638,9 +662,11 @@ export class BaileysStartupService extends ChannelStartupService {
 
     // connectToWhatsapp resolves when a socket is constructed, not when it opens.
     // The attempt succeeds only on an actual 'open' event, with a 30-second deadline.
-    const outcome = await new Promise<
-      { kind: 'opened' | 'closed' | 'terminal' | 'threw' | 'timed_out'; code?: number; error?: unknown }
-    >((resolve) => {
+    const outcome = await new Promise<{
+      kind: 'opened' | 'closed' | 'terminal' | 'threw' | 'timed_out';
+      code?: number;
+      error?: unknown;
+    }>((resolve) => {
       let completed = false;
       let deadline: ReturnType<typeof setTimeout>;
       const finish = (result: {
@@ -669,8 +695,11 @@ export class BaileysStartupService extends ChannelStartupService {
     // Reconcile it before treating the 30-second deadline as socket death.
     // The connectionUpdate callback can switch state across the await above.
     // Read it through the getter so TS does not retain the earlier 'close' narrowing.
-    if (outcome.kind === 'timed_out' && this.connectionStatus.state === 'open' &&
-        (this.client?.ws as any)?.isOpen === true) {
+    if (
+      outcome.kind === 'timed_out' &&
+      this.connectionStatus.state === 'open' &&
+      (this.client?.ws as any)?.isOpen === true
+    ) {
       const liveSocket = this.client;
       this.logger.warn(`Reconnect attempt ${attempt} outcome=timeout-with-open-socket; attempting DB reconciliation`);
       const reconciled = await this.completeOpenConnection(
@@ -696,7 +725,9 @@ export class BaileysStartupService extends ChannelStartupService {
         this.logger.error(error);
       }
       try {
-        this.client?.end(new Boom('WhatsApp reconnect attempt failed', { statusCode: DisconnectReason.connectionLost }));
+        this.client?.end(
+          new Boom('WhatsApp reconnect attempt failed', { statusCode: DisconnectReason.connectionLost }),
+        );
       } catch (error) {
         this.logger.error(error);
       }
@@ -712,11 +743,15 @@ export class BaileysStartupService extends ChannelStartupService {
   // and background worker are committed together. A skipped stale write is
   // never acknowledged; the independent supervisor can repair it later.
   private async completeOpenConnection(socket: WASocket, profileName: string): Promise<boolean> {
-    if (socket !== this.client || this.stateConnection.state !== 'open' ||
-        (socket.ws as any)?.isOpen !== true ||
-        (this.activeSocketBuildRevision !== undefined &&
-         this.activeSocketBuildRevision !== this.socketBuildRevision)) {
-      this.logger.warn(`Open completion ignored instance=${this.instanceName} guard=socket-state-transport-or-generation`);
+    if (
+      socket !== this.client ||
+      this.stateConnection.state !== 'open' ||
+      (socket.ws as any)?.isOpen !== true ||
+      (this.activeSocketBuildRevision !== undefined && this.activeSocketBuildRevision !== this.socketBuildRevision)
+    ) {
+      this.logger.warn(
+        `Open completion ignored instance=${this.instanceName} guard=socket-state-transport-or-generation`,
+      );
       return false;
     }
     const revision = this.connectionRevision;
@@ -743,11 +778,15 @@ export class BaileysStartupService extends ChannelStartupService {
       return false;
     }
     if (!persisted) {
-      this.logger.warn(`Open completion ignored instance=${this.instanceName} guard=queued-write-stale revision=${revision} current=${this.connectionRevision}`);
+      this.logger.warn(
+        `Open completion ignored instance=${this.instanceName} guard=queued-write-stale revision=${revision} current=${this.connectionRevision}`,
+      );
       return false;
     }
     if (this.stateConnection.state !== 'open' || revision !== this.connectionRevision || socket !== this.client) {
-      this.logger.warn(`Open completion after persist instance=${this.instanceName} guard=state-revision-or-socket revision=${revision} current=${this.connectionRevision}`);
+      this.logger.warn(
+        `Open completion after persist instance=${this.instanceName} guard=state-revision-or-socket revision=${revision} current=${this.connectionRevision}`,
+      );
       return false;
     }
 
@@ -782,29 +821,34 @@ export class BaileysStartupService extends ChannelStartupService {
     socket: WASocket = this.client,
   ) {
     if (socket !== this.client) {
-      this.logger.warn(`Connection update ignored instance=${this.instanceName} guard=stale-socket connection=${connection ?? 'none'}`);
+      this.logger.warn(
+        `Connection update ignored instance=${this.instanceName} guard=stale-socket connection=${connection ?? 'none'}`,
+      );
       return;
     }
     // Built sockets must match the active generation. An adopted socket without
     // a generation marker is still the current socket and must report transitions.
-    if (
-      this.activeSocketBuildRevision !== undefined &&
-      this.activeSocketBuildRevision !== this.socketBuildRevision
-    ) {
-      this.logger.warn(`Connection update ignored instance=${this.instanceName} guard=build-revision active=${this.activeSocketBuildRevision} current=${this.socketBuildRevision} connection=${connection ?? 'none'}`);
+    if (this.activeSocketBuildRevision !== undefined && this.activeSocketBuildRevision !== this.socketBuildRevision) {
+      this.logger.warn(
+        `Connection update ignored instance=${this.instanceName} guard=build-revision active=${this.activeSocketBuildRevision} current=${this.socketBuildRevision} connection=${connection ?? 'none'}`,
+      );
       return;
     }
     // A delayed 'connecting' or QR-only event is not allowed to demote a
     // socket which is already demonstrably open. Otherwise the subsequent
     // profile await can leave in-memory 'connecting' and DB 'close' forever.
-    if (this.stateConnection.state === 'open' && (socket.ws as any)?.isOpen === true &&
-        (connection === 'connecting' || (qr && !connection))) {
+    if (
+      this.stateConnection.state === 'open' &&
+      (socket.ws as any)?.isOpen === true &&
+      (connection === 'connecting' || (qr && !connection))
+    ) {
       this.logger.warn(`Connection update ignored instance=${this.instanceName} guard=late-connecting-on-open`);
       return;
     }
-    const revision = qr || connection
-      ? (this.connectionRevision = (this.connectionRevision ?? 0) + 1)
-      : (this.connectionRevision ??= 0);
+    const revision =
+      qr || connection
+        ? (this.connectionRevision = (this.connectionRevision ?? 0) + 1)
+        : (this.connectionRevision ??= 0);
     if (connection) {
       this.stateConnection = {
         state: connection,
@@ -983,11 +1027,15 @@ export class BaileysStartupService extends ChannelStartupService {
 
       const profileName = (await this.getProfileName()) as string;
       if (this.stateConnection.state !== 'open' || socket !== this.client) {
-        this.logger.warn(`Connection open ignored instance=${this.instanceName} guard=state-or-socket revision=${revision} current=${this.connectionRevision}`);
+        this.logger.warn(
+          `Connection open ignored instance=${this.instanceName} guard=state-or-socket revision=${revision} current=${this.connectionRevision}`,
+        );
         return;
       }
       if (revision !== this.connectionRevision) {
-        this.logger.warn(`Connection open revision advanced instance=${this.instanceName} guard=profile-await old=${revision} current=${this.connectionRevision}; reconciling`);
+        this.logger.warn(
+          `Connection open revision advanced instance=${this.instanceName} guard=profile-await old=${revision} current=${this.connectionRevision}; reconciling`,
+        );
       }
       await this.completeOpenConnection(socket, profileName);
     }
@@ -2572,229 +2620,231 @@ export class BaileysStartupService extends ChannelStartupService {
           this.logger.error(`WhatsApp connection update failed: ${String(error)}`),
         );
       }
-      this.eventProcessingQueue = this.eventProcessingQueue.catch((error) => {
-        this.logger.error(`WhatsApp event processing queue recovered: ${String(error)}`);
-      }).then(async () => {
-        try {
-          if (!this.endSession) {
-            const database = this.configService.get<Database>('DATABASE');
-            const settings = await this.findSettings();
+      this.eventProcessingQueue = this.eventProcessingQueue
+        .catch((error) => {
+          this.logger.error(`WhatsApp event processing queue recovered: ${String(error)}`);
+        })
+        .then(async () => {
+          try {
+            if (!this.endSession) {
+              const database = this.configService.get<Database>('DATABASE');
+              const settings = await this.findSettings();
 
-            if (events.call) {
-              const call = events.call[0];
+              if (events.call) {
+                const call = events.call[0];
 
-              if (settings?.rejectCall && call.status == 'offer') {
-                this.client.rejectCall(call.id, call.from);
-              }
-
-              if (settings?.msgCall?.trim().length > 0 && call.status == 'offer') {
-                if (call.from.endsWith('@lid')) {
-                  call.from = await this.client.signalRepository.lidMapping.getPNForLID(call.from as string);
+                if (settings?.rejectCall && call.status == 'offer') {
+                  this.client.rejectCall(call.id, call.from);
                 }
-                const msg = await this.sendBaileysMessage(call.from, { text: settings.msgCall });
 
-                this.client.ev.emit('messages.upsert', { messages: [msg], type: 'notify' });
+                if (settings?.msgCall?.trim().length > 0 && call.status == 'offer') {
+                  if (call.from.endsWith('@lid')) {
+                    call.from = await this.client.signalRepository.lidMapping.getPNForLID(call.from as string);
+                  }
+                  const msg = await this.sendBaileysMessage(call.from, { text: settings.msgCall });
+
+                  this.client.ev.emit('messages.upsert', { messages: [msg], type: 'notify' });
+                }
+
+                this.sendDataWebhook(Events.CALL, call);
               }
 
-              this.sendDataWebhook(Events.CALL, call);
-            }
+              if (events['creds.update']) {
+                this.instance.authState.saveCreds();
+                this.sendDataWebhook(Events.CREDS_UPDATE, { instance: this.instance.name });
+              }
 
-            if (events['creds.update']) {
-              this.instance.authState.saveCreds();
-              this.sendDataWebhook(Events.CREDS_UPDATE, { instance: this.instance.name });
-            }
+              if (events['messaging-history.set']) {
+                const payload = events['messaging-history.set'];
+                this.sendDataWebhook(Events.MESSAGING_HISTORY_SET, payload);
+                await this.messageHandle['messaging-history.set'](payload);
+              }
 
-            if (events['messaging-history.set']) {
-              const payload = events['messaging-history.set'];
-              this.sendDataWebhook(Events.MESSAGING_HISTORY_SET, payload);
-              await this.messageHandle['messaging-history.set'](payload);
-            }
+              if (events['messaging-history.status']) {
+                this.sendDataWebhook(Events.MESSAGING_HISTORY_STATUS, events['messaging-history.status']);
+              }
 
-            if (events['messaging-history.status']) {
-              this.sendDataWebhook(Events.MESSAGING_HISTORY_STATUS, events['messaging-history.status']);
-            }
+              if (events['lid-mapping.update']) {
+                const mapping = events['lid-mapping.update'];
+                this.sendDataWebhook(Events.LID_MAPPING_UPDATE, mapping);
+                await saveOnWhatsappCache(
+                  [{ remoteJid: mapping.pn, remoteJidAlt: mapping.lid, lid: mapping.lid, exists: true }],
+                  this.instanceId,
+                );
+                await localReadService.invalidate(this.instanceId, [
+                  'onWhatsapp',
+                  'chat.whatsappNumbers',
+                  'chat.fetchProfile',
+                ]);
+              }
 
-            if (events['lid-mapping.update']) {
-              const mapping = events['lid-mapping.update'];
-              this.sendDataWebhook(Events.LID_MAPPING_UPDATE, mapping);
-              await saveOnWhatsappCache(
-                [{ remoteJid: mapping.pn, remoteJidAlt: mapping.lid, lid: mapping.lid, exists: true }],
-                this.instanceId,
-              );
-              await localReadService.invalidate(this.instanceId, [
-                'onWhatsapp',
-                'chat.whatsappNumbers',
-                'chat.fetchProfile',
-              ]);
-            }
+              if (events['messages.upsert']) {
+                const payload = events['messages.upsert'];
 
-            if (events['messages.upsert']) {
-              const payload = events['messages.upsert'];
+                // this.messageProcessor.processMessage(payload, settings);
+                await this.messageHandle['messages.upsert'](payload, settings);
+              }
 
-              // this.messageProcessor.processMessage(payload, settings);
-              await this.messageHandle['messages.upsert'](payload, settings);
-            }
+              if (events['messages.update']) {
+                const payload = events['messages.update'];
+                await this.messageHandle['messages.update'](payload, settings);
+              }
 
-            if (events['messages.update']) {
-              const payload = events['messages.update'];
-              await this.messageHandle['messages.update'](payload, settings);
-            }
+              if (events['messages.media-update']) {
+                this.sendDataWebhook(Events.MESSAGES_MEDIA_UPDATE, events['messages.media-update']);
+              }
 
-            if (events['messages.media-update']) {
-              this.sendDataWebhook(Events.MESSAGES_MEDIA_UPDATE, events['messages.media-update']);
-            }
+              if (events['messages.reaction']) {
+                this.sendDataWebhook(Events.MESSAGES_REACTION, events['messages.reaction']);
+              }
 
-            if (events['messages.reaction']) {
-              this.sendDataWebhook(Events.MESSAGES_REACTION, events['messages.reaction']);
-            }
+              if (events['message-receipt.update']) {
+                const payload = events['message-receipt.update'] as MessageUserReceiptUpdate[];
+                this.sendDataWebhook(Events.MESSAGE_RECEIPT_UPDATE, payload);
+                const remotesJidMap: Record<string, number> = {};
 
-            if (events['message-receipt.update']) {
-              const payload = events['message-receipt.update'] as MessageUserReceiptUpdate[];
-              this.sendDataWebhook(Events.MESSAGE_RECEIPT_UPDATE, payload);
-              const remotesJidMap: Record<string, number> = {};
+                for (const event of payload) {
+                  if (typeof event.key.remoteJid === 'string' && typeof event.receipt.readTimestamp === 'number') {
+                    remotesJidMap[event.key.remoteJid] = event.receipt.readTimestamp;
+                  }
+                }
 
-              for (const event of payload) {
-                if (typeof event.key.remoteJid === 'string' && typeof event.receipt.readTimestamp === 'number') {
-                  remotesJidMap[event.key.remoteJid] = event.receipt.readTimestamp;
+                await Promise.all(
+                  Object.keys(remotesJidMap).map(async (remoteJid) =>
+                    this.updateMessagesReadedByTimestamp(remoteJid, remotesJidMap[remoteJid]),
+                  ),
+                );
+              }
+
+              if (events['presence.update']) {
+                const payload = events['presence.update'];
+
+                if (settings?.groupsIgnore && payload.id.includes('@g.us')) {
+                  return;
+                }
+
+                this.sendDataWebhook(Events.PRESENCE_UPDATE, payload);
+              }
+
+              if (!settings?.groupsIgnore) {
+                if (events['groups.upsert']) {
+                  const payload = events['groups.upsert'];
+                  await this.groupHandler['groups.upsert'](payload);
+                }
+
+                if (events['groups.update']) {
+                  const payload = events['groups.update'];
+                  await this.groupHandler['groups.update'](payload);
+                }
+
+                if (events['group-participants.update']) {
+                  const payload = events['group-participants.update'] as any;
+                  await this.groupHandler['group-participants.update'](payload);
+                }
+
+                if (events['group.join-request']) {
+                  this.sendDataWebhook(Events.GROUP_JOIN_REQUEST, events['group.join-request']);
+                }
+
+                if (events['group.member-tag.update']) {
+                  this.sendDataWebhook(Events.GROUP_MEMBER_TAG_UPDATE, events['group.member-tag.update']);
                 }
               }
 
-              await Promise.all(
-                Object.keys(remotesJidMap).map(async (remoteJid) =>
-                  this.updateMessagesReadedByTimestamp(remoteJid, remotesJidMap[remoteJid]),
-                ),
-              );
-            }
+              if (events['chats.upsert']) {
+                const payload = events['chats.upsert'];
+                this.chatHandle['chats.upsert'](payload);
+              }
 
-            if (events['presence.update']) {
-              const payload = events['presence.update'];
+              if (events['chats.update']) {
+                const payload = events['chats.update'];
+                this.chatHandle['chats.update'](payload);
+              }
 
-              if (settings?.groupsIgnore && payload.id.includes('@g.us')) {
+              if (events['chats.delete']) {
+                const payload = events['chats.delete'];
+                this.chatHandle['chats.delete'](payload);
+              }
+
+              if (events['contacts.upsert']) {
+                const payload = events['contacts.upsert'];
+                await this.contactHandle['contacts.upsert'](payload);
+              }
+
+              if (events['contacts.update']) {
+                const payload = events['contacts.update'];
+                await this.contactHandle['contacts.update'](payload);
+              }
+
+              if (events['blocklist.set']) {
+                this.sendDataWebhook(Events.BLOCKLIST_SET, events['blocklist.set']);
+                await localReadService.store(this.instanceId, 'fetchBlocklist', [], {
+                  method: 'fetchBlocklist',
+                  result: events['blocklist.set'].blocklist,
+                });
+              }
+
+              if (events['blocklist.update']) {
+                this.sendDataWebhook(Events.BLOCKLIST_UPDATE, events['blocklist.update']);
+                await localReadService.invalidate(this.instanceId, ['fetchBlocklist']);
+              }
+
+              if (events['newsletter.reaction']) {
+                this.sendDataWebhook(Events.NEWSLETTER_REACTION, events['newsletter.reaction']);
+              }
+
+              if (events['newsletter.view']) {
+                this.sendDataWebhook(Events.NEWSLETTER_VIEW, events['newsletter.view']);
+              }
+
+              if (events['newsletter-participants.update']) {
+                this.sendDataWebhook(Events.NEWSLETTER_PARTICIPANTS_UPDATE, events['newsletter-participants.update']);
+                await localReadService.invalidate(this.instanceId, [
+                  'newsletterSubscribers',
+                  'newsletterMetadata',
+                  'newsletterAdminCount',
+                ]);
+              }
+
+              if (events['newsletter-settings.update']) {
+                this.sendDataWebhook(Events.NEWSLETTER_SETTINGS_UPDATE, events['newsletter-settings.update']);
+                await localReadService.invalidate(this.instanceId, ['newsletterMetadata']);
+              }
+
+              if (events['message-capping.update']) {
+                this.sendDataWebhook(Events.MESSAGE_CAPPING_UPDATE, events['message-capping.update']);
+                await localReadService.invalidate(this.instanceId, ['fetchNewChatMessageCap']);
+              }
+
+              if (events['chats.lock']) {
+                this.sendDataWebhook(Events.CHATS_LOCK, events['chats.lock']);
+              }
+
+              if (events['settings.update']) {
+                this.sendDataWebhook(Events.SETTINGS_UPDATE, events['settings.update']);
+                await localReadService.invalidate(this.instanceId, [
+                  'fetchPrivacySettings',
+                  'fetchDisappearingDuration',
+                  'chat.fetchPrivacySettings',
+                ]);
+              }
+
+              if (events[Events.LABELS_ASSOCIATION]) {
+                const payload = events[Events.LABELS_ASSOCIATION];
+                this.labelHandle[Events.LABELS_ASSOCIATION](payload, database);
                 return;
               }
 
-              this.sendDataWebhook(Events.PRESENCE_UPDATE, payload);
-            }
-
-            if (!settings?.groupsIgnore) {
-              if (events['groups.upsert']) {
-                const payload = events['groups.upsert'];
-                await this.groupHandler['groups.upsert'](payload);
-              }
-
-              if (events['groups.update']) {
-                const payload = events['groups.update'];
-                await this.groupHandler['groups.update'](payload);
-              }
-
-              if (events['group-participants.update']) {
-                const payload = events['group-participants.update'] as any;
-                await this.groupHandler['group-participants.update'](payload);
-              }
-
-              if (events['group.join-request']) {
-                this.sendDataWebhook(Events.GROUP_JOIN_REQUEST, events['group.join-request']);
-              }
-
-              if (events['group.member-tag.update']) {
-                this.sendDataWebhook(Events.GROUP_MEMBER_TAG_UPDATE, events['group.member-tag.update']);
+              if (events[Events.LABELS_EDIT]) {
+                const payload = events[Events.LABELS_EDIT];
+                this.labelHandle[Events.LABELS_EDIT](payload);
+                return;
               }
             }
-
-            if (events['chats.upsert']) {
-              const payload = events['chats.upsert'];
-              this.chatHandle['chats.upsert'](payload);
-            }
-
-            if (events['chats.update']) {
-              const payload = events['chats.update'];
-              this.chatHandle['chats.update'](payload);
-            }
-
-            if (events['chats.delete']) {
-              const payload = events['chats.delete'];
-              this.chatHandle['chats.delete'](payload);
-            }
-
-            if (events['contacts.upsert']) {
-              const payload = events['contacts.upsert'];
-              await this.contactHandle['contacts.upsert'](payload);
-            }
-
-            if (events['contacts.update']) {
-              const payload = events['contacts.update'];
-              await this.contactHandle['contacts.update'](payload);
-            }
-
-            if (events['blocklist.set']) {
-              this.sendDataWebhook(Events.BLOCKLIST_SET, events['blocklist.set']);
-              await localReadService.store(this.instanceId, 'fetchBlocklist', [], {
-                method: 'fetchBlocklist',
-                result: events['blocklist.set'].blocklist,
-              });
-            }
-
-            if (events['blocklist.update']) {
-              this.sendDataWebhook(Events.BLOCKLIST_UPDATE, events['blocklist.update']);
-              await localReadService.invalidate(this.instanceId, ['fetchBlocklist']);
-            }
-
-            if (events['newsletter.reaction']) {
-              this.sendDataWebhook(Events.NEWSLETTER_REACTION, events['newsletter.reaction']);
-            }
-
-            if (events['newsletter.view']) {
-              this.sendDataWebhook(Events.NEWSLETTER_VIEW, events['newsletter.view']);
-            }
-
-            if (events['newsletter-participants.update']) {
-              this.sendDataWebhook(Events.NEWSLETTER_PARTICIPANTS_UPDATE, events['newsletter-participants.update']);
-              await localReadService.invalidate(this.instanceId, [
-                'newsletterSubscribers',
-                'newsletterMetadata',
-                'newsletterAdminCount',
-              ]);
-            }
-
-            if (events['newsletter-settings.update']) {
-              this.sendDataWebhook(Events.NEWSLETTER_SETTINGS_UPDATE, events['newsletter-settings.update']);
-              await localReadService.invalidate(this.instanceId, ['newsletterMetadata']);
-            }
-
-            if (events['message-capping.update']) {
-              this.sendDataWebhook(Events.MESSAGE_CAPPING_UPDATE, events['message-capping.update']);
-              await localReadService.invalidate(this.instanceId, ['fetchNewChatMessageCap']);
-            }
-
-            if (events['chats.lock']) {
-              this.sendDataWebhook(Events.CHATS_LOCK, events['chats.lock']);
-            }
-
-            if (events['settings.update']) {
-              this.sendDataWebhook(Events.SETTINGS_UPDATE, events['settings.update']);
-              await localReadService.invalidate(this.instanceId, [
-                'fetchPrivacySettings',
-                'fetchDisappearingDuration',
-                'chat.fetchPrivacySettings',
-              ]);
-            }
-
-            if (events[Events.LABELS_ASSOCIATION]) {
-              const payload = events[Events.LABELS_ASSOCIATION];
-              this.labelHandle[Events.LABELS_ASSOCIATION](payload, database);
-              return;
-            }
-
-            if (events[Events.LABELS_EDIT]) {
-              const payload = events[Events.LABELS_EDIT];
-              this.labelHandle[Events.LABELS_EDIT](payload);
-              return;
-            }
+          } catch (error) {
+            this.logger.error(error);
           }
-        } catch (error) {
-          this.logger.error(error);
-        }
-      });
+        });
     });
   }
 
