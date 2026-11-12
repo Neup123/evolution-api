@@ -358,7 +358,21 @@ async function timedOutProfileDoesNotKillLiveSocket() {
   assert.ok(logs.some((line) => line.includes('outcome=late_open_reconciled')));
 }
 
+
+// A delayed connecting marker from the same live socket must not demote open
+// state, or hide the orphan from open-only reconciliation.
+async function lateConnectingCannotDemoteConfirmedOpen() {
+  const { service, socket, stored, logs } = harness();
+  const revision = service.connectionRevision;
+  await service.connectionUpdate({ connection: 'connecting' }, socket);
+  assert.equal(service.stateConnection.state, 'open');
+  assert.equal(stored.connectionStatus, 'open');
+  assert.equal(service.connectionRevision, revision);
+  assert.ok(logs.some((line) => line.includes('guard=late-connecting-on-open')));
+}
+
 async function main() {
+  await lateConnectingCannotDemoteConfirmedOpen();
   await timedOutProfileDoesNotKillLiveSocket();
   await revisionBumpDuringProfileFetchReconciles();
   await watchdogProbeFailureRetainsLiveSocket();
