@@ -24,7 +24,7 @@ function harness() {
   const logs: string[] = [];
   const socket: any = {
     user: { id: '12345:1@s.whatsapp.net' },
-    ws: { close() {} },
+    ws: { isOpen: true, close() {} },
     end() {},
   };
   // Do not construct the full server; exercise the actual connectionUpdate,
@@ -50,6 +50,7 @@ function harness() {
   service.configService = { get: (key: string) => key === 'CHATWOOT' ? { ENABLED: false } : {} };
   service.prismaRepository = {
     instance: {
+      findUnique: async () => ({ connectionStatus: stored.connectionStatus }),
       update: async ({ data }: any) => {
         Object.assign(stored, data);
       },
@@ -253,7 +254,90 @@ async function failedOpenStatusWriteStaysRetryable() {
   assert.ok(logs.some((line) => line.includes('Could not persist WhatsApp open transition')));
 }
 
+
+// A QR/revision event while the profile is pending cannot orphan an already-open
+// socket. The final open must use the current revision, not abandon persistence.
+async function revisionBumpDuringProfileFetchReconciles() {
+  const { service, socket, stored, logs } = harness();
+  stored.connectionStatus = 'close';
+  let releasePicture!: (picture: { profilePictureUrl: null }) => void;
+  service.profilePicture = () => new Promise((resolve) => { releasePicture = resolve; });
+  const settled: string[] = [];
+  service.pendingReconnect = { settle: (kind: string) => settled.push(kind) };
+
+  const opening = service.connectionUpdate({ connection: 'open' }, socket);
+  await until(() => typeof releasePicture === 'function', 'Open profile request did not begin');
+  service.connectionRevision++;
+  releasePicture({ profilePictureUrl: null });
+  await opening;
+
+  assert.equal(stored.connectionStatus, 'open');
+  assert.equal(stored.disconnectionAt, null);
+  assert.deepEqual(settled, ['opened']);
+  assert.ok(logs.some((line) => line.includes('guard=profile-await')));
+}
+
+// An IQ ping error from WhatsApp or a proxy does not prove the transport died.
+async function watchdogProbeFailureRetainsLiveSocket() {
+  const { service, socket, stored, logs } = harness();
+  let ends = 0;
+  socket.query = async () => { throw new Error('Simulated ping delay'); };
+  socket.end = () => { ends++; };
+
+  await service.checkSocketHealth(socket);
+  assert.equal(ends, 0, 'A healthy WebSocket must not be ended after a failed ping');
+  assert.equal(service.stateConnection.state, 'open');
+  assert.equal(stored.connectionStatus, 'open');
+  assert.ok(logs.some((line) => line.includes('result=degraded')));
+}
+
+// A missed timeout callback cannot leave a paired, closed account idle forever.
+async function supervisorRearmsAbandonedReconnect() {
+  const { service, stored } = harness();
+  service.stateConnection = { state: 'close', statusReason: 408 };
+  stored.connectionStatus = 'close';
+  const scheduled: number[] = [];
+  service.scheduleReconnect = (code: number) => scheduled.push(code);
+
+  await service.superviseConnection();
+  assert.deepEqual(scheduled, [408]);
+}
+
+// The fallback supervisor repairs open-in-memory/close-in-DB divergence.
+async function supervisorRepairsOrphanedOpen() {
+  const { service, stored, socket, logs } = harness();
+  stored.connectionStatus = 'close';
+  service.openObservedAt = Date.now() - 180_000;
+  const settled: string[] = [];
+  service.pendingReconnect = { settle: (kind: string) => settled.push(kind) };
+
+  await service.superviseConnection();
+  assert.equal(stored.connectionStatus, 'open');
+  assert.deepEqual(settled, ['opened']);
+  assert.ok(logs.some((line) => line.includes('result=orphan-open')));
+  assert.equal(socket.ws.isOpen, true);
+}
+
+// The independent supervisor detects an actually closed transport even if
+// Baileys did not deliver a close event.
+async function supervisorClosesPersistentlyDeadTransport() {
+  const { service, socket, stored } = harness();
+  socket.ws.isOpen = false;
+  service.socketClosedObservedAt = Date.now() - 70_000;
+  const scheduled: number[] = [];
+  service.scheduleReconnect = (code: number) => scheduled.push(code);
+
+  await service.superviseConnection();
+  assert.equal(stored.connectionStatus, 'close');
+  assert.deepEqual(scheduled, [408]);
+}
+
 async function main() {
+  await revisionBumpDuringProfileFetchReconciles();
+  await watchdogProbeFailureRetainsLiveSocket();
+  await supervisorRearmsAbandonedReconnect();
+  await supervisorRepairsOrphanedOpen();
+  await supervisorClosesPersistentlyDeadTransport();
   await nativeCloseWriteFailureStillRetries();
   await reconnectOpensOnlyAfterStoredWrite();
   await failedOpenStatusWriteStaysRetryable();
