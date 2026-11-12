@@ -10,9 +10,23 @@ const originalLoad = Module._load;
 const bridgeNotAvailable = (name) => () => {
   throw new Error(`whatsapp-rust-bridge.${name} must not be called by a socket-state unit test`);
 };
+// Baileys constructs this export while loading Utils/lt-hash.js. Its
+// instance is inert during socket-state tests; actual hash methods fail loudly.
+class LTHashAntiTampering {
+  constructor() {
+    return new Proxy(this, {
+      get(_target, property) {
+        if (typeof property === 'symbol') return undefined;
+        return bridgeNotAvailable(`LTHashAntiTampering.${String(property)}`);
+      },
+    });
+  }
+}
+
 const bridgeStub = new Proxy(Object.create(null), {
   get(_target, property) {
     if (property === '__esModule') return false;
+    if (property === 'LTHashAntiTampering') return LTHashAntiTampering;
     if (typeof property === 'symbol') return undefined;
     return bridgeNotAvailable(property);
   },
