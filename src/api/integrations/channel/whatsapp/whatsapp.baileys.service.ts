@@ -711,9 +711,10 @@ export class BaileysStartupService extends ChannelStartupService {
   // never acknowledged; the independent supervisor can repair it later.
   private async completeOpenConnection(socket: WASocket, profileName: string): Promise<boolean> {
     if (socket !== this.client || this.stateConnection.state !== 'open' ||
+        (socket.ws as any)?.isOpen !== true ||
         (this.activeSocketBuildRevision !== undefined &&
          this.activeSocketBuildRevision !== this.socketBuildRevision)) {
-      this.logger.warn(`Open completion ignored instance=${this.instanceName} guard=socket-state-or-generation`);
+      this.logger.warn(`Open completion ignored instance=${this.instanceName} guard=socket-state-transport-or-generation`);
       return false;
     }
     const revision = this.connectionRevision;
