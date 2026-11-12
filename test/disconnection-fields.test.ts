@@ -16,7 +16,7 @@ async function main() {
   };
   const socket: any = {
     user: { id: '123456:1@s.whatsapp.net' },
-    ws: { close() {} },
+    ws: { isOpen: true, close() {} },
     end() {},
   };
   const service: any = Object.create(BaileysStartupService.prototype);
@@ -31,6 +31,7 @@ async function main() {
   service.eventEmitter = { emit() {} };
   service.logger = { info() {}, error() {}, warn() {} };
   service.stopOutboundQueueWorker = () => {};
+  service.startOutboundQueueWorker = () => {};
   service.startOutboundQueueWorker = () => {};
   service.watchSocket = () => {};
   service.profilePicture = async () => ({ profilePictureUrl: null });
