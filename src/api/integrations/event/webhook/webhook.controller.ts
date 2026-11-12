@@ -171,14 +171,25 @@ export class WebhookController extends EventController implements EventControlle
     // Bound in-memory work during a network outage. EventManager captures an
     // archive copy before dispatch; dropped remote deliveries are logged.
     if (this.activeDeliveries >= this.maxConcurrentDeliveries) {
-      this.logger.warn(`Webhook delivery skipped instance=${instanceName} reason=concurrency-limit active=${this.activeDeliveries}`);
+      this.logger.warn(
+        `Webhook delivery skipped instance=${instanceName} reason=concurrency-limit active=${this.activeDeliveries}`,
+      );
       return;
     }
     this.activeDeliveries++;
     try {
       await this.emitBounded({
-        instanceName, origin, event, data, serverUrl, dateTime,
-        sender, apiKey, local, integration, extra,
+        instanceName,
+        origin,
+        event,
+        data,
+        serverUrl,
+        dateTime,
+        sender,
+        apiKey,
+        local,
+        integration,
+        extra,
       });
     } finally {
       this.activeDeliveries--;
@@ -327,7 +338,10 @@ export class WebhookController extends EventController implements EventControlle
     delaySeconds?: number,
   ): Promise<void> {
     const webhookConfig = configService.get<Webhook>('WEBHOOK');
-    const maxRetryAttempts = Math.min(this.maxDeliveryAttempts, Math.max(1, maxRetries ?? webhookConfig.RETRY?.MAX_ATTEMPTS ?? 10));
+    const maxRetryAttempts = Math.min(
+      this.maxDeliveryAttempts,
+      Math.max(1, maxRetries ?? webhookConfig.RETRY?.MAX_ATTEMPTS ?? 10),
+    );
     const initialDelay = delaySeconds ?? webhookConfig.RETRY?.INITIAL_DELAY_SECONDS ?? 5;
     const useExponentialBackoff = webhookConfig.RETRY?.USE_EXPONENTIAL_BACKOFF ?? true;
     const maxDelay = Math.min(3, webhookConfig.RETRY?.MAX_DELAY_SECONDS ?? 300);
