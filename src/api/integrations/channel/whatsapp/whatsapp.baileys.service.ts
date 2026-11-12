@@ -667,7 +667,9 @@ export class BaileysStartupService extends ChannelStartupService {
 
     // A live WS may have delivered open while a profile lookup was blocked.
     // Reconcile it before treating the 30-second deadline as socket death.
-    if (outcome.kind === 'timed_out' && this.stateConnection.state === 'open' &&
+    // The connectionUpdate callback can switch state across the await above.
+    // Read it through the getter so TS does not retain the earlier 'close' narrowing.
+    if (outcome.kind === 'timed_out' && this.connectionStatus.state === 'open' &&
         (this.client?.ws as any)?.isOpen === true) {
       const liveSocket = this.client;
       this.logger.warn(`Reconnect attempt ${attempt} outcome=timeout-with-open-socket; attempting DB reconciliation`);
