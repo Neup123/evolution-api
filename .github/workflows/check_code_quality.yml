@@ -78,6 +78,9 @@ jobs:
     - name: Apply PostgreSQL migrations
       run: npm run db:deploy
 
+    - name: Test WhatsApp connection recovery and watchdog
+      run: npm run test:connection-recovery
+
     - name: Test durable outbound queue
       run: npm run test:outbound-queue && npm run test:outbound-queue:postgres
 
