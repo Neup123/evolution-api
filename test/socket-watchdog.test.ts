@@ -97,4 +97,11 @@ async function main() {
   await nonOpenOrRetryingIsNotProbed();
   console.log('Socket watchdog tests passed');
 }
-void main().catch((error) => { console.error(error); process.exitCode = 1; });
+// Module imports can start background Redis retries; these isolated test
+// processes must terminate once assertions have completed.
+void main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
