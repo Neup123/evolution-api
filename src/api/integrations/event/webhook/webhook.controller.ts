@@ -342,7 +342,7 @@ export class WebhookController extends EventController implements EventControlle
       this.maxDeliveryAttempts,
       Math.max(1, maxRetries ?? webhookConfig.RETRY?.MAX_ATTEMPTS ?? 10),
     );
-    const initialDelay = delaySeconds ?? webhookConfig.RETRY?.INITIAL_DELAY_SECONDS ?? 5;
+    const initialDelay = Math.min(2, delaySeconds ?? webhookConfig.RETRY?.INITIAL_DELAY_SECONDS ?? 5);
     const useExponentialBackoff = webhookConfig.RETRY?.USE_EXPONENTIAL_BACKOFF ?? true;
     const maxDelay = Math.min(3, webhookConfig.RETRY?.MAX_DELAY_SECONDS ?? 300);
     const jitterFactor = webhookConfig.RETRY?.JITTER_FACTOR ?? 0.2;
@@ -410,7 +410,7 @@ export class WebhookController extends EventController implements EventControlle
           nextDelay = Math.min(initialDelay * Math.pow(2, attempts - 1), maxDelay);
 
           const jitter = nextDelay * jitterFactor * (Math.random() * 2 - 1);
-          nextDelay = Math.max(initialDelay, nextDelay + jitter);
+          nextDelay = Math.min(maxDelay, Math.max(initialDelay, nextDelay + jitter));
         }
 
         this.logger.log({
