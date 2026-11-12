@@ -336,6 +336,7 @@ export class BaileysStartupService extends ChannelStartupService {
   }
 
   public async logoutInstance() {
+    clearInterval(this.connectionSupervisor);
     clearInterval(this.socketWatchdog);
     clearTimeout(this.reconnectTimer);
     this.reconnectTimer = undefined;
@@ -422,18 +423,82 @@ export class BaileysStartupService extends ChannelStartupService {
   private socketBuildRevision = 0;
   private activeSocketBuildRevision = 0;
   private socketWatchdog?: ReturnType<typeof setInterval>;
+  private connectionSupervisor?: ReturnType<typeof setInterval>;
+  private openObservedAt = 0;
+  private socketClosedObservedAt = 0;
+  private readonly openReconcileDelayMs = 120_000;
+
+  // Independent of Baileys events and reconnect attempt promises. An orphaned
+  // open or a lost reconnect timer must never leave an HTTP-healthy process idle.
+  private startConnectionSupervisor() {
+    clearInterval(this.connectionSupervisor);
+    this.connectionSupervisor = setInterval(() => {
+      void this.superviseConnection().catch((error) =>
+        this.logger.error(`Connection supervisor failed instance=${this.instanceName}: ${String(error)}`),
+      );
+    }, 60_000);
+    this.connectionSupervisor.unref?.();
+  }
+
+  private async superviseConnection(): Promise<void> {
+    if (this.endSession || !this.client) return;
+    const socket = this.client;
+    if (this.stateConnection.state === 'close') {
+      const code = this.stateConnection.statusReason;
+      if (!this.reconnectTimer && !this.reconnectInFlight && this.shouldReconnectAfterClose(code)) {
+        this.logger.warn(`Connection supervisor instance=${this.instanceName} result=rearm-reconnect code=${code}`);
+        this.scheduleReconnect(code);
+      }
+      return;
+    }
+    if (this.stateConnection.state !== 'open') return;
+
+    if ((socket.ws as any)?.isOpen === false) {
+      if (!this.socketClosedObservedAt) this.socketClosedObservedAt = Date.now();
+      // Two independent observations are required; a transient WS transition
+      // must not be treated as evidence that a paired session is lost.
+      if (Date.now() - this.socketClosedObservedAt >= 60_000) {
+        this.logger.warn(`Connection supervisor instance=${this.instanceName} result=socket-closed`);
+        await this.connectionUpdate({
+          connection: 'close',
+          lastDisconnect: {
+            error: new Boom('WhatsApp WebSocket stayed closed', { statusCode: DisconnectReason.connectionLost }),
+            date: new Date(),
+          },
+        }, socket);
+      }
+      return;
+    }
+    this.socketClosedObservedAt = 0;
+    if ((socket.ws as any)?.isOpen !== true || !this.openObservedAt ||
+        Date.now() - this.openObservedAt < this.openReconcileDelayMs) return;
+
+    const stored = await this.prismaRepository.instance.findUnique({
+      where: { id: this.instanceId },
+      select: { connectionStatus: true },
+    });
+    if (socket !== this.client || this.stateConnection.state !== 'open') return;
+    if (stored?.connectionStatus !== 'open') {
+      this.logger.warn(`Connection supervisor instance=${this.instanceName} result=orphan-open db=${stored?.connectionStatus ?? 'missing'}; reconciling`);
+      await this.completeOpenConnection(
+        socket,
+        (socket.user?.name ?? socket.user?.verifiedName ?? this.instance.name) as string,
+      );
+    }
+  }
 
   // Serialize status writes and reject stale transitions before they enter the database.
   // A close queued behind an in-flight open write is always applied last.
-  private async persistConnectionTransition(revision: number, data: Prisma.InstanceUpdateInput): Promise<void> {
+  private async persistConnectionTransition(revision: number, data: Prisma.InstanceUpdateInput): Promise<boolean> {
     // A service wrapping an existing socket may not have a queued write yet.
     const previousWrite = this.statusWriteQueue ?? Promise.resolve();
     const write = previousWrite.catch(() => undefined).then(async () => {
-      if (revision !== this.connectionRevision) return;
+      if (revision !== this.connectionRevision) return false;
       await this.prismaRepository.instance.update({ where: { id: this.instanceId }, data });
+      return true;
     });
-    this.statusWriteQueue = write.catch((error) => this.logger.error(error));
-    await write;
+    this.statusWriteQueue = write.then(() => undefined, (error) => this.logger.error(error));
+    return await write;
   }
 
   private watchdogRecoveryInFlight = false;
@@ -496,8 +561,17 @@ export class BaileysStartupService extends ChannelStartupService {
           this.reconnectTimer || this.watchdogRecoveryInFlight) return;
       this.watchdogRecoveryInFlight = true;
       const reason = error instanceof Error ? error.message : String(error);
+      // A failed IQ ping is not proof of a dead transport: delayed WA replies
+      // and server-side throttling must not terminate an otherwise open socket.
+      if ((socket.ws as any)?.isOpen !== false) {
+        this.watchdogRecoveryInFlight = false;
+        this.logger.warn(
+          `Socket watchdog instance=${this.instanceName} result=degraded durationMs=${Date.now() - started} reason=${reason}; socket retained`,
+        );
+        return;
+      }
       this.logger.warn(
-        `Socket watchdog instance=${this.instanceName} result=failed durationMs=${Date.now() - started} reason=${reason}; reconnect triggered`,
+        `Socket watchdog instance=${this.instanceName} result=socket-closed durationMs=${Date.now() - started} reason=${reason}; reconnect triggered`,
       );
 
       const disconnectError = new Boom('WhatsApp socket health probe failed', {
@@ -545,7 +619,13 @@ export class BaileysStartupService extends ChannelStartupService {
     const delay = statusCode === 515 ? 0 : Math.floor(Math.random() * ceilingMs);
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = undefined;
-      void this.runReconnectAttempt(statusCode).catch((error) => this.logger.error(error));
+      void this.runReconnectAttempt(statusCode).catch((error) => {
+        this.logger.error(`Reconnect supervisor unexpected failure instance=${this.instanceName}: ${String(error)}`);
+        // An exception outside the normal outcome path must never strand
+        // reconnectInFlight=true and permanently suppress later attempts.
+        this.reconnectInFlight = false;
+        if (this.stateConnection.state === 'close') this.scheduleReconnect(statusCode);
+      });
     }, delay);
     this.reconnectTimer.unref?.();
   }
@@ -609,17 +689,90 @@ export class BaileysStartupService extends ChannelStartupService {
     }
   }
 
+  // The only successful open completion path: status write, settle, watchdog
+  // and background worker are committed together. A skipped stale write is
+  // never acknowledged; the independent supervisor can repair it later.
+  private async completeOpenConnection(socket: WASocket, profileName: string): Promise<void> {
+    if (socket !== this.client || this.stateConnection.state !== 'open' ||
+        (this.activeSocketBuildRevision !== undefined &&
+         this.activeSocketBuildRevision !== this.socketBuildRevision)) {
+      this.logger.warn(`Open completion ignored instance=${this.instanceName} guard=socket-state-or-generation`);
+      return;
+    }
+    const revision = this.connectionRevision;
+    let persisted = false;
+    try {
+      persisted = await this.persistConnectionTransition(revision, {
+        ownerJid: this.instance.wuid,
+        profileName,
+        profilePicUrl: this.instance.profilePictureUrl,
+        connectionStatus: 'open',
+        disconnectionAt: null,
+        disconnectionReasonCode: null,
+        disconnectionObject: null,
+      });
+    } catch (error) {
+      this.logger.error(`Could not persist WhatsApp open transition: ${String(error)}`);
+      if (revision === this.connectionRevision && socket === this.client) {
+        this.stateConnection = { state: 'close', statusReason: DisconnectReason.connectionLost };
+        clearInterval(this.socketWatchdog);
+        this.stopOutboundQueueWorker();
+        this.pendingReconnect?.settle('closed', DisconnectReason.connectionLost);
+        this.scheduleReconnect(DisconnectReason.connectionLost);
+      }
+      return;
+    }
+    if (!persisted) {
+      this.logger.warn(`Open completion ignored instance=${this.instanceName} guard=queued-write-stale revision=${revision} current=${this.connectionRevision}`);
+      return;
+    }
+    if (this.stateConnection.state !== 'open' || revision !== this.connectionRevision || socket !== this.client) {
+      this.logger.warn(`Open completion after persist instance=${this.instanceName} guard=state-revision-or-socket revision=${revision} current=${this.connectionRevision}`);
+      return;
+    }
+
+    this.pendingReconnect?.settle('opened');
+    this.watchSocket(socket);
+    clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = undefined;
+    this.reconnectAttempts = 0;
+    this.startOutboundQueueWorker();
+
+    if (this.configService.get<Chatwoot>('CHATWOOT').ENABLED && this.localChatwoot?.enabled) {
+      this.chatwootService.eventWhatsapp(
+        Events.CONNECTION_UPDATE,
+        { instanceName: this.instance.name, instanceId: this.instanceId },
+        { instance: this.instance.name, status: 'open' },
+      );
+      this.syncChatwootLostMessages();
+    }
+
+    this.sendDataWebhook(Events.CONNECTION_UPDATE, {
+      instance: this.instance.name,
+      wuid: this.instance.wuid,
+      profileName,
+      profilePictureUrl: this.instance.profilePictureUrl,
+      ...this.stateConnection,
+    });
+  }
+
   private async connectionUpdate(
     { qr, connection, lastDisconnect }: Partial<ConnectionState>,
     socket: WASocket = this.client,
   ) {
-    if (socket !== this.client) return;
+    if (socket !== this.client) {
+      this.logger.warn(`Connection update ignored instance=${this.instanceName} guard=stale-socket connection=${connection ?? 'none'}`);
+      return;
+    }
     // Built sockets must match the active generation. An adopted socket without
     // a generation marker is still the current socket and must report transitions.
     if (
       this.activeSocketBuildRevision !== undefined &&
       this.activeSocketBuildRevision !== this.socketBuildRevision
-    ) return;
+    ) {
+      this.logger.warn(`Connection update ignored instance=${this.instanceName} guard=build-revision active=${this.activeSocketBuildRevision} current=${this.socketBuildRevision} connection=${connection ?? 'none'}`);
+      return;
+    }
     const revision = qr || connection
       ? (this.connectionRevision = (this.connectionRevision ?? 0) + 1)
       : (this.connectionRevision ??= 0);
@@ -717,6 +870,8 @@ export class BaileysStartupService extends ChannelStartupService {
     }
 
     if (connection === 'close') {
+      this.openObservedAt = 0;
+      this.socketClosedObservedAt = 0;
       clearInterval(this.socketWatchdog);
       this.stopOutboundQueueWorker();
       const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
@@ -773,6 +928,8 @@ export class BaileysStartupService extends ChannelStartupService {
     }
 
     if (connection === 'open') {
+      this.openObservedAt = Date.now();
+      this.socketClosedObservedAt = 0;
       this.instance.wuid = this.client.user.id.replace(/:\d+/, '');
       try {
         const profilePic = await this.profilePicture(this.instance.wuid);
@@ -796,55 +953,14 @@ export class BaileysStartupService extends ChannelStartupService {
       );
 
       const profileName = (await this.getProfileName()) as string;
-      if (this.stateConnection.state !== 'open' || revision !== this.connectionRevision || socket !== this.client) return;
-      try {
-        await this.persistConnectionTransition(revision, {
-          ownerJid: this.instance.wuid,
-          profileName,
-          profilePicUrl: this.instance.profilePictureUrl,
-          connectionStatus: 'open',
-          disconnectionAt: null,
-          disconnectionReasonCode: null,
-          disconnectionObject: null,
-        });
-      } catch (error) {
-        this.logger.error(`Could not persist WhatsApp open transition: ${String(error)}`);
-        if (revision === this.connectionRevision && socket === this.client) {
-          // An open socket with a failed final write is not a recovered instance.
-          this.stateConnection = { state: 'close', statusReason: DisconnectReason.connectionLost };
-          clearInterval(this.socketWatchdog);
-          this.stopOutboundQueueWorker();
-          this.pendingReconnect?.settle('closed', DisconnectReason.connectionLost);
-          // If a reconnect is in flight, its outcome handler schedules the retry.
-          this.scheduleReconnect(DisconnectReason.connectionLost);
-        }
+      if (this.stateConnection.state !== 'open' || socket !== this.client) {
+        this.logger.warn(`Connection open ignored instance=${this.instanceName} guard=state-or-socket revision=${revision} current=${this.connectionRevision}`);
         return;
       }
-      if (this.stateConnection.state !== 'open' || revision !== this.connectionRevision || socket !== this.client) return;
-      // Recovery is complete only after the final status write, not on the raw event.
-      this.pendingReconnect?.settle('opened');
-      this.watchSocket(socket);
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = undefined;
-      this.reconnectAttempts = 0;
-      this.startOutboundQueueWorker();
-
-      if (this.configService.get<Chatwoot>('CHATWOOT').ENABLED && this.localChatwoot?.enabled) {
-        this.chatwootService.eventWhatsapp(
-          Events.CONNECTION_UPDATE,
-          { instanceName: this.instance.name, instanceId: this.instanceId },
-          { instance: this.instance.name, status: 'open' },
-        );
-        this.syncChatwootLostMessages();
+      if (revision !== this.connectionRevision) {
+        this.logger.warn(`Connection open revision advanced instance=${this.instanceName} guard=profile-await old=${revision} current=${this.connectionRevision}; reconciling`);
       }
-
-      this.sendDataWebhook(Events.CONNECTION_UPDATE, {
-        instance: this.instance.name,
-        wuid: this.instance.wuid,
-        profileName: await this.getProfileName(),
-        profilePictureUrl: this.instance.profilePictureUrl,
-        ...this.stateConnection,
-      });
+      await this.completeOpenConnection(socket, profileName);
     }
 
     if (connection === 'connecting') {
@@ -1060,6 +1176,7 @@ export class BaileysStartupService extends ChannelStartupService {
     }
 
     this.client = makeWASocket(socketConfig);
+    this.startConnectionSupervisor();
     this.client.ws.on('CB:stream:error', (node: { attrs?: { code?: string | number } }) => {
       if (String(node?.attrs?.code) === '515') this.lastStream515At = Date.now();
     });
@@ -2419,7 +2536,16 @@ export class BaileysStartupService extends ChannelStartupService {
   private eventHandler() {
     const socket = this.client;
     socket.ev.process(async (events) => {
-      this.eventProcessingQueue = this.eventProcessingQueue.then(async () => {
+      // Never queue connection state behind slow settings/database/message work.
+      // A native close must be handled even when the general queue is blocked.
+      if (events['connection.update']) {
+        void this.connectionUpdate(events['connection.update'], socket).catch((error) =>
+          this.logger.error(`WhatsApp connection update failed: ${String(error)}`),
+        );
+      }
+      this.eventProcessingQueue = this.eventProcessingQueue.catch((error) => {
+        this.logger.error(`WhatsApp event processing queue recovered: ${String(error)}`);
+      }).then(async () => {
         try {
           if (!this.endSession) {
             const database = this.configService.get<Database>('DATABASE');
@@ -2442,10 +2568,6 @@ export class BaileysStartupService extends ChannelStartupService {
               }
 
               this.sendDataWebhook(Events.CALL, call);
-            }
-
-            if (events['connection.update']) {
-              void this.connectionUpdate(events['connection.update'], socket).catch((error) => this.logger.error(error));
             }
 
             if (events['creds.update']) {
