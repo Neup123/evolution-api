@@ -79,7 +79,7 @@ jobs:
       run: npm run db:deploy
 
     - name: Test WhatsApp connection recovery and watchdog
-      run: npm run test:connection-recovery
+      run: npm run test:connection-recovery && npm run test:socket-watchdog && npm run test:disconnection-fields
 
     - name: Test durable outbound queue
       run: npm run test:outbound-queue && npm run test:outbound-queue:postgres
