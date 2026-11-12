@@ -43,7 +43,9 @@
     "test:settings-templates": "tsx ./test/settings-template-hierarchy.test.ts",
     "test:review-surfaces": "tsx ./test/review-surfaces.test.ts",
     "test:mistakes-generator": "tsx ./test/mistakes-generator.test.ts",
-    "test:connection-recovery": "tsx ./test/connection-recovery.test.ts"
+    "test:connection-recovery": "node --require ./test/support/whatsapp-rust-bridge-test-preload.cjs --import tsx ./test/connection-recovery.test.ts",
+    "test:socket-watchdog": "node --require ./test/support/whatsapp-rust-bridge-test-preload.cjs --import tsx ./test/socket-watchdog.test.ts",
+    "test:disconnection-fields": "node --require ./test/support/whatsapp-rust-bridge-test-preload.cjs --import tsx ./test/disconnection-fields.test.ts"
   },
   "repository": {
     "type": "git",
