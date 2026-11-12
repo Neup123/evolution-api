@@ -791,6 +791,14 @@ export class BaileysStartupService extends ChannelStartupService {
       this.logger.warn(`Connection update ignored instance=${this.instanceName} guard=build-revision active=${this.activeSocketBuildRevision} current=${this.socketBuildRevision} connection=${connection ?? 'none'}`);
       return;
     }
+    // A delayed 'connecting' or QR-only event is not allowed to demote a
+    // socket which is already demonstrably open. Otherwise the subsequent
+    // profile await can leave in-memory 'connecting' and DB 'close' forever.
+    if (this.stateConnection.state === 'open' && (socket.ws as any)?.isOpen === true &&
+        (connection === 'connecting' || (qr && !connection))) {
+      this.logger.warn(`Connection update ignored instance=${this.instanceName} guard=late-connecting-on-open`);
+      return;
+    }
     const revision = qr || connection
       ? (this.connectionRevision = (this.connectionRevision ?? 0) + 1)
       : (this.connectionRevision ??= 0);
