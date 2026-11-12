@@ -668,7 +668,6 @@ export class BaileysStartupService extends ChannelStartupService {
       error?: unknown;
     }>((resolve) => {
       let completed = false;
-      let deadline: ReturnType<typeof setTimeout>;
       const finish = (result: {
         kind: 'opened' | 'closed' | 'terminal' | 'threw' | 'timed_out';
         code?: number;
@@ -681,7 +680,7 @@ export class BaileysStartupService extends ChannelStartupService {
         resolve(result);
       };
       this.pendingReconnect = { settle: (kind, code) => finish({ kind, code }) };
-      deadline = setTimeout(() => finish({ kind: 'timed_out' }), this.reconnectAttemptTimeoutMs);
+      const deadline = setTimeout(() => finish({ kind: 'timed_out' }), this.reconnectAttemptTimeoutMs);
       deadline.unref?.();
       void this.connectToWhatsapp(this.phoneNumber).catch((error) => finish({ kind: 'threw', error }));
     });
