@@ -63,7 +63,14 @@ async function throwingProbeRetainsLiveSocket() {
 async function hangingProbeRetainsLiveSocket() {
   const h = harness();
   h.socket.query = () => new Promise(() => {});
-  await h.service.checkSocketHealth(h.socket);
+  // The service deliberately unrefs its health deadline; keep the isolated
+  // Node test process alive until that deadline has actually fired.
+  const keepAlive = setTimeout(() => {}, 100);
+  try {
+    await h.service.checkSocketHealth(h.socket);
+  } finally {
+    clearTimeout(keepAlive);
+  }
   assert.equal(h.stored.connectionStatus, 'open');
   assert.equal(h.reconnectCodes.length, 0);
   assert.equal(h.ended(), 0);
