@@ -332,7 +332,34 @@ async function supervisorClosesPersistentlyDeadTransport() {
   assert.deepEqual(scheduled, [408]);
 }
 
+
+// A real open event with a stuck profile request must not be killed merely
+// because the reconnection attempt's status-write deadline expired.
+async function timedOutProfileDoesNotKillLiveSocket() {
+  const { service, socket, stored, logs } = harness();
+  stored.connectionStatus = 'close';
+  service.stateConnection = { state: 'close' };
+  service.reconnectAttemptTimeoutMs = 25;
+  let ended = 0;
+  socket.end = () => { ended++; };
+  service.profilePicture = () => new Promise(() => {});
+  service.connectToWhatsapp = async () => {
+    service.activeSocketBuildRevision = ++service.socketBuildRevision;
+    queueMicrotask(() => { void service.connectionUpdate({ connection: 'open' }, socket); });
+    return socket;
+  };
+  const attempt = service.runReconnectAttempt();
+  await sleep(65);
+  await attempt;
+
+  assert.equal(stored.connectionStatus, 'open');
+  assert.equal(service.stateConnection.state, 'open');
+  assert.equal(ended, 0, 'A live WebSocket must survive a delayed profile fetch');
+  assert.ok(logs.some((line) => line.includes('outcome=late_open_reconciled')));
+}
+
 async function main() {
+  await timedOutProfileDoesNotKillLiveSocket();
   await revisionBumpDuringProfileFetchReconciles();
   await watchdogProbeFailureRetainsLiveSocket();
   await supervisorRearmsAbandonedReconnect();
