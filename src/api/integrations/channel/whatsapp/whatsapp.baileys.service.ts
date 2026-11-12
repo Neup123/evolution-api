@@ -665,6 +665,23 @@ export class BaileysStartupService extends ChannelStartupService {
     );
     if (outcome.kind === 'threw') this.logger.error(outcome.error);
 
+    // A live WS may have delivered open while a profile lookup was blocked.
+    // Reconcile it before treating the 30-second deadline as socket death.
+    if (outcome.kind === 'timed_out' && this.stateConnection.state === 'open' &&
+        (this.client?.ws as any)?.isOpen === true) {
+      const liveSocket = this.client;
+      this.logger.warn(`Reconnect attempt ${attempt} outcome=timeout-with-open-socket; attempting DB reconciliation`);
+      const reconciled = await this.completeOpenConnection(
+        liveSocket,
+        (liveSocket.user?.name ?? liveSocket.user?.verifiedName ?? this.instance.name) as string,
+      );
+      if (reconciled) {
+        this.logger.info(`Reconnect attempt ${attempt} outcome=late_open_reconciled`);
+        this.reconnectInFlight = false;
+        return;
+      }
+    }
+
     if (outcome.kind === 'timed_out' || outcome.kind === 'threw') {
       // Invalidate late events and socket construction from the failed attempt.
       // A thrown initialization may already have emitted 'connecting'.
@@ -692,12 +709,12 @@ export class BaileysStartupService extends ChannelStartupService {
   // The only successful open completion path: status write, settle, watchdog
   // and background worker are committed together. A skipped stale write is
   // never acknowledged; the independent supervisor can repair it later.
-  private async completeOpenConnection(socket: WASocket, profileName: string): Promise<void> {
+  private async completeOpenConnection(socket: WASocket, profileName: string): Promise<boolean> {
     if (socket !== this.client || this.stateConnection.state !== 'open' ||
         (this.activeSocketBuildRevision !== undefined &&
          this.activeSocketBuildRevision !== this.socketBuildRevision)) {
       this.logger.warn(`Open completion ignored instance=${this.instanceName} guard=socket-state-or-generation`);
-      return;
+      return false;
     }
     const revision = this.connectionRevision;
     let persisted = false;
@@ -720,15 +737,15 @@ export class BaileysStartupService extends ChannelStartupService {
         this.pendingReconnect?.settle('closed', DisconnectReason.connectionLost);
         this.scheduleReconnect(DisconnectReason.connectionLost);
       }
-      return;
+      return false;
     }
     if (!persisted) {
       this.logger.warn(`Open completion ignored instance=${this.instanceName} guard=queued-write-stale revision=${revision} current=${this.connectionRevision}`);
-      return;
+      return false;
     }
     if (this.stateConnection.state !== 'open' || revision !== this.connectionRevision || socket !== this.client) {
       this.logger.warn(`Open completion after persist instance=${this.instanceName} guard=state-revision-or-socket revision=${revision} current=${this.connectionRevision}`);
-      return;
+      return false;
     }
 
     this.pendingReconnect?.settle('opened');
@@ -754,6 +771,7 @@ export class BaileysStartupService extends ChannelStartupService {
       profilePictureUrl: this.instance.profilePictureUrl,
       ...this.stateConnection,
     });
+    return true;
   }
 
   private async connectionUpdate(
