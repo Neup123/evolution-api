@@ -371,7 +371,21 @@ async function lateConnectingCannotDemoteConfirmedOpen() {
   assert.ok(logs.some((line) => line.includes('guard=late-connecting-on-open')));
 }
 
+
+// An old or half-open transport must not persist a fabricated open status
+// merely because an earlier connection event said 'open'.
+async function closedTransportCannotFinalizeOpen() {
+  const { service, socket, stored, logs } = harness();
+  stored.connectionStatus = 'close';
+  socket.ws.isOpen = false;
+  const completed = await service.completeOpenConnection(socket, 'Test');
+  assert.equal(completed, false);
+  assert.equal(stored.connectionStatus, 'close');
+  assert.ok(logs.some((line) => line.includes('guard=socket-state-transport-or-generation')));
+}
+
 async function main() {
+  await closedTransportCannotFinalizeOpen();
   await lateConnectingCannotDemoteConfirmedOpen();
   await timedOutProfileDoesNotKillLiveSocket();
   await revisionBumpDuringProfileFetchReconciles();
