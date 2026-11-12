@@ -33,7 +33,9 @@ export class RabbitmqController extends EventController implements EventControll
       }
     } catch {
       this.status = false;
-      this.logger.warn('AMQP disabled: RABBITMQ_URI must be a valid amqp:// or amqps:// URL; check Coolify configuration');
+      this.logger.warn(
+        'AMQP disabled: RABBITMQ_URI must be a valid amqp:// or amqps:// URL; check Coolify configuration',
+      );
       return;
     }
 
