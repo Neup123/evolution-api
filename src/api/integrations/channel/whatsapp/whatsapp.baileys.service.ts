@@ -627,12 +627,15 @@ export class BaileysStartupService extends ChannelStartupService {
   }
 
   private shouldReconnectAfterClose(statusCode?: number): boolean {
-    // 408 is both Baileys connectionLost and timedOut. A paired session must
-    // survive a keep-alive gap; only an unregistered session stops retrying.
-    if (statusCode === 408) return this.instance.authState?.state?.creds?.registered === true;
-    const recent515 = this.lastStream515At > 0 && Date.now() - this.lastStream515At <= this.stream515GraceMs;
-    if (statusCode === DisconnectReason.loggedOut && recent515) return true;
-    return ![DisconnectReason.loggedOut, DisconnectReason.forbidden, 402, 406].includes(statusCode);
+    // Baileys 7.0.0-rc14 has exactly one confirmed non-retryable session
+    // close: loggedOut (401), which requires re-pairing. In particular, 408
+    // (connectionLost/timedOut), 403, 411, 440, 500 and unknown status codes
+    // must not be interpreted as proof of logout or gated on possibly stale
+    // authState.creds.registered. Retry them using capped backoff.
+    if (statusCode !== DisconnectReason.loggedOut) return true;
+    // A 515 restart handshake can be followed by a stale 401 emitted by the
+    // old socket. Preserve the existing short guard against false logout.
+    return this.lastStream515At > 0 && Date.now() - this.lastStream515At <= this.stream515GraceMs;
   }
 
   private scheduleReconnect(statusCode?: number) {
@@ -641,6 +644,11 @@ export class BaileysStartupService extends ChannelStartupService {
     // Full jitter spreads 428 storms across accounts; restartRequired (515)
     // must reconnect immediately instead of using the backoff window.
     const delay = statusCode === 515 ? 0 : Math.floor(Math.random() * ceilingMs);
+    this.logger.warn(
+      `Reconnect attempt ${this.reconnectAttempts + 1} scheduled instance=${this.instanceName} ` +
+        `code=${statusCode ?? 'unknown'} nextRetrySeconds=${(delay / 1000).toFixed(3)} ` +
+        `backoffCeilingSeconds=${(ceilingMs / 1000).toFixed(3)}`,
+    );
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = undefined;
       void this.runReconnectAttempt(statusCode).catch((error) => {
@@ -658,7 +666,9 @@ export class BaileysStartupService extends ChannelStartupService {
     if (this.reconnectInFlight || this.stateConnection.state !== 'close') return;
     this.reconnectInFlight = true;
     const attempt = ++this.reconnectAttempts;
-    this.logger.info(`Reconnect attempt ${attempt} started after close code ${statusCode ?? 'unknown'}`);
+    this.logger.info(
+      `Reconnect attempt ${attempt} started after close code ${statusCode ?? 'unknown'} instance=${this.instanceName}`,
+    );
 
     // connectToWhatsapp resolves when a socket is constructed, not when it opens.
     // The attempt succeeds only on an actual 'open' event, with a 30-second deadline.
@@ -733,9 +743,20 @@ export class BaileysStartupService extends ChannelStartupService {
     }
 
     this.reconnectInFlight = false;
-    if (outcome.kind !== 'opened' && outcome.kind !== 'terminal' && this.stateConnection.state === 'close') {
+    if (outcome.kind === 'opened') {
+      this.logger.info(
+        `Reconnect loop stopped instance=${this.instanceName} reason=recovered code=${outcome.code ?? statusCode ?? 'unknown'} attempts=${attempt}`,
+      );
+    } else if (outcome.kind !== 'terminal' && this.stateConnection.state === 'close') {
+      // The close handler may already have tried to schedule while
+      // reconnectInFlight was true. Always re-arm after releasing that latch.
       this.scheduleReconnect(outcome.code ?? statusCode);
+    } else if (outcome.kind !== 'terminal') {
+      this.logger.warn(
+        `Reconnect loop paused instance=${this.instanceName} state=${this.stateConnection.state} code=${outcome.code ?? statusCode ?? 'unknown'} attempt=${attempt}; supervisor will re-evaluate`,
+      );
     }
+    // The terminal close handler emits the single explicit stopped line.
   }
 
   // The only successful open completion path: status write, settle, watchdog
@@ -975,6 +996,9 @@ export class BaileysStartupService extends ChannelStartupService {
       } else {
         clearTimeout(this.reconnectTimer);
         this.reconnectTimer = undefined;
+        this.logger.warn(
+          `Reconnect loop stopped instance=${this.instanceName} reason=logged-out code=${statusCode ?? 'unknown'} attempt=${this.reconnectAttempts}; re-pairing required`,
+        );
         this.sendDataWebhook(Events.STATUS_INSTANCE, {
           instance: this.instance.name,
           status: 'closed',

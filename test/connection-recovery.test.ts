@@ -161,8 +161,8 @@ async function registered408Retries() {
   assert.ok(!events.includes('logout.instance'), '408 may not wipe paired credentials');
 }
 
-async function unregistered408Terminates() {
-  const { service, socket } = harness();
+async function unregistered408Retries() {
+  const { service, socket, stored } = harness();
   service.instance.authState = { state: { creds: { registered: false } } };
   const reconnectCodes: number[] = [];
   const events: string[] = [];
@@ -171,8 +171,36 @@ async function unregistered408Terminates() {
   await service.connectionUpdate({ connection: 'close', lastDisconnect: {
     error: new Boom('Unpaired registration timed out', { statusCode: 408 }),
   } }, socket);
-  assert.deepEqual(reconnectCodes, []);
-  assert.ok(events.includes('logout.instance'), 'Unregistered 408 must terminate');
+  assert.deepEqual(reconnectCodes, [408], '408 is transient even when registration reports false');
+  assert.equal(stored.connectionStatus, 'close');
+  assert.ok(!events.includes('logout.instance'), '408 must never trigger logout');
+}
+
+// Missing/stale auth state cannot turn connection timeouts into logouts.
+async function missingAuth408Retries() {
+  const { service, socket } = harness();
+  delete service.instance.authState;
+  const scheduled: number[] = [];
+  const events: string[] = [];
+  service.scheduleReconnect = (code: number) => { scheduled.push(code); };
+  service.eventEmitter.emit = (event: string) => { events.push(event); };
+  await service.connectionUpdate({ connection: 'close', lastDisconnect: {
+    error: new Boom('Reconnect timed out', { statusCode: DisconnectReason.timedOut }),
+  } }, socket);
+  assert.deepEqual(scheduled, [408]);
+  assert.ok(!events.includes('logout.instance'));
+}
+
+// Only 401 (unless preceded by a fresh 515) is terminal in Baileys.
+// Other codes, including unknown HTTP-style and Baileys enum values,
+// retain the retry path without making assumptions about credential state.
+async function onlyExplicitLogoutIsTerminal() {
+  const { service } = harness();
+  delete service.instance.authState;
+  for (const code of [undefined, 402, 403, 406, 408, 411, 428, 440, 500, 503, 515]) {
+    assert.equal(service.shouldReconnectAfterClose(code), true, `Code ${code} must remain retryable`);
+  }
+  assert.equal(service.shouldReconnectAfterClose(DisconnectReason.loggedOut), false);
 }
 
 async function trailing401After515Retries() {
@@ -384,6 +412,71 @@ async function closedTransportCannotFinalizeOpen() {
   assert.ok(logs.some((line) => line.includes('guard=socket-state-transport-or-generation')));
 }
 
+// A reconnect socket can itself report 408 after a 428/503 close.
+// The pending attempt must settle 'closed' (never 'terminal'), schedule
+// another capped-backoff attempt and eventually acknowledge a real open.
+async function reconnect408EventuallyRecovers() {
+  const { service, socket, stored, logs } = harness();
+  let attempts = 0;
+  const events: string[] = [];
+  service.eventEmitter.emit = (event: string) => { events.push(event); };
+  service.connectToWhatsapp = async () => {
+    service.activeSocketBuildRevision = ++service.socketBuildRevision;
+    attempts++;
+    if (attempts === 1) {
+      // Credential data can be missing midway through rebuilding a socket.
+      delete service.instance.authState;
+      queueMicrotask(() => {
+        void service.connectionUpdate({ connection: 'close', lastDisconnect: {
+          error: new Boom('408 during reconnect', { statusCode: DisconnectReason.connectionLost }),
+        } }, socket);
+      });
+    } else {
+      queueMicrotask(() => { void service.connectionUpdate({ connection: 'open' }, socket); });
+    }
+    return socket;
+  };
+
+  await service.connectionUpdate(transientClose(), socket);
+  await until(() => stored.connectionStatus === 'open', '408 during reconnect killed the retry loop');
+  assert.equal(attempts, 2, 'Second reconnect attempt should recover');
+  assert.ok(logs.some((line) => line.includes('Reconnect attempt 1 outcome=closed code=408')));
+  assert.ok(logs.some((line) => line.includes('Reconnect attempt 2 scheduled') &&
+    line.includes('code=408') && line.includes('nextRetrySeconds=')));
+  assert.ok(logs.some((line) => line.includes('Reconnect attempt 2 outcome=opened')));
+  assert.ok(logs.some((line) => line.includes('reason=recovered')));
+  assert.ok(!logs.some((line) => line.includes('outcome=terminal')));
+  assert.ok(!events.includes('logout.instance'));
+}
+
+// A real logged-out close during a reconnect must stop with an explicit log
+// and must never schedule attempt 2.
+async function loggedOutDuringReconnectStopsWithLog() {
+  const { service, socket, stored, logs } = harness();
+  let attempts = 0;
+  service.connectToWhatsapp = async () => {
+    service.activeSocketBuildRevision = ++service.socketBuildRevision;
+    attempts++;
+    queueMicrotask(() => {
+      void service.connectionUpdate({ connection: 'close', lastDisconnect: {
+        error: new Boom('Device unlinked', { statusCode: DisconnectReason.loggedOut }),
+      } }, socket);
+    });
+    return socket;
+  };
+
+  await service.connectionUpdate(transientClose(), socket);
+  await until(() => logs.some((line) => line.includes('Reconnect attempt 1 outcome=terminal code=401')),
+    '401 during reconnect never settled terminal');
+  await sleep(35);
+  assert.equal(attempts, 1, 'Real logout must not schedule a second reconnect');
+  assert.equal(stored.connectionStatus, 'close');
+  assert.ok(logs.some((line) => line.includes('Reconnect loop stopped') &&
+    line.includes('reason=logged-out') && line.includes('code=401') &&
+    line.includes('re-pairing required')));
+  assert.ok(!logs.some((line) => line.includes('Reconnect attempt 2 scheduled')));
+}
+
 async function main() {
   await closedTransportCannotFinalizeOpen();
   await lateConnectingCannotDemoteConfirmedOpen();
@@ -401,7 +494,11 @@ async function main() {
   await delayedOpenCannotOverwriteClose();
   await terminalDoesNotRetry();
   await registered408Retries();
-  await unregistered408Terminates();
+  await unregistered408Retries();
+  await missingAuth408Retries();
+  await onlyExplicitLogoutIsTerminal();
+  await reconnect408EventuallyRecovers();
+  await loggedOutDuringReconnectStopsWithLog();
   await trailing401After515Retries();
   await expired515DoesNotMaskLogout();
   console.log('Connection recovery tests passed');
