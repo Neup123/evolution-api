@@ -24,7 +24,7 @@ function harness() {
   const logs: string[] = [];
   const socket: any = {
     user: { id: '12345:1@s.whatsapp.net' },
-    ws: { close() {} },
+    ws: { isOpen: true, close() {} },
     end() {},
   };
   // Do not construct the full server; exercise the actual connectionUpdate,
@@ -50,6 +50,7 @@ function harness() {
   service.configService = { get: (key: string) => key === 'CHATWOOT' ? { ENABLED: false } : {} };
   service.prismaRepository = {
     instance: {
+      findUnique: async () => ({ connectionStatus: stored.connectionStatus }),
       update: async ({ data }: any) => {
         Object.assign(stored, data);
       },
@@ -160,8 +161,8 @@ async function registered408Retries() {
   assert.ok(!events.includes('logout.instance'), '408 may not wipe paired credentials');
 }
 
-async function unregistered408Terminates() {
-  const { service, socket } = harness();
+async function unregistered408Retries() {
+  const { service, socket, stored } = harness();
   service.instance.authState = { state: { creds: { registered: false } } };
   const reconnectCodes: number[] = [];
   const events: string[] = [];
@@ -170,8 +171,36 @@ async function unregistered408Terminates() {
   await service.connectionUpdate({ connection: 'close', lastDisconnect: {
     error: new Boom('Unpaired registration timed out', { statusCode: 408 }),
   } }, socket);
-  assert.deepEqual(reconnectCodes, []);
-  assert.ok(events.includes('logout.instance'), 'Unregistered 408 must terminate');
+  assert.deepEqual(reconnectCodes, [408], '408 is transient even when registration reports false');
+  assert.equal(stored.connectionStatus, 'close');
+  assert.ok(!events.includes('logout.instance'), '408 must never trigger logout');
+}
+
+// Missing/stale auth state cannot turn connection timeouts into logouts.
+async function missingAuth408Retries() {
+  const { service, socket } = harness();
+  delete service.instance.authState;
+  const scheduled: number[] = [];
+  const events: string[] = [];
+  service.scheduleReconnect = (code: number) => { scheduled.push(code); };
+  service.eventEmitter.emit = (event: string) => { events.push(event); };
+  await service.connectionUpdate({ connection: 'close', lastDisconnect: {
+    error: new Boom('Reconnect timed out', { statusCode: DisconnectReason.timedOut }),
+  } }, socket);
+  assert.deepEqual(scheduled, [408]);
+  assert.ok(!events.includes('logout.instance'));
+}
+
+// Only 401 (unless preceded by a fresh 515) is terminal in Baileys.
+// Other codes, including unknown HTTP-style and Baileys enum values,
+// retain the retry path without making assumptions about credential state.
+async function onlyExplicitLogoutIsTerminal() {
+  const { service } = harness();
+  delete service.instance.authState;
+  for (const code of [undefined, 402, 403, 406, 408, 411, 428, 440, 500, 503, 515]) {
+    assert.equal(service.shouldReconnectAfterClose(code), true, `Code ${code} must remain retryable`);
+  }
+  assert.equal(service.shouldReconnectAfterClose(DisconnectReason.loggedOut), false);
 }
 
 async function trailing401After515Retries() {
@@ -253,7 +282,210 @@ async function failedOpenStatusWriteStaysRetryable() {
   assert.ok(logs.some((line) => line.includes('Could not persist WhatsApp open transition')));
 }
 
+
+// A QR/revision event while the profile is pending cannot orphan an already-open
+// socket. The final open must use the current revision, not abandon persistence.
+async function revisionBumpDuringProfileFetchReconciles() {
+  const { service, socket, stored, logs } = harness();
+  stored.connectionStatus = 'close';
+  let releasePicture!: (picture: { profilePictureUrl: null }) => void;
+  service.profilePicture = () => new Promise((resolve) => { releasePicture = resolve; });
+  const settled: string[] = [];
+  service.pendingReconnect = { settle: (kind: string) => settled.push(kind) };
+
+  const opening = service.connectionUpdate({ connection: 'open' }, socket);
+  await until(() => typeof releasePicture === 'function', 'Open profile request did not begin');
+  service.connectionRevision++;
+  releasePicture({ profilePictureUrl: null });
+  await opening;
+
+  assert.equal(stored.connectionStatus, 'open');
+  assert.equal(stored.disconnectionAt, null);
+  assert.deepEqual(settled, ['opened']);
+  assert.ok(logs.some((line) => line.includes('guard=profile-await')));
+}
+
+// An IQ ping error from WhatsApp or a proxy does not prove the transport died.
+async function watchdogProbeFailureRetainsLiveSocket() {
+  const { service, socket, stored, logs } = harness();
+  let ends = 0;
+  socket.query = async () => { throw new Error('Simulated ping delay'); };
+  socket.end = () => { ends++; };
+
+  await service.checkSocketHealth(socket);
+  assert.equal(ends, 0, 'A healthy WebSocket must not be ended after a failed ping');
+  assert.equal(service.stateConnection.state, 'open');
+  assert.equal(stored.connectionStatus, 'open');
+  assert.ok(logs.some((line) => line.includes('result=degraded')));
+}
+
+// A missed timeout callback cannot leave a paired, closed account idle forever.
+async function supervisorRearmsAbandonedReconnect() {
+  const { service, stored } = harness();
+  service.stateConnection = { state: 'close', statusReason: 408 };
+  stored.connectionStatus = 'close';
+  const scheduled: number[] = [];
+  service.scheduleReconnect = (code: number) => scheduled.push(code);
+
+  await service.superviseConnection();
+  assert.deepEqual(scheduled, [408]);
+}
+
+// The fallback supervisor repairs open-in-memory/close-in-DB divergence.
+async function supervisorRepairsOrphanedOpen() {
+  const { service, stored, socket, logs } = harness();
+  stored.connectionStatus = 'close';
+  service.openObservedAt = Date.now() - 180_000;
+  const settled: string[] = [];
+  service.pendingReconnect = { settle: (kind: string) => settled.push(kind) };
+
+  await service.superviseConnection();
+  assert.equal(stored.connectionStatus, 'open');
+  assert.deepEqual(settled, ['opened']);
+  assert.ok(logs.some((line) => line.includes('result=orphan-open')));
+  assert.equal(socket.ws.isOpen, true);
+}
+
+// The independent supervisor detects an actually closed transport even if
+// Baileys did not deliver a close event.
+async function supervisorClosesPersistentlyDeadTransport() {
+  const { service, socket, stored } = harness();
+  socket.ws.isOpen = false;
+  service.socketClosedObservedAt = Date.now() - 70_000;
+  const scheduled: number[] = [];
+  service.scheduleReconnect = (code: number) => scheduled.push(code);
+
+  await service.superviseConnection();
+  assert.equal(stored.connectionStatus, 'close');
+  assert.deepEqual(scheduled, [408]);
+}
+
+
+// A real open event with a stuck profile request must not be killed merely
+// because the reconnection attempt's status-write deadline expired.
+async function timedOutProfileDoesNotKillLiveSocket() {
+  const { service, socket, stored, logs } = harness();
+  stored.connectionStatus = 'close';
+  service.stateConnection = { state: 'close' };
+  service.reconnectAttemptTimeoutMs = 25;
+  let ended = 0;
+  socket.end = () => { ended++; };
+  service.profilePicture = () => new Promise(() => {});
+  service.connectToWhatsapp = async () => {
+    service.activeSocketBuildRevision = ++service.socketBuildRevision;
+    queueMicrotask(() => { void service.connectionUpdate({ connection: 'open' }, socket); });
+    return socket;
+  };
+  const attempt = service.runReconnectAttempt();
+  await sleep(65);
+  await attempt;
+
+  assert.equal(stored.connectionStatus, 'open');
+  assert.equal(service.stateConnection.state, 'open');
+  assert.equal(ended, 0, 'A live WebSocket must survive a delayed profile fetch');
+  assert.ok(logs.some((line) => line.includes('outcome=late_open_reconciled')));
+}
+
+
+// A delayed connecting marker from the same live socket must not demote open
+// state, or hide the orphan from open-only reconciliation.
+async function lateConnectingCannotDemoteConfirmedOpen() {
+  const { service, socket, stored, logs } = harness();
+  const revision = service.connectionRevision;
+  await service.connectionUpdate({ connection: 'connecting' }, socket);
+  assert.equal(service.stateConnection.state, 'open');
+  assert.equal(stored.connectionStatus, 'open');
+  assert.equal(service.connectionRevision, revision);
+  assert.ok(logs.some((line) => line.includes('guard=late-connecting-on-open')));
+}
+
+
+// An old or half-open transport must not persist a fabricated open status
+// merely because an earlier connection event said 'open'.
+async function closedTransportCannotFinalizeOpen() {
+  const { service, socket, stored, logs } = harness();
+  stored.connectionStatus = 'close';
+  socket.ws.isOpen = false;
+  const completed = await service.completeOpenConnection(socket, 'Test');
+  assert.equal(completed, false);
+  assert.equal(stored.connectionStatus, 'close');
+  assert.ok(logs.some((line) => line.includes('guard=socket-state-transport-or-generation')));
+}
+
+// A reconnect socket can itself report 408 after a 428/503 close.
+// The pending attempt must settle 'closed' (never 'terminal'), schedule
+// another capped-backoff attempt and eventually acknowledge a real open.
+async function reconnect408EventuallyRecovers() {
+  const { service, socket, stored, logs } = harness();
+  let attempts = 0;
+  const events: string[] = [];
+  service.eventEmitter.emit = (event: string) => { events.push(event); };
+  service.connectToWhatsapp = async () => {
+    service.activeSocketBuildRevision = ++service.socketBuildRevision;
+    attempts++;
+    if (attempts === 1) {
+      // Credential data can be missing midway through rebuilding a socket.
+      delete service.instance.authState;
+      queueMicrotask(() => {
+        void service.connectionUpdate({ connection: 'close', lastDisconnect: {
+          error: new Boom('408 during reconnect', { statusCode: DisconnectReason.connectionLost }),
+        } }, socket);
+      });
+    } else {
+      queueMicrotask(() => { void service.connectionUpdate({ connection: 'open' }, socket); });
+    }
+    return socket;
+  };
+
+  await service.connectionUpdate(transientClose(), socket);
+  await until(() => stored.connectionStatus === 'open', '408 during reconnect killed the retry loop');
+  assert.equal(attempts, 2, 'Second reconnect attempt should recover');
+  assert.ok(logs.some((line) => line.includes('Reconnect attempt 1 outcome=closed code=408')));
+  assert.ok(logs.some((line) => line.includes('Reconnect attempt 2 scheduled') &&
+    line.includes('code=408') && line.includes('nextRetrySeconds=')));
+  assert.ok(logs.some((line) => line.includes('Reconnect attempt 2 outcome=opened')));
+  assert.ok(logs.some((line) => line.includes('reason=recovered')));
+  assert.ok(!logs.some((line) => line.includes('outcome=terminal')));
+  assert.ok(!events.includes('logout.instance'));
+}
+
+// A real logged-out close during a reconnect must stop with an explicit log
+// and must never schedule attempt 2.
+async function loggedOutDuringReconnectStopsWithLog() {
+  const { service, socket, stored, logs } = harness();
+  let attempts = 0;
+  service.connectToWhatsapp = async () => {
+    service.activeSocketBuildRevision = ++service.socketBuildRevision;
+    attempts++;
+    queueMicrotask(() => {
+      void service.connectionUpdate({ connection: 'close', lastDisconnect: {
+        error: new Boom('Device unlinked', { statusCode: DisconnectReason.loggedOut }),
+      } }, socket);
+    });
+    return socket;
+  };
+
+  await service.connectionUpdate(transientClose(), socket);
+  await until(() => logs.some((line) => line.includes('Reconnect attempt 1 outcome=terminal code=401')),
+    '401 during reconnect never settled terminal');
+  await sleep(35);
+  assert.equal(attempts, 1, 'Real logout must not schedule a second reconnect');
+  assert.equal(stored.connectionStatus, 'close');
+  assert.ok(logs.some((line) => line.includes('Reconnect loop stopped') &&
+    line.includes('reason=logged-out') && line.includes('code=401') &&
+    line.includes('re-pairing required')));
+  assert.ok(!logs.some((line) => line.includes('Reconnect attempt 2 scheduled')));
+}
+
 async function main() {
+  await closedTransportCannotFinalizeOpen();
+  await lateConnectingCannotDemoteConfirmedOpen();
+  await timedOutProfileDoesNotKillLiveSocket();
+  await revisionBumpDuringProfileFetchReconciles();
+  await watchdogProbeFailureRetainsLiveSocket();
+  await supervisorRearmsAbandonedReconnect();
+  await supervisorRepairsOrphanedOpen();
+  await supervisorClosesPersistentlyDeadTransport();
   await nativeCloseWriteFailureStillRetries();
   await reconnectOpensOnlyAfterStoredWrite();
   await failedOpenStatusWriteStaysRetryable();
@@ -262,10 +494,21 @@ async function main() {
   await delayedOpenCannotOverwriteClose();
   await terminalDoesNotRetry();
   await registered408Retries();
-  await unregistered408Terminates();
+  await unregistered408Retries();
+  await missingAuth408Retries();
+  await onlyExplicitLogoutIsTerminal();
+  await reconnect408EventuallyRecovers();
+  await loggedOutDuringReconnectStopsWithLog();
   await trailing401After515Retries();
   await expired515DoesNotMaskLogout();
   console.log('Connection recovery tests passed');
 }
 
-void main().catch((error) => { console.error(error); process.exitCode = 1; });
+// Module imports can start background Redis retries; these isolated test
+// processes must terminate once assertions have completed.
+void main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });

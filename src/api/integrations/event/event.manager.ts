@@ -8,9 +8,11 @@ import { WebsocketController } from '@api/integrations/event/websocket/websocket
 import { PrismaRepository } from '@api/repository/repository.service';
 import { ArchiveService } from '@api/services/archive.service';
 import { WAMonitoringService } from '@api/services/monitor.service';
+import { Logger } from '@config/logger.config';
 import { Server } from 'http';
 
 export class EventManager {
+  private readonly logger = new Logger('EventManager');
   private prismaRepository: PrismaRepository;
   private waMonitor: WAMonitoringService;
   private websocketController: WebsocketController;
@@ -135,7 +137,11 @@ export class EventManager {
     await this.rabbitmq.emit(eventData);
     await this.nats.emit(eventData);
     await this.sqs.emit(eventData);
-    await this.webhook.emit(eventData);
+    // A slow or unreachable n8n destination must not block the primary event
+    // pipeline (or keep message/connection processing stalled for minutes).
+    void this.webhook.emit(eventData).catch((error) => {
+      this.logger.error(`Webhook asynchronous delivery failed: ${String(error)}`);
+    });
     await this.pusher.emit(eventData);
     await this.kafka.emit(eventData);
   }

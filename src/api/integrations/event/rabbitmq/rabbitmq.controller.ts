@@ -20,7 +20,22 @@ export class RabbitmqController extends EventController implements EventControll
   }
 
   public async init(): Promise<void> {
-    if (!this.status) {
+    if (!this.status) return;
+
+    // Fail closed on configuration errors. Invalid URL errors cannot be
+    // resolved by reconnect backoff; leaving AMQP enabled causes noisy retries
+    // on every event while consuming resources needed by WhatsApp recovery.
+    const uri = configService.get<Rabbitmq>('RABBITMQ').URI;
+    try {
+      const parsed = new URL(uri);
+      if (!['amqp:', 'amqps:'].includes(parsed.protocol) || !parsed.hostname) {
+        throw new Error('unsupported AMQP protocol or missing host');
+      }
+    } catch {
+      this.status = false;
+      this.logger.warn(
+        'AMQP disabled: RABBITMQ_URI must be a valid amqp:// or amqps:// URL; check Coolify configuration',
+      );
       return;
     }
 

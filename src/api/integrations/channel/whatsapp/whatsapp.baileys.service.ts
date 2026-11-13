@@ -336,6 +336,7 @@ export class BaileysStartupService extends ChannelStartupService {
   }
 
   public async logoutInstance() {
+    clearInterval(this.connectionSupervisor);
     clearInterval(this.socketWatchdog);
     clearTimeout(this.reconnectTimer);
     this.reconnectTimer = undefined;
@@ -422,18 +423,96 @@ export class BaileysStartupService extends ChannelStartupService {
   private socketBuildRevision = 0;
   private activeSocketBuildRevision = 0;
   private socketWatchdog?: ReturnType<typeof setInterval>;
+  private connectionSupervisor?: ReturnType<typeof setInterval>;
+  private openObservedAt = 0;
+  private socketClosedObservedAt = 0;
+  private readonly openReconcileDelayMs = 120_000;
+
+  // Independent of Baileys events and reconnect attempt promises. An orphaned
+  // open or a lost reconnect timer must never leave an HTTP-healthy process idle.
+  private startConnectionSupervisor() {
+    clearInterval(this.connectionSupervisor);
+    this.connectionSupervisor = setInterval(() => {
+      void this.superviseConnection().catch((error) =>
+        this.logger.error(`Connection supervisor failed instance=${this.instanceName}: ${String(error)}`),
+      );
+    }, 60_000);
+    this.connectionSupervisor.unref?.();
+  }
+
+  private async superviseConnection(): Promise<void> {
+    if (this.endSession || !this.client) return;
+    const socket = this.client;
+    if (this.stateConnection.state === 'close') {
+      const code = this.stateConnection.statusReason;
+      if (!this.reconnectTimer && !this.reconnectInFlight && this.shouldReconnectAfterClose(code)) {
+        this.logger.warn(`Connection supervisor instance=${this.instanceName} result=rearm-reconnect code=${code}`);
+        this.scheduleReconnect(code);
+      }
+      return;
+    }
+    if (this.stateConnection.state !== 'open') return;
+
+    if ((socket.ws as any)?.isOpen === false) {
+      if (!this.socketClosedObservedAt) this.socketClosedObservedAt = Date.now();
+      // Two independent observations are required; a transient WS transition
+      // must not be treated as evidence that a paired session is lost.
+      if (Date.now() - this.socketClosedObservedAt >= 60_000) {
+        this.logger.warn(`Connection supervisor instance=${this.instanceName} result=socket-closed`);
+        await this.connectionUpdate(
+          {
+            connection: 'close',
+            lastDisconnect: {
+              error: new Boom('WhatsApp WebSocket stayed closed', { statusCode: DisconnectReason.connectionLost }),
+              date: new Date(),
+            },
+          },
+          socket,
+        );
+      }
+      return;
+    }
+    this.socketClosedObservedAt = 0;
+    if (
+      (socket.ws as any)?.isOpen !== true ||
+      !this.openObservedAt ||
+      Date.now() - this.openObservedAt < this.openReconcileDelayMs
+    )
+      return;
+
+    const stored = await this.prismaRepository.instance.findUnique({
+      where: { id: this.instanceId },
+      select: { connectionStatus: true },
+    });
+    if (socket !== this.client || this.stateConnection.state !== 'open') return;
+    if (stored?.connectionStatus !== 'open') {
+      this.logger.warn(
+        `Connection supervisor instance=${this.instanceName} result=orphan-open db=${stored?.connectionStatus ?? 'missing'}; reconciling`,
+      );
+      await this.completeOpenConnection(
+        socket,
+        (socket.user?.name ?? socket.user?.verifiedName ?? this.instance.name) as string,
+      );
+    }
+  }
 
   // Serialize status writes and reject stale transitions before they enter the database.
   // A close queued behind an in-flight open write is always applied last.
-  private async persistConnectionTransition(revision: number, data: Prisma.InstanceUpdateInput): Promise<void> {
+  private async persistConnectionTransition(revision: number, data: Prisma.InstanceUpdateInput): Promise<boolean> {
     // A service wrapping an existing socket may not have a queued write yet.
     const previousWrite = this.statusWriteQueue ?? Promise.resolve();
-    const write = previousWrite.catch(() => undefined).then(async () => {
-      if (revision !== this.connectionRevision) return;
-      await this.prismaRepository.instance.update({ where: { id: this.instanceId }, data });
-    });
-    this.statusWriteQueue = write.catch((error) => this.logger.error(error));
-    await write;
+    const write = previousWrite
+      .catch(() => undefined)
+      .then(async () => {
+        if (revision !== this.connectionRevision) return false;
+        await this.prismaRepository.instance.update({ where: { id: this.instanceId }, data });
+        return true;
+      });
+    this.statusWriteQueue = write.then(
+      () => undefined,
+      (error) => this.logger.error(error),
+    );
+    return await write;
   }
 
   private watchdogRecoveryInFlight = false;
@@ -462,16 +541,20 @@ export class BaileysStartupService extends ChannelStartupService {
   }
 
   private async checkSocketHealth(socket: WASocket): Promise<void> {
-    if (socket !== this.client || this.stateConnection.state !== 'open' ||
-        this.reconnectTimer || this.watchdogRecoveryInFlight) return;
+    if (
+      socket !== this.client ||
+      this.stateConnection.state !== 'open' ||
+      this.reconnectTimer ||
+      this.watchdogRecoveryInFlight
+    )
+      return;
 
     // Only probe instances that are genuinely exposed as 'open' to API consumers.
     const stored = await this.prismaRepository.instance.findUnique({
       where: { id: this.instanceId },
       select: { connectionStatus: true },
     });
-    if (stored?.connectionStatus !== 'open' ||
-        socket !== this.client || this.stateConnection.state !== 'open') return;
+    if (stored?.connectionStatus !== 'open' || socket !== this.client || this.stateConnection.state !== 'open') return;
 
     const started = Date.now();
     let deadline: ReturnType<typeof setTimeout> | undefined;
@@ -490,14 +573,30 @@ export class BaileysStartupService extends ChannelStartupService {
           deadline.unref?.();
         }),
       ]);
-      this.logger.info(`Socket watchdog instance=${this.instanceName} result=healthy durationMs=${Date.now() - started}`);
+      this.logger.info(
+        `Socket watchdog instance=${this.instanceName} result=healthy durationMs=${Date.now() - started}`,
+      );
     } catch (error) {
-      if (socket !== this.client || this.stateConnection.state !== 'open' ||
-          this.reconnectTimer || this.watchdogRecoveryInFlight) return;
+      if (
+        socket !== this.client ||
+        this.stateConnection.state !== 'open' ||
+        this.reconnectTimer ||
+        this.watchdogRecoveryInFlight
+      )
+        return;
       this.watchdogRecoveryInFlight = true;
       const reason = error instanceof Error ? error.message : String(error);
+      // A failed IQ ping is not proof of a dead transport: delayed WA replies
+      // and server-side throttling must not terminate an otherwise open socket.
+      if ((socket.ws as any)?.isOpen !== false) {
+        this.watchdogRecoveryInFlight = false;
+        this.logger.warn(
+          `Socket watchdog instance=${this.instanceName} result=degraded durationMs=${Date.now() - started} reason=${reason}; socket retained`,
+        );
+        return;
+      }
       this.logger.warn(
-        `Socket watchdog instance=${this.instanceName} result=failed durationMs=${Date.now() - started} reason=${reason}; reconnect triggered`,
+        `Socket watchdog instance=${this.instanceName} result=socket-closed durationMs=${Date.now() - started} reason=${reason}; reconnect triggered`,
       );
 
       const disconnectError = new Boom('WhatsApp socket health probe failed', {
@@ -528,13 +627,15 @@ export class BaileysStartupService extends ChannelStartupService {
   }
 
   private shouldReconnectAfterClose(statusCode?: number): boolean {
-    // 408 is both Baileys connectionLost and timedOut. A paired session must
-    // survive a keep-alive gap; only an unregistered session stops retrying.
-    if (statusCode === 408) return this.instance.authState?.state?.creds?.registered === true;
-    const recent515 = this.lastStream515At > 0 &&
-      Date.now() - this.lastStream515At <= this.stream515GraceMs;
-    if (statusCode === DisconnectReason.loggedOut && recent515) return true;
-    return ![DisconnectReason.loggedOut, DisconnectReason.forbidden, 402, 406].includes(statusCode);
+    // Baileys 7.0.0-rc14 has exactly one confirmed non-retryable session
+    // close: loggedOut (401), which requires re-pairing. In particular, 408
+    // (connectionLost/timedOut), 403, 411, 440, 500 and unknown status codes
+    // must not be interpreted as proof of logout or gated on possibly stale
+    // authState.creds.registered. Retry them using capped backoff.
+    if (statusCode !== DisconnectReason.loggedOut) return true;
+    // A 515 restart handshake can be followed by a stale 401 emitted by the
+    // old socket. Preserve the existing short guard against false logout.
+    return this.lastStream515At > 0 && Date.now() - this.lastStream515At <= this.stream515GraceMs;
   }
 
   private scheduleReconnect(statusCode?: number) {
@@ -543,9 +644,20 @@ export class BaileysStartupService extends ChannelStartupService {
     // Full jitter spreads 428 storms across accounts; restartRequired (515)
     // must reconnect immediately instead of using the backoff window.
     const delay = statusCode === 515 ? 0 : Math.floor(Math.random() * ceilingMs);
+    this.logger.warn(
+      `Reconnect attempt ${this.reconnectAttempts + 1} scheduled instance=${this.instanceName} ` +
+        `code=${statusCode ?? 'unknown'} nextRetrySeconds=${(delay / 1000).toFixed(3)} ` +
+        `backoffCeilingSeconds=${(ceilingMs / 1000).toFixed(3)}`,
+    );
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = undefined;
-      void this.runReconnectAttempt(statusCode).catch((error) => this.logger.error(error));
+      void this.runReconnectAttempt(statusCode).catch((error) => {
+        this.logger.error(`Reconnect supervisor unexpected failure instance=${this.instanceName}: ${String(error)}`);
+        // An exception outside the normal outcome path must never strand
+        // reconnectInFlight=true and permanently suppress later attempts.
+        this.reconnectInFlight = false;
+        if (this.stateConnection.state === 'close') this.scheduleReconnect(statusCode);
+      });
     }, delay);
     this.reconnectTimer.unref?.();
   }
@@ -554,15 +666,18 @@ export class BaileysStartupService extends ChannelStartupService {
     if (this.reconnectInFlight || this.stateConnection.state !== 'close') return;
     this.reconnectInFlight = true;
     const attempt = ++this.reconnectAttempts;
-    this.logger.info(`Reconnect attempt ${attempt} started after close code ${statusCode ?? 'unknown'}`);
+    this.logger.info(
+      `Reconnect attempt ${attempt} started after close code ${statusCode ?? 'unknown'} instance=${this.instanceName}`,
+    );
 
     // connectToWhatsapp resolves when a socket is constructed, not when it opens.
     // The attempt succeeds only on an actual 'open' event, with a 30-second deadline.
-    const outcome = await new Promise<
-      { kind: 'opened' | 'closed' | 'terminal' | 'threw' | 'timed_out'; code?: number; error?: unknown }
-    >((resolve) => {
+    const outcome = await new Promise<{
+      kind: 'opened' | 'closed' | 'terminal' | 'threw' | 'timed_out';
+      code?: number;
+      error?: unknown;
+    }>((resolve) => {
       let completed = false;
-      let deadline: ReturnType<typeof setTimeout>;
       const finish = (result: {
         kind: 'opened' | 'closed' | 'terminal' | 'threw' | 'timed_out';
         code?: number;
@@ -575,7 +690,7 @@ export class BaileysStartupService extends ChannelStartupService {
         resolve(result);
       };
       this.pendingReconnect = { settle: (kind, code) => finish({ kind, code }) };
-      deadline = setTimeout(() => finish({ kind: 'timed_out' }), this.reconnectAttemptTimeoutMs);
+      const deadline = setTimeout(() => finish({ kind: 'timed_out' }), this.reconnectAttemptTimeoutMs);
       deadline.unref?.();
       void this.connectToWhatsapp(this.phoneNumber).catch((error) => finish({ kind: 'threw', error }));
     });
@@ -584,6 +699,28 @@ export class BaileysStartupService extends ChannelStartupService {
       `Reconnect attempt ${attempt} outcome=${outcome.kind} code=${outcome.code ?? statusCode ?? 'unknown'}`,
     );
     if (outcome.kind === 'threw') this.logger.error(outcome.error);
+
+    // A live WS may have delivered open while a profile lookup was blocked.
+    // Reconcile it before treating the 30-second deadline as socket death.
+    // The connectionUpdate callback can switch state across the await above.
+    // Read it through the getter so TS does not retain the earlier 'close' narrowing.
+    if (
+      outcome.kind === 'timed_out' &&
+      this.connectionStatus.state === 'open' &&
+      (this.client?.ws as any)?.isOpen === true
+    ) {
+      const liveSocket = this.client;
+      this.logger.warn(`Reconnect attempt ${attempt} outcome=timeout-with-open-socket; attempting DB reconciliation`);
+      const reconciled = await this.completeOpenConnection(
+        liveSocket,
+        (liveSocket.user?.name ?? liveSocket.user?.verifiedName ?? this.instance.name) as string,
+      );
+      if (reconciled) {
+        this.logger.info(`Reconnect attempt ${attempt} outcome=late_open_reconciled`);
+        this.reconnectInFlight = false;
+        return;
+      }
+    }
 
     if (outcome.kind === 'timed_out' || outcome.kind === 'threw') {
       // Invalidate late events and socket construction from the failed attempt.
@@ -597,32 +734,141 @@ export class BaileysStartupService extends ChannelStartupService {
         this.logger.error(error);
       }
       try {
-        this.client?.end(new Boom('WhatsApp reconnect attempt failed', { statusCode: DisconnectReason.connectionLost }));
+        this.client?.end(
+          new Boom('WhatsApp reconnect attempt failed', { statusCode: DisconnectReason.connectionLost }),
+        );
       } catch (error) {
         this.logger.error(error);
       }
     }
 
     this.reconnectInFlight = false;
-    if (outcome.kind !== 'opened' && outcome.kind !== 'terminal' && this.stateConnection.state === 'close') {
+    if (outcome.kind === 'opened') {
+      this.logger.info(
+        `Reconnect loop stopped instance=${this.instanceName} reason=recovered code=${outcome.code ?? statusCode ?? 'unknown'} attempts=${attempt}`,
+      );
+    } else if (outcome.kind !== 'terminal' && this.stateConnection.state === 'close') {
+      // The close handler may already have tried to schedule while
+      // reconnectInFlight was true. Always re-arm after releasing that latch.
       this.scheduleReconnect(outcome.code ?? statusCode);
+    } else if (outcome.kind !== 'terminal') {
+      this.logger.warn(
+        `Reconnect loop paused instance=${this.instanceName} state=${this.stateConnection.state} code=${outcome.code ?? statusCode ?? 'unknown'} attempt=${attempt}; supervisor will re-evaluate`,
+      );
     }
+    // The terminal close handler emits the single explicit stopped line.
+  }
+
+  // The only successful open completion path: status write, settle, watchdog
+  // and background worker are committed together. A skipped stale write is
+  // never acknowledged; the independent supervisor can repair it later.
+  private async completeOpenConnection(socket: WASocket, profileName: string): Promise<boolean> {
+    if (
+      socket !== this.client ||
+      this.stateConnection.state !== 'open' ||
+      (socket.ws as any)?.isOpen !== true ||
+      (this.activeSocketBuildRevision !== undefined && this.activeSocketBuildRevision !== this.socketBuildRevision)
+    ) {
+      this.logger.warn(
+        `Open completion ignored instance=${this.instanceName} guard=socket-state-transport-or-generation`,
+      );
+      return false;
+    }
+    const revision = this.connectionRevision;
+    let persisted = false;
+    try {
+      persisted = await this.persistConnectionTransition(revision, {
+        ownerJid: this.instance.wuid,
+        profileName,
+        profilePicUrl: this.instance.profilePictureUrl,
+        connectionStatus: 'open',
+        disconnectionAt: null,
+        disconnectionReasonCode: null,
+        disconnectionObject: null,
+      });
+    } catch (error) {
+      this.logger.error(`Could not persist WhatsApp open transition: ${String(error)}`);
+      if (revision === this.connectionRevision && socket === this.client) {
+        this.stateConnection = { state: 'close', statusReason: DisconnectReason.connectionLost };
+        clearInterval(this.socketWatchdog);
+        this.stopOutboundQueueWorker();
+        this.pendingReconnect?.settle('closed', DisconnectReason.connectionLost);
+        this.scheduleReconnect(DisconnectReason.connectionLost);
+      }
+      return false;
+    }
+    if (!persisted) {
+      this.logger.warn(
+        `Open completion ignored instance=${this.instanceName} guard=queued-write-stale revision=${revision} current=${this.connectionRevision}`,
+      );
+      return false;
+    }
+    if (this.stateConnection.state !== 'open' || revision !== this.connectionRevision || socket !== this.client) {
+      this.logger.warn(
+        `Open completion after persist instance=${this.instanceName} guard=state-revision-or-socket revision=${revision} current=${this.connectionRevision}`,
+      );
+      return false;
+    }
+
+    this.pendingReconnect?.settle('opened');
+    this.watchSocket(socket);
+    clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = undefined;
+    this.reconnectAttempts = 0;
+    this.startOutboundQueueWorker();
+
+    if (this.configService.get<Chatwoot>('CHATWOOT').ENABLED && this.localChatwoot?.enabled) {
+      this.chatwootService.eventWhatsapp(
+        Events.CONNECTION_UPDATE,
+        { instanceName: this.instance.name, instanceId: this.instanceId },
+        { instance: this.instance.name, status: 'open' },
+      );
+      this.syncChatwootLostMessages();
+    }
+
+    this.sendDataWebhook(Events.CONNECTION_UPDATE, {
+      instance: this.instance.name,
+      wuid: this.instance.wuid,
+      profileName,
+      profilePictureUrl: this.instance.profilePictureUrl,
+      ...this.stateConnection,
+    });
+    return true;
   }
 
   private async connectionUpdate(
     { qr, connection, lastDisconnect }: Partial<ConnectionState>,
     socket: WASocket = this.client,
   ) {
-    if (socket !== this.client) return;
+    if (socket !== this.client) {
+      this.logger.warn(
+        `Connection update ignored instance=${this.instanceName} guard=stale-socket connection=${connection ?? 'none'}`,
+      );
+      return;
+    }
     // Built sockets must match the active generation. An adopted socket without
     // a generation marker is still the current socket and must report transitions.
+    if (this.activeSocketBuildRevision !== undefined && this.activeSocketBuildRevision !== this.socketBuildRevision) {
+      this.logger.warn(
+        `Connection update ignored instance=${this.instanceName} guard=build-revision active=${this.activeSocketBuildRevision} current=${this.socketBuildRevision} connection=${connection ?? 'none'}`,
+      );
+      return;
+    }
+    // A delayed 'connecting' or QR-only event is not allowed to demote a
+    // socket which is already demonstrably open. Otherwise the subsequent
+    // profile await can leave in-memory 'connecting' and DB 'close' forever.
     if (
-      this.activeSocketBuildRevision !== undefined &&
-      this.activeSocketBuildRevision !== this.socketBuildRevision
-    ) return;
-    const revision = qr || connection
-      ? (this.connectionRevision = (this.connectionRevision ?? 0) + 1)
-      : (this.connectionRevision ??= 0);
+      this.stateConnection.state === 'open' &&
+      (socket.ws as any)?.isOpen === true &&
+      (connection === 'connecting' || (qr && !connection))
+    ) {
+      this.logger.warn(`Connection update ignored instance=${this.instanceName} guard=late-connecting-on-open`);
+      return;
+    }
+    const revision =
+      qr || connection
+        ? (this.connectionRevision = (this.connectionRevision ?? 0) + 1)
+        : (this.connectionRevision ??= 0);
     if (connection) {
       this.stateConnection = {
         state: connection,
@@ -717,6 +963,8 @@ export class BaileysStartupService extends ChannelStartupService {
     }
 
     if (connection === 'close') {
+      this.openObservedAt = 0;
+      this.socketClosedObservedAt = 0;
       clearInterval(this.socketWatchdog);
       this.stopOutboundQueueWorker();
       const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
@@ -748,6 +996,9 @@ export class BaileysStartupService extends ChannelStartupService {
       } else {
         clearTimeout(this.reconnectTimer);
         this.reconnectTimer = undefined;
+        this.logger.warn(
+          `Reconnect loop stopped instance=${this.instanceName} reason=logged-out code=${statusCode ?? 'unknown'} attempt=${this.reconnectAttempts}; re-pairing required`,
+        );
         this.sendDataWebhook(Events.STATUS_INSTANCE, {
           instance: this.instance.name,
           status: 'closed',
@@ -773,6 +1024,8 @@ export class BaileysStartupService extends ChannelStartupService {
     }
 
     if (connection === 'open') {
+      this.openObservedAt = Date.now();
+      this.socketClosedObservedAt = 0;
       this.instance.wuid = this.client.user.id.replace(/:\d+/, '');
       try {
         const profilePic = await this.profilePicture(this.instance.wuid);
@@ -796,55 +1049,18 @@ export class BaileysStartupService extends ChannelStartupService {
       );
 
       const profileName = (await this.getProfileName()) as string;
-      if (this.stateConnection.state !== 'open' || revision !== this.connectionRevision || socket !== this.client) return;
-      try {
-        await this.persistConnectionTransition(revision, {
-          ownerJid: this.instance.wuid,
-          profileName,
-          profilePicUrl: this.instance.profilePictureUrl,
-          connectionStatus: 'open',
-          disconnectionAt: null,
-          disconnectionReasonCode: null,
-          disconnectionObject: null,
-        });
-      } catch (error) {
-        this.logger.error(`Could not persist WhatsApp open transition: ${String(error)}`);
-        if (revision === this.connectionRevision && socket === this.client) {
-          // An open socket with a failed final write is not a recovered instance.
-          this.stateConnection = { state: 'close', statusReason: DisconnectReason.connectionLost };
-          clearInterval(this.socketWatchdog);
-          this.stopOutboundQueueWorker();
-          this.pendingReconnect?.settle('closed', DisconnectReason.connectionLost);
-          // If a reconnect is in flight, its outcome handler schedules the retry.
-          this.scheduleReconnect(DisconnectReason.connectionLost);
-        }
+      if (this.stateConnection.state !== 'open' || socket !== this.client) {
+        this.logger.warn(
+          `Connection open ignored instance=${this.instanceName} guard=state-or-socket revision=${revision} current=${this.connectionRevision}`,
+        );
         return;
       }
-      if (this.stateConnection.state !== 'open' || revision !== this.connectionRevision || socket !== this.client) return;
-      // Recovery is complete only after the final status write, not on the raw event.
-      this.pendingReconnect?.settle('opened');
-      this.watchSocket(socket);
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = undefined;
-      this.reconnectAttempts = 0;
-      this.startOutboundQueueWorker();
-
-      if (this.configService.get<Chatwoot>('CHATWOOT').ENABLED && this.localChatwoot?.enabled) {
-        this.chatwootService.eventWhatsapp(
-          Events.CONNECTION_UPDATE,
-          { instanceName: this.instance.name, instanceId: this.instanceId },
-          { instance: this.instance.name, status: 'open' },
+      if (revision !== this.connectionRevision) {
+        this.logger.warn(
+          `Connection open revision advanced instance=${this.instanceName} guard=profile-await old=${revision} current=${this.connectionRevision}; reconciling`,
         );
-        this.syncChatwootLostMessages();
       }
-
-      this.sendDataWebhook(Events.CONNECTION_UPDATE, {
-        instance: this.instance.name,
-        wuid: this.instance.wuid,
-        profileName: await this.getProfileName(),
-        profilePictureUrl: this.instance.profilePictureUrl,
-        ...this.stateConnection,
-      });
+      await this.completeOpenConnection(socket, profileName);
     }
 
     if (connection === 'connecting') {
@@ -1060,6 +1276,7 @@ export class BaileysStartupService extends ChannelStartupService {
     }
 
     this.client = makeWASocket(socketConfig);
+    this.startConnectionSupervisor();
     this.client.ws.on('CB:stream:error', (node: { attrs?: { code?: string | number } }) => {
       if (String(node?.attrs?.code) === '515') this.lastStream515At = Date.now();
     });
@@ -2419,231 +2636,238 @@ export class BaileysStartupService extends ChannelStartupService {
   private eventHandler() {
     const socket = this.client;
     socket.ev.process(async (events) => {
-      this.eventProcessingQueue = this.eventProcessingQueue.then(async () => {
-        try {
-          if (!this.endSession) {
-            const database = this.configService.get<Database>('DATABASE');
-            const settings = await this.findSettings();
+      // Never queue connection state behind slow settings/database/message work.
+      // A native close must be handled even when the general queue is blocked.
+      if (events['connection.update']) {
+        void this.connectionUpdate(events['connection.update'], socket).catch((error) =>
+          this.logger.error(`WhatsApp connection update failed: ${String(error)}`),
+        );
+      }
+      this.eventProcessingQueue = this.eventProcessingQueue
+        .catch((error) => {
+          this.logger.error(`WhatsApp event processing queue recovered: ${String(error)}`);
+        })
+        .then(async () => {
+          try {
+            if (!this.endSession) {
+              const database = this.configService.get<Database>('DATABASE');
+              const settings = await this.findSettings();
 
-            if (events.call) {
-              const call = events.call[0];
+              if (events.call) {
+                const call = events.call[0];
 
-              if (settings?.rejectCall && call.status == 'offer') {
-                this.client.rejectCall(call.id, call.from);
-              }
-
-              if (settings?.msgCall?.trim().length > 0 && call.status == 'offer') {
-                if (call.from.endsWith('@lid')) {
-                  call.from = await this.client.signalRepository.lidMapping.getPNForLID(call.from as string);
+                if (settings?.rejectCall && call.status == 'offer') {
+                  this.client.rejectCall(call.id, call.from);
                 }
-                const msg = await this.sendBaileysMessage(call.from, { text: settings.msgCall });
 
-                this.client.ev.emit('messages.upsert', { messages: [msg], type: 'notify' });
+                if (settings?.msgCall?.trim().length > 0 && call.status == 'offer') {
+                  if (call.from.endsWith('@lid')) {
+                    call.from = await this.client.signalRepository.lidMapping.getPNForLID(call.from as string);
+                  }
+                  const msg = await this.sendBaileysMessage(call.from, { text: settings.msgCall });
+
+                  this.client.ev.emit('messages.upsert', { messages: [msg], type: 'notify' });
+                }
+
+                this.sendDataWebhook(Events.CALL, call);
               }
 
-              this.sendDataWebhook(Events.CALL, call);
-            }
+              if (events['creds.update']) {
+                this.instance.authState.saveCreds();
+                this.sendDataWebhook(Events.CREDS_UPDATE, { instance: this.instance.name });
+              }
 
-            if (events['connection.update']) {
-              void this.connectionUpdate(events['connection.update'], socket).catch((error) => this.logger.error(error));
-            }
+              if (events['messaging-history.set']) {
+                const payload = events['messaging-history.set'];
+                this.sendDataWebhook(Events.MESSAGING_HISTORY_SET, payload);
+                await this.messageHandle['messaging-history.set'](payload);
+              }
 
-            if (events['creds.update']) {
-              this.instance.authState.saveCreds();
-              this.sendDataWebhook(Events.CREDS_UPDATE, { instance: this.instance.name });
-            }
+              if (events['messaging-history.status']) {
+                this.sendDataWebhook(Events.MESSAGING_HISTORY_STATUS, events['messaging-history.status']);
+              }
 
-            if (events['messaging-history.set']) {
-              const payload = events['messaging-history.set'];
-              this.sendDataWebhook(Events.MESSAGING_HISTORY_SET, payload);
-              await this.messageHandle['messaging-history.set'](payload);
-            }
+              if (events['lid-mapping.update']) {
+                const mapping = events['lid-mapping.update'];
+                this.sendDataWebhook(Events.LID_MAPPING_UPDATE, mapping);
+                await saveOnWhatsappCache(
+                  [{ remoteJid: mapping.pn, remoteJidAlt: mapping.lid, lid: mapping.lid, exists: true }],
+                  this.instanceId,
+                );
+                await localReadService.invalidate(this.instanceId, [
+                  'onWhatsapp',
+                  'chat.whatsappNumbers',
+                  'chat.fetchProfile',
+                ]);
+              }
 
-            if (events['messaging-history.status']) {
-              this.sendDataWebhook(Events.MESSAGING_HISTORY_STATUS, events['messaging-history.status']);
-            }
+              if (events['messages.upsert']) {
+                const payload = events['messages.upsert'];
 
-            if (events['lid-mapping.update']) {
-              const mapping = events['lid-mapping.update'];
-              this.sendDataWebhook(Events.LID_MAPPING_UPDATE, mapping);
-              await saveOnWhatsappCache(
-                [{ remoteJid: mapping.pn, remoteJidAlt: mapping.lid, lid: mapping.lid, exists: true }],
-                this.instanceId,
-              );
-              await localReadService.invalidate(this.instanceId, [
-                'onWhatsapp',
-                'chat.whatsappNumbers',
-                'chat.fetchProfile',
-              ]);
-            }
+                // this.messageProcessor.processMessage(payload, settings);
+                await this.messageHandle['messages.upsert'](payload, settings);
+              }
 
-            if (events['messages.upsert']) {
-              const payload = events['messages.upsert'];
+              if (events['messages.update']) {
+                const payload = events['messages.update'];
+                await this.messageHandle['messages.update'](payload, settings);
+              }
 
-              // this.messageProcessor.processMessage(payload, settings);
-              await this.messageHandle['messages.upsert'](payload, settings);
-            }
+              if (events['messages.media-update']) {
+                this.sendDataWebhook(Events.MESSAGES_MEDIA_UPDATE, events['messages.media-update']);
+              }
 
-            if (events['messages.update']) {
-              const payload = events['messages.update'];
-              await this.messageHandle['messages.update'](payload, settings);
-            }
+              if (events['messages.reaction']) {
+                this.sendDataWebhook(Events.MESSAGES_REACTION, events['messages.reaction']);
+              }
 
-            if (events['messages.media-update']) {
-              this.sendDataWebhook(Events.MESSAGES_MEDIA_UPDATE, events['messages.media-update']);
-            }
+              if (events['message-receipt.update']) {
+                const payload = events['message-receipt.update'] as MessageUserReceiptUpdate[];
+                this.sendDataWebhook(Events.MESSAGE_RECEIPT_UPDATE, payload);
+                const remotesJidMap: Record<string, number> = {};
 
-            if (events['messages.reaction']) {
-              this.sendDataWebhook(Events.MESSAGES_REACTION, events['messages.reaction']);
-            }
+                for (const event of payload) {
+                  if (typeof event.key.remoteJid === 'string' && typeof event.receipt.readTimestamp === 'number') {
+                    remotesJidMap[event.key.remoteJid] = event.receipt.readTimestamp;
+                  }
+                }
 
-            if (events['message-receipt.update']) {
-              const payload = events['message-receipt.update'] as MessageUserReceiptUpdate[];
-              this.sendDataWebhook(Events.MESSAGE_RECEIPT_UPDATE, payload);
-              const remotesJidMap: Record<string, number> = {};
+                await Promise.all(
+                  Object.keys(remotesJidMap).map(async (remoteJid) =>
+                    this.updateMessagesReadedByTimestamp(remoteJid, remotesJidMap[remoteJid]),
+                  ),
+                );
+              }
 
-              for (const event of payload) {
-                if (typeof event.key.remoteJid === 'string' && typeof event.receipt.readTimestamp === 'number') {
-                  remotesJidMap[event.key.remoteJid] = event.receipt.readTimestamp;
+              if (events['presence.update']) {
+                const payload = events['presence.update'];
+
+                if (settings?.groupsIgnore && payload.id.includes('@g.us')) {
+                  return;
+                }
+
+                this.sendDataWebhook(Events.PRESENCE_UPDATE, payload);
+              }
+
+              if (!settings?.groupsIgnore) {
+                if (events['groups.upsert']) {
+                  const payload = events['groups.upsert'];
+                  await this.groupHandler['groups.upsert'](payload);
+                }
+
+                if (events['groups.update']) {
+                  const payload = events['groups.update'];
+                  await this.groupHandler['groups.update'](payload);
+                }
+
+                if (events['group-participants.update']) {
+                  const payload = events['group-participants.update'] as any;
+                  await this.groupHandler['group-participants.update'](payload);
+                }
+
+                if (events['group.join-request']) {
+                  this.sendDataWebhook(Events.GROUP_JOIN_REQUEST, events['group.join-request']);
+                }
+
+                if (events['group.member-tag.update']) {
+                  this.sendDataWebhook(Events.GROUP_MEMBER_TAG_UPDATE, events['group.member-tag.update']);
                 }
               }
 
-              await Promise.all(
-                Object.keys(remotesJidMap).map(async (remoteJid) =>
-                  this.updateMessagesReadedByTimestamp(remoteJid, remotesJidMap[remoteJid]),
-                ),
-              );
-            }
+              if (events['chats.upsert']) {
+                const payload = events['chats.upsert'];
+                this.chatHandle['chats.upsert'](payload);
+              }
 
-            if (events['presence.update']) {
-              const payload = events['presence.update'];
+              if (events['chats.update']) {
+                const payload = events['chats.update'];
+                this.chatHandle['chats.update'](payload);
+              }
 
-              if (settings?.groupsIgnore && payload.id.includes('@g.us')) {
+              if (events['chats.delete']) {
+                const payload = events['chats.delete'];
+                this.chatHandle['chats.delete'](payload);
+              }
+
+              if (events['contacts.upsert']) {
+                const payload = events['contacts.upsert'];
+                await this.contactHandle['contacts.upsert'](payload);
+              }
+
+              if (events['contacts.update']) {
+                const payload = events['contacts.update'];
+                await this.contactHandle['contacts.update'](payload);
+              }
+
+              if (events['blocklist.set']) {
+                this.sendDataWebhook(Events.BLOCKLIST_SET, events['blocklist.set']);
+                await localReadService.store(this.instanceId, 'fetchBlocklist', [], {
+                  method: 'fetchBlocklist',
+                  result: events['blocklist.set'].blocklist,
+                });
+              }
+
+              if (events['blocklist.update']) {
+                this.sendDataWebhook(Events.BLOCKLIST_UPDATE, events['blocklist.update']);
+                await localReadService.invalidate(this.instanceId, ['fetchBlocklist']);
+              }
+
+              if (events['newsletter.reaction']) {
+                this.sendDataWebhook(Events.NEWSLETTER_REACTION, events['newsletter.reaction']);
+              }
+
+              if (events['newsletter.view']) {
+                this.sendDataWebhook(Events.NEWSLETTER_VIEW, events['newsletter.view']);
+              }
+
+              if (events['newsletter-participants.update']) {
+                this.sendDataWebhook(Events.NEWSLETTER_PARTICIPANTS_UPDATE, events['newsletter-participants.update']);
+                await localReadService.invalidate(this.instanceId, [
+                  'newsletterSubscribers',
+                  'newsletterMetadata',
+                  'newsletterAdminCount',
+                ]);
+              }
+
+              if (events['newsletter-settings.update']) {
+                this.sendDataWebhook(Events.NEWSLETTER_SETTINGS_UPDATE, events['newsletter-settings.update']);
+                await localReadService.invalidate(this.instanceId, ['newsletterMetadata']);
+              }
+
+              if (events['message-capping.update']) {
+                this.sendDataWebhook(Events.MESSAGE_CAPPING_UPDATE, events['message-capping.update']);
+                await localReadService.invalidate(this.instanceId, ['fetchNewChatMessageCap']);
+              }
+
+              if (events['chats.lock']) {
+                this.sendDataWebhook(Events.CHATS_LOCK, events['chats.lock']);
+              }
+
+              if (events['settings.update']) {
+                this.sendDataWebhook(Events.SETTINGS_UPDATE, events['settings.update']);
+                await localReadService.invalidate(this.instanceId, [
+                  'fetchPrivacySettings',
+                  'fetchDisappearingDuration',
+                  'chat.fetchPrivacySettings',
+                ]);
+              }
+
+              if (events[Events.LABELS_ASSOCIATION]) {
+                const payload = events[Events.LABELS_ASSOCIATION];
+                this.labelHandle[Events.LABELS_ASSOCIATION](payload, database);
                 return;
               }
 
-              this.sendDataWebhook(Events.PRESENCE_UPDATE, payload);
-            }
-
-            if (!settings?.groupsIgnore) {
-              if (events['groups.upsert']) {
-                const payload = events['groups.upsert'];
-                await this.groupHandler['groups.upsert'](payload);
-              }
-
-              if (events['groups.update']) {
-                const payload = events['groups.update'];
-                await this.groupHandler['groups.update'](payload);
-              }
-
-              if (events['group-participants.update']) {
-                const payload = events['group-participants.update'] as any;
-                await this.groupHandler['group-participants.update'](payload);
-              }
-
-              if (events['group.join-request']) {
-                this.sendDataWebhook(Events.GROUP_JOIN_REQUEST, events['group.join-request']);
-              }
-
-              if (events['group.member-tag.update']) {
-                this.sendDataWebhook(Events.GROUP_MEMBER_TAG_UPDATE, events['group.member-tag.update']);
+              if (events[Events.LABELS_EDIT]) {
+                const payload = events[Events.LABELS_EDIT];
+                this.labelHandle[Events.LABELS_EDIT](payload);
+                return;
               }
             }
-
-            if (events['chats.upsert']) {
-              const payload = events['chats.upsert'];
-              this.chatHandle['chats.upsert'](payload);
-            }
-
-            if (events['chats.update']) {
-              const payload = events['chats.update'];
-              this.chatHandle['chats.update'](payload);
-            }
-
-            if (events['chats.delete']) {
-              const payload = events['chats.delete'];
-              this.chatHandle['chats.delete'](payload);
-            }
-
-            if (events['contacts.upsert']) {
-              const payload = events['contacts.upsert'];
-              await this.contactHandle['contacts.upsert'](payload);
-            }
-
-            if (events['contacts.update']) {
-              const payload = events['contacts.update'];
-              await this.contactHandle['contacts.update'](payload);
-            }
-
-            if (events['blocklist.set']) {
-              this.sendDataWebhook(Events.BLOCKLIST_SET, events['blocklist.set']);
-              await localReadService.store(this.instanceId, 'fetchBlocklist', [], {
-                method: 'fetchBlocklist',
-                result: events['blocklist.set'].blocklist,
-              });
-            }
-
-            if (events['blocklist.update']) {
-              this.sendDataWebhook(Events.BLOCKLIST_UPDATE, events['blocklist.update']);
-              await localReadService.invalidate(this.instanceId, ['fetchBlocklist']);
-            }
-
-            if (events['newsletter.reaction']) {
-              this.sendDataWebhook(Events.NEWSLETTER_REACTION, events['newsletter.reaction']);
-            }
-
-            if (events['newsletter.view']) {
-              this.sendDataWebhook(Events.NEWSLETTER_VIEW, events['newsletter.view']);
-            }
-
-            if (events['newsletter-participants.update']) {
-              this.sendDataWebhook(Events.NEWSLETTER_PARTICIPANTS_UPDATE, events['newsletter-participants.update']);
-              await localReadService.invalidate(this.instanceId, [
-                'newsletterSubscribers',
-                'newsletterMetadata',
-                'newsletterAdminCount',
-              ]);
-            }
-
-            if (events['newsletter-settings.update']) {
-              this.sendDataWebhook(Events.NEWSLETTER_SETTINGS_UPDATE, events['newsletter-settings.update']);
-              await localReadService.invalidate(this.instanceId, ['newsletterMetadata']);
-            }
-
-            if (events['message-capping.update']) {
-              this.sendDataWebhook(Events.MESSAGE_CAPPING_UPDATE, events['message-capping.update']);
-              await localReadService.invalidate(this.instanceId, ['fetchNewChatMessageCap']);
-            }
-
-            if (events['chats.lock']) {
-              this.sendDataWebhook(Events.CHATS_LOCK, events['chats.lock']);
-            }
-
-            if (events['settings.update']) {
-              this.sendDataWebhook(Events.SETTINGS_UPDATE, events['settings.update']);
-              await localReadService.invalidate(this.instanceId, [
-                'fetchPrivacySettings',
-                'fetchDisappearingDuration',
-                'chat.fetchPrivacySettings',
-              ]);
-            }
-
-            if (events[Events.LABELS_ASSOCIATION]) {
-              const payload = events[Events.LABELS_ASSOCIATION];
-              this.labelHandle[Events.LABELS_ASSOCIATION](payload, database);
-              return;
-            }
-
-            if (events[Events.LABELS_EDIT]) {
-              const payload = events[Events.LABELS_EDIT];
-              this.labelHandle[Events.LABELS_EDIT](payload);
-              return;
-            }
+          } catch (error) {
+            this.logger.error(error);
           }
-        } catch (error) {
-          this.logger.error(error);
-        }
-      });
+        });
     });
   }
 

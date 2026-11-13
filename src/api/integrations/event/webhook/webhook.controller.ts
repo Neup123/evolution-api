@@ -12,6 +12,10 @@ import { EmitData, EventController, EventControllerInterface } from '../event.co
 
 export class WebhookController extends EventController implements EventControllerInterface {
   private readonly logger = new Logger('WebhookController');
+  private readonly maxConcurrentDeliveries = 8;
+  private activeDeliveries = 0;
+  private readonly maxRequestTimeoutMs = 10_000;
+  private readonly maxDeliveryAttempts = 2;
 
   private eventUrl(url: string, event: string): string {
     return `${url.replace(/\/+$/, '')}/${event}`;
@@ -164,7 +168,46 @@ export class WebhookController extends EventController implements EventControlle
     if (integration && !integration.includes('webhook')) {
       return;
     }
+    // Bound in-memory work during a network outage. EventManager captures an
+    // archive copy before dispatch; dropped remote deliveries are logged.
+    if (this.activeDeliveries >= this.maxConcurrentDeliveries) {
+      this.logger.warn(
+        `Webhook delivery skipped instance=${instanceName} reason=concurrency-limit active=${this.activeDeliveries}`,
+      );
+      return;
+    }
+    this.activeDeliveries++;
+    try {
+      await this.emitBounded({
+        instanceName,
+        origin,
+        event,
+        data,
+        serverUrl,
+        dateTime,
+        sender,
+        apiKey,
+        local,
+        integration,
+        extra,
+      });
+    } finally {
+      this.activeDeliveries--;
+    }
+  }
 
+  private async emitBounded({
+    instanceName,
+    origin,
+    event,
+    data,
+    serverUrl,
+    dateTime,
+    sender,
+    apiKey,
+    local,
+    extra,
+  }: EmitData): Promise<void> {
     const endpoints = await this.getAll(instanceName);
 
     const webhookConfig = configService.get<Webhook>('WEBHOOK');
@@ -212,7 +255,7 @@ export class WebhookController extends EventController implements EventControlle
             const httpService = axios.create({
               baseURL,
               headers: webhookHeaders as Record<string, string> | undefined,
-              timeout: webhookConfig.REQUEST?.TIMEOUT_MS ?? 30000,
+              timeout: Math.min(this.maxRequestTimeoutMs, webhookConfig.REQUEST?.TIMEOUT_MS ?? 30000),
             });
 
             await this.retryWebhookRequest(httpService, endpointData, `${origin}.sendData-Webhook`, baseURL, serverUrl);
@@ -256,7 +299,7 @@ export class WebhookController extends EventController implements EventControlle
           if (regex.test(globalURL)) {
             const httpService = axios.create({
               baseURL: globalURL,
-              timeout: webhookConfig.REQUEST?.TIMEOUT_MS ?? 30000,
+              timeout: Math.min(this.maxRequestTimeoutMs, webhookConfig.REQUEST?.TIMEOUT_MS ?? 30000),
             });
 
             await this.retryWebhookRequest(
@@ -295,14 +338,25 @@ export class WebhookController extends EventController implements EventControlle
     delaySeconds?: number,
   ): Promise<void> {
     const webhookConfig = configService.get<Webhook>('WEBHOOK');
-    const maxRetryAttempts = maxRetries ?? webhookConfig.RETRY?.MAX_ATTEMPTS ?? 10;
-    const initialDelay = delaySeconds ?? webhookConfig.RETRY?.INITIAL_DELAY_SECONDS ?? 5;
+    const maxRetryAttempts = Math.min(
+      this.maxDeliveryAttempts,
+      Math.max(1, maxRetries ?? webhookConfig.RETRY?.MAX_ATTEMPTS ?? 10),
+    );
+    const initialDelay = Math.min(2, delaySeconds ?? webhookConfig.RETRY?.INITIAL_DELAY_SECONDS ?? 5);
     const useExponentialBackoff = webhookConfig.RETRY?.USE_EXPONENTIAL_BACKOFF ?? true;
-    const maxDelay = webhookConfig.RETRY?.MAX_DELAY_SECONDS ?? 300;
+    const maxDelay = Math.min(3, webhookConfig.RETRY?.MAX_DELAY_SECONDS ?? 300);
     const jitterFactor = webhookConfig.RETRY?.JITTER_FACTOR ?? 0.2;
     const nonRetryableStatusCodes = webhookConfig.RETRY?.NON_RETRYABLE_STATUS_CODES ?? [400, 401, 403, 404, 422];
 
     let attempts = 0;
+    // Expose the target host for hairpin/NAT diagnosis without leaking a
+    // credential-bearing webhook path or query.
+    let targetHost = 'invalid';
+    try {
+      targetHost = new URL(baseURL).host;
+    } catch {
+      // URL validation occurs in emitBounded; leave a recognizable marker.
+    }
 
     while (attempts < maxRetryAttempts) {
       try {
@@ -338,6 +392,7 @@ export class WebhookController extends EventController implements EventControlle
           syscall: error?.syscall,
           code: error?.code,
           isTimeout,
+          targetHost: isTimeout ? targetHost : undefined,
           statusCode: error?.response?.status,
           error: error?.errno,
           stack: error?.stack,
@@ -355,7 +410,7 @@ export class WebhookController extends EventController implements EventControlle
           nextDelay = Math.min(initialDelay * Math.pow(2, attempts - 1), maxDelay);
 
           const jitter = nextDelay * jitterFactor * (Math.random() * 2 - 1);
-          nextDelay = Math.max(initialDelay, nextDelay + jitter);
+          nextDelay = Math.min(maxDelay, Math.max(initialDelay, nextDelay + jitter));
         }
 
         this.logger.log({

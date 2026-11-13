@@ -16,7 +16,7 @@ async function main() {
   };
   const socket: any = {
     user: { id: '123456:1@s.whatsapp.net' },
-    ws: { close() {} },
+    ws: { isOpen: true, close() {} },
     end() {},
   };
   const service: any = Object.create(BaileysStartupService.prototype);
@@ -31,6 +31,7 @@ async function main() {
   service.eventEmitter = { emit() {} };
   service.logger = { info() {}, error() {}, warn() {} };
   service.stopOutboundQueueWorker = () => {};
+  service.startOutboundQueueWorker = () => {};
   service.startOutboundQueueWorker = () => {};
   service.watchSocket = () => {};
   service.profilePicture = async () => ({ profilePictureUrl: null });
@@ -63,4 +64,11 @@ async function main() {
   assert.equal(stored.disconnectionObject, null);
   console.log('Disconnection field reset tests passed');
 }
-void main().catch((error) => { console.error(error); process.exitCode = 1; });
+// Module imports can start background Redis retries; these isolated test
+// processes must terminate once assertions have completed.
+void main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
